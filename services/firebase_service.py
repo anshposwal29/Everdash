@@ -1,5 +1,5 @@
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, auth
 from datetime import datetime
 import pytz
 from config import Config
@@ -178,6 +178,28 @@ class FirebaseService:
             raise
 
         return messages
+
+    def get_auth_user(self, firebase_id):
+        """Fetch user authentication data from Firebase Authentication"""
+        if not self.initialized:
+            self.initialize()
+
+        try:
+            user_record = auth.get_user(firebase_id)
+            return {
+                'uid': user_record.uid,
+                'email': user_record.email,
+                'phone_number': user_record.phone_number,
+                'display_name': user_record.display_name,
+                'disabled': user_record.disabled,
+                'email_verified': user_record.email_verified
+            }
+        except auth.UserNotFoundError:
+            print(f"Authentication user {firebase_id} not found")
+            return None
+        except Exception as e:
+            print(f"Error fetching auth user {firebase_id}: {e}")
+            return None
 
 
 # Singleton instance

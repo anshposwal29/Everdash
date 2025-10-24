@@ -18,6 +18,11 @@
             <strong>REDCap ID:</strong> {{ user.redcap_id }}
         </div>
         {% endif %}
+        {% if user.identifier %}
+        <div class="info-item">
+            <strong>Identifier:</strong> {{ user.identifier }}
+        </div>
+        {% endif %}
         <div class="info-item">
             <strong>Status:</strong>
             <span class="status-badge {% if user.is_active %}active{% else %}inactive{% endif %}">

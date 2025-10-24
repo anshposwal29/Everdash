@@ -169,6 +169,7 @@ def dashboard():
         user_row = {
             'firebase_id': user.firebase_id,
             'redcap_id': user.redcap_id or '-',
+            'identifier': user.identifier or '-',
             'research_assistant': user.research_assistant or '-',
             'dates': {}
         }
@@ -297,6 +298,7 @@ def get_messages_for_date(firebase_id, date_str):
             'user': {
                 'firebase_id': user.firebase_id,
                 'redcap_id': user.redcap_id or '-',
+                'identifier': user.identifier or '-',
                 'research_assistant': user.research_assistant or '-'
             },
             'date': date_str

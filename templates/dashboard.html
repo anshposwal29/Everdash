@@ -56,6 +56,7 @@
             <tr>
                 <th class="sticky-col">Firebase ID</th>
                 <th class="sticky-col">REDCap ID</th>
+                <th class="sticky-col">Identifier</th>
                 <th class="sticky-col">RA</th>
                 {% for date in date_range %}
                 <th class="date-col">
@@ -78,6 +79,11 @@
                 <td class="sticky-col user-cell">
                     <a href="{{ url_for('user_detail', firebase_id=user_row.firebase_id, start_date=start_date.isoformat(), end_date=end_date.isoformat()) }}">
                         {{ user_row.redcap_id }}
+                    </a>
+                </td>
+                <td class="sticky-col user-cell">
+                    <a href="{{ url_for('user_detail', firebase_id=user_row.firebase_id, start_date=start_date.isoformat(), end_date=end_date.isoformat()) }}">
+                        {{ user_row.identifier }}
                     </a>
                 </td>
                 <td class="sticky-col user-cell">
@@ -214,6 +220,7 @@ function showMessages(firebaseId, date) {
                     <div class="message-info">
                         <p><strong>Firebase ID:</strong> ${user.firebase_id}</p>
                         <p><strong>REDCap ID:</strong> ${user.redcap_id}</p>
+                        <p><strong>Identifier:</strong> ${user.identifier}</p>
                         <p><strong>Research Assistant:</strong> ${user.research_assistant}</p>
                         <p><strong>Date:</strong> ${dateFormatted}</p>
                     </div>

@@ -55,6 +55,23 @@ class SyncService:
     def __init__(self):
         self.timezone = pytz.timezone(Config.TIMEZONE)
 
+    def _fetch_and_update_auth_identifier(self, user):
+        """
+        Fetch authentication data from Firebase Auth and update user's identifier.
+        The identifier is typically the email address from Firebase Authentication.
+        """
+        try:
+            auth_data = firebase_service.get_auth_user(user.firebase_id)
+            if auth_data:
+                # Use email as the identifier, fall back to phone number or display name
+                user.identifier = auth_data.get('email') or auth_data.get('phone_number') or auth_data.get('display_name') or '-'
+                print(f"Updated identifier for {user.firebase_id}: {user.identifier}")
+            else:
+                user.identifier = '-'
+        except Exception as e:
+            print(f"Error fetching auth identifier for {user.firebase_id}: {e}")
+            user.identifier = '-'
+
     def _normalize_risk_score(self, risk_score):
         """
         Normalize risk score to handle multiple formats:
@@ -149,6 +166,10 @@ class SyncService:
 
                 user.is_active = True
                 user.last_synced = datetime.utcnow()
+
+                # Fetch and update identifier from Firebase Authentication
+                self._fetch_and_update_auth_identifier(user)
+
                 synced_count += 1
 
             except Exception as e:
@@ -213,6 +234,10 @@ class SyncService:
                 user.is_animated = fb_user.get('isAnimate', False)
                 user.is_dark_mode = fb_user.get('isDark', False)
                 user.last_synced = datetime.utcnow()
+
+                # Fetch and update identifier from Firebase Authentication
+                self._fetch_and_update_auth_identifier(user)
+
                 synced_count += 1
 
             db.session.commit()
@@ -319,6 +344,11 @@ class SyncService:
                     user.research_assistant = research_assistant
                     user.is_active = True
                     user.last_synced = datetime.utcnow()
+
+                    # Fetch and update identifier from Firebase Authentication
+                    if not user.firebase_id.startswith('redcap_'):
+                        self._fetch_and_update_auth_identifier(user)
+
                     synced_count += 1
 
                 except Exception as e:
@@ -367,6 +397,9 @@ class SyncService:
             user.is_dark_mode = fb_user.get('isDark', False)
             user.is_active = active_firebase_ids is None or firebase_id in active_firebase_ids
             user.last_synced = datetime.utcnow()
+
+            # Fetch and update identifier from Firebase Authentication
+            self._fetch_and_update_auth_identifier(user)
 
             synced_count += 1
 
@@ -548,6 +581,9 @@ class SyncService:
                         user.current_convo_id = fb_user.get('convoID', '')
                         user.is_animated = fb_user.get('isAnimate', False)
                         user.is_dark_mode = fb_user.get('isDark', False)
+                        # Fetch and update identifier from Firebase Authentication
+                        if not user.firebase_id.startswith('redcap_'):
+                            self._fetch_and_update_auth_identifier(user)
                 db.session.commit()
 
             # Get last sync timestamp to only fetch new data

@@ -37,6 +37,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     firebase_id = db.Column(db.String(100), unique=True, nullable=False, index=True)
     redcap_id = db.Column(db.String(100), index=True)
+    identifier = db.Column(db.String(255))  # Email or identifier from Firebase Authentication
     research_assistant = db.Column(db.String(100))  # RA assigned to this participant
     current_convo_id = db.Column(db.String(100))
     is_animated = db.Column(db.Boolean, default=False)
