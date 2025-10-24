@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Theradash{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Therabot Conversation Dashboard</h1>
+
+    <div class="dashboard-controls">
+        <div class="date-range-controls">
+            <form method="GET" action="{{ url_for('dashboard') }}" class="date-range-form">
+                <div class="form-inline">
+                    <label for="start_date">Start Date:</label>
+                    <input type="date" id="start_date" name="start_date" value="{{ start_date.isoformat() }}" required>
+
+                    <label for="end_date">End Date:</label>
+                    <input type="date" id="end_date" name="end_date" value="{{ end_date.isoformat() }}" required>
+
+                    <button type="submit" class="btn btn-secondary">Update Range</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="sync-controls">
+            <button id="sync-btn" class="btn btn-primary">
+                <span class="sync-icon">&#x21bb;</span> Refresh Data
+            </button>
+            {% if last_sync %}
+            <small class="sync-status">
+                Last sync: {{ last_sync.created_at.strftime('%Y-%m-%d %I:%M %p') }}
+                ({{ last_sync.messages_synced }} messages)
+            </small>
+            {% else %}
+            <small class="sync-status">No sync yet</small>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-info">
+    <div class="info-box">
+        <strong>Total Users:</strong> {{ dashboard_data|length }}
+    </div>
+    <div class="info-box">
+        <strong>Date Range:</strong> {{ start_date.strftime('%b %d, %Y') }} - {{ end_date.strftime('%b %d, %Y') }}
+    </div>
+    <div class="info-box alert-info">
+        <strong>Risk Threshold:</strong> {{ risk_threshold }}
+        <span class="risk-indicator high">High Risk</span> = Red highlight
+    </div>
+</div>
+
+<div class="dashboard-grid-container">
+    <table class="dashboard-grid">
+        <thead>
+            <tr>
+                <th class="sticky-col">Firebase ID</th>
+                <th class="sticky-col">REDCap ID</th>
+                <th class="sticky-col">RA</th>
+                {% for date in date_range %}
+                <th class="date-col">
+                    <div class="date-header">
+                        <div class="day-name">{{ date.strftime('%a') }}</div>
+                        <div class="date-number">{{ date.strftime('%m/%d') }}</div>
+                    </div>
+                </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for user_row in dashboard_data %}
+            <tr>
+                <td class="sticky-col user-cell">
+                    <a href="{{ url_for('user_detail', firebase_id=user_row.firebase_id, start_date=start_date.isoformat(), end_date=end_date.isoformat()) }}" title="{{ user_row.firebase_id }}">
+                        {{ user_row.firebase_id[:12] }}...
+                    </a>
+                </td>
+                <td class="sticky-col user-cell">
+                    <a href="{{ url_for('user_detail', firebase_id=user_row.firebase_id, start_date=start_date.isoformat(), end_date=end_date.isoformat()) }}">
+                        {{ user_row.redcap_id }}
+                    </a>
+                </td>
+                <td class="sticky-col user-cell">
+                    {{ user_row.research_assistant }}
+                </td>
+                {% for date in date_range %}
+                {% set date_key = date.isoformat() %}
+                {% set cell_data = user_row.dates.get(date_key, {'count': 0, 'has_high_risk': False, 'max_risk_score': 0, 'has_unreviewed': False}) %}
+                <td class="message-cell {% if cell_data.has_high_risk %}high-risk{% elif cell_data.count > 0 %}has-messages{% endif %} {% if cell_data.has_unreviewed %}unreviewed{% endif %}"
+                    data-count="{{ cell_data.count }}"
+                    data-risk="{{ cell_data.max_risk_score }}"
+                    data-firebase-id="{{ user_row.firebase_id }}"
+                    data-date="{{ date_key }}"
+                    onclick="{% if cell_data.count > 0 %}showMessages('{{ user_row.firebase_id }}', '{{ date_key }}'){% endif %}"
+                    style="{% if cell_data.count > 0 %}cursor: pointer;{% endif %}"
+                    title="{% if cell_data.has_high_risk %}HIGH RISK ALERT! {% endif %}{{ cell_data.count }} message(s){% if cell_data.max_risk_score > 0 %}, Max risk: {{ '%.2f'|format(cell_data.max_risk_score) }}{% endif %}{% if cell_data.has_unreviewed %} - UNREVIEWED{% endif %}">
+                    {% if cell_data.count > 0 %}
+                        <span class="message-count">{{ cell_data.count }}</span>
+                        {% if cell_data.has_high_risk %}
+                        <span class="risk-badge">!</span>
+                        {% endif %}
+                        {% if cell_data.has_unreviewed %}
+                        <span class="unreviewed-badge">⚠</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="no-messages">-</span>
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div id="sync-status-message" class="status-message" style="display: none;"></div>
+
+<!-- Message Modal -->
+<div id="message-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Messages</h2>
+            <span class="close" onclick="closeMessageModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="message-modal-info"></div>
+            <div id="message-modal-messages"></div>
+        </div>
+        <div class="modal-footer">
+            <button id="mark-reviewed-btn" class="btn btn-primary" onclick="markDateReviewed()">
+                Mark All as Reviewed
+            </button>
+            <button class="btn btn-secondary" onclick="closeMessageModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('sync-btn').addEventListener('click', function() {
+    const btn = this;
+    const statusMessage = document.getElementById('sync-status-message');
+
+    // Disable button and show loading state
+    btn.disabled = true;
+    btn.innerHTML = '<span class="sync-icon spinning">&#x21bb;</span> Syncing...';
+    statusMessage.style.display = 'block';
+    statusMessage.className = 'status-message info';
+    statusMessage.textContent = 'Syncing data from Firebase...';
+
+    // Make API call
+    fetch('/api/sync', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            statusMessage.className = 'status-message success';
+            statusMessage.textContent = data.message;
+
+            // Reload page after 2 seconds to show new data
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        } else {
+            statusMessage.className = 'status-message error';
+            statusMessage.textContent = 'Sync failed: ' + data.message;
+            btn.disabled = false;
+            btn.innerHTML = '<span class="sync-icon">&#x21bb;</span> Refresh Data';
+        }
+    })
+    .catch(error => {
+        statusMessage.className = 'status-message error';
+        statusMessage.textContent = 'Error: ' + error.message;
+        btn.disabled = false;
+        btn.innerHTML = '<span class="sync-icon">&#x21bb;</span> Refresh Data';
+    });
+});
+
+// Modal functions
+let currentFirebaseId = null;
+let currentDate = null;
+
+function showMessages(firebaseId, date) {
+    currentFirebaseId = firebaseId;
+    currentDate = date;
+
+    const modal = document.getElementById('message-modal');
+    const modalInfo = document.getElementById('message-modal-info');
+    const modalMessages = document.getElementById('message-modal-messages');
+
+    modalInfo.innerHTML = '<p>Loading...</p>';
+    modalMessages.innerHTML = '';
+    modal.style.display = 'block';
+
+    fetch(`/api/messages/${firebaseId}/${date}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const user = data.user;
+                const dateFormatted = new Date(date).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                modalInfo.innerHTML = `
+                    <div class="message-info">
+                        <p><strong>Firebase ID:</strong> ${user.firebase_id}</p>
+                        <p><strong>REDCap ID:</strong> ${user.redcap_id}</p>
+                        <p><strong>Research Assistant:</strong> ${user.research_assistant}</p>
+                        <p><strong>Date:</strong> ${dateFormatted}</p>
+                    </div>
+                `;
+
+                if (data.messages.length > 0) {
+                    let messagesHtml = '<div class="messages-list">';
+                    data.messages.forEach(msg => {
+                        const riskClass = msg.has_high_risk ? 'high-risk' : '';
+                        const reviewedClass = msg.is_reviewed ? 'reviewed' : 'unreviewed';
+                        // Safely handle risk score - check if it's a number before formatting
+                        const riskBadge = msg.has_high_risk && typeof msg.risk_score === 'number'
+                            ? `<span class="risk-badge">! Risk: ${msg.risk_score.toFixed(2)}</span>`
+                            : '';
+                        const reviewedBadge = msg.is_reviewed ? '<span class="reviewed-badge">✓ Reviewed</span>' : '<span class="unreviewed-badge">⚠ Unreviewed</span>';
+
+                        messagesHtml += `
+                            <div class="message-item ${riskClass} ${reviewedClass}">
+                                <div class="message-header">
+                                    <span class="message-time">${msg.timestamp}</span>
+                                    ${riskBadge}
+                                    ${reviewedBadge}
+                                </div>
+                                <div class="message-text">${escapeHtml(msg.text)}</div>
+                            </div>
+                        `;
+                    });
+                    messagesHtml += '</div>';
+                    modalMessages.innerHTML = messagesHtml;
+                } else {
+                    modalMessages.innerHTML = '<p>No messages found for this date.</p>';
+                }
+            } else {
+                modalInfo.innerHTML = `<p class="error">Error: ${data.message}</p>`;
+            }
+        })
+        .catch(error => {
+            modalInfo.innerHTML = `<p class="error">Error loading messages: ${error.message}</p>`;
+        });
+}
+
+function closeMessageModal() {
+    document.getElementById('message-modal').style.display = 'none';
+    currentFirebaseId = null;
+    currentDate = null;
+}
+
+function markDateReviewed() {
+    if (!currentFirebaseId || !currentDate) {
+        return;
+    }
+
+    const btn = document.getElementById('mark-reviewed-btn');
+    btn.disabled = true;
+    btn.textContent = 'Marking...';
+
+    fetch(`/api/messages/date/${currentFirebaseId}/${currentDate}/mark-reviewed`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            closeMessageModal();
+            // Reload the page to update the dashboard
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+            btn.disabled = false;
+            btn.textContent = 'Mark All as Reviewed';
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error.message);
+        btn.disabled = false;
+        btn.textContent = 'Mark All as Reviewed';
+    });
+}
+
+function escapeHtml(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+// Close modal when clicking outside of it
+window.onclick = function(event) {
+    const modal = document.getElementById('message-modal');
+    if (event.target === modal) {
+        closeMessageModal();
+    }
+}
+</script>
+{% endblock %}

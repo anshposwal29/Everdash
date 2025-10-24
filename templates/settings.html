@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Theradash{% endblock %}
+
+{% block content %}
+<div class="settings-header">
+    <h1>Application Settings</h1>
+</div>
+
+<div class="settings-container">
+    <div class="settings-section">
+        <h2>Configuration Status</h2>
+
+        <div class="config-status">
+            <div class="status-item">
+                <span class="status-icon {% if settings.firebase_configured %}success{% else %}error{% endif %}">
+                    {% if settings.firebase_configured %}✓{% else %}✗{% endif %}
+                </span>
+                <strong>Firebase:</strong>
+                {{ 'Configured' if settings.firebase_configured else 'Not Configured' }}
+            </div>
+
+            <div class="status-item">
+                <span class="status-icon {% if settings.redcap_configured %}success{% else %}error{% endif %}">
+                    {% if settings.redcap_configured %}✓{% else %}✗{% endif %}
+                </span>
+                <strong>REDCap:</strong>
+                {{ 'Configured' if settings.redcap_configured else 'Not Configured' }}
+            </div>
+
+            <div class="status-item">
+                <span class="status-icon {% if settings.twilio_configured %}success{% else %}error{% endif %}">
+                    {% if settings.twilio_configured %}✓{% else %}✗{% endif %}
+                </span>
+                <strong>Twilio SMS:</strong>
+                {{ 'Configured' if settings.twilio_configured else 'Not Configured' }}
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <h2>Risk Monitoring</h2>
+        <div class="setting-item">
+            <strong>Risk Score Threshold:</strong>
+            <span class="setting-value">{{ settings.risk_threshold }}</span>
+            <p class="setting-description">
+                Messages with a risk score above this threshold will trigger alerts.
+                To change this value, update the RISK_SCORE_THRESHOLD environment variable.
+            </p>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <h2>Security</h2>
+        <div class="setting-item">
+            <strong>Allowed IP Prefix:</strong>
+            <span class="setting-value">{{ settings.ip_prefix }}.*.*</span>
+            <p class="setting-description">
+                Only IP addresses starting with this prefix can access the application.
+                To change this value, update the IP_PREFIX_ALLOWED environment variable.
+            </p>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <h2>Alert Recipients</h2>
+        <div class="setting-item">
+            {% if settings.admin_numbers %}
+            <strong>Admin Phone Numbers:</strong>
+            <ul class="admin-numbers-list">
+                {% for number in settings.admin_numbers %}
+                {% if number %}
+                <li>{{ number }}</li>
+                {% endif %}
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-warning">No admin phone numbers configured</p>
+            {% endif %}
+            <p class="setting-description">
+                To change alert recipients, update the TWILIO_ADMIN_NUMBERS environment variable
+                (comma-separated list of phone numbers).
+            </p>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <h2>Sync History</h2>
+        {% if settings.last_sync %}
+        <div class="sync-history">
+            <div class="sync-stat">
+                <strong>Last Sync:</strong>
+                {{ settings.last_sync.created_at.strftime('%Y-%m-%d %I:%M:%S %p') }}
+            </div>
+            <div class="sync-stat">
+                <strong>Messages Synced:</strong>
+                {{ settings.last_sync.messages_synced }}
+            </div>
+            <div class="sync-stat">
+                <strong>Conversations Synced:</strong>
+                {{ settings.last_sync.conversations_synced }}
+            </div>
+            <div class="sync-stat">
+                <strong>Users Synced:</strong>
+                {{ settings.last_sync.users_synced }}
+            </div>
+            <div class="sync-stat">
+                <strong>Duration:</strong>
+                {{ '%.2f'|format(settings.last_sync.sync_duration_seconds) }} seconds
+            </div>
+        </div>
+        {% else %}
+        <p>No sync has been performed yet.</p>
+        {% endif %}
+    </div>
+
+    <div class="settings-section">
+        <h2>Environment Variables Guide</h2>
+        <div class="env-guide">
+            <p>To configure this application, set the following environment variables:</p>
+            <ul class="env-list">
+                <li><code>SECRET_KEY</code> - Flask secret key for sessions</li>
+                <li><code>FIREBASE_CREDENTIALS_PATH</code> - Path to Firebase credentials JSON</li>
+                <li><code>REDCAP_API_URL</code> - REDCap API endpoint URL</li>
+                <li><code>REDCAP_API_TOKEN</code> - REDCap API access token</li>
+                <li><code>REDCAP_FILTER_LOGIC</code> - REDCap filter logic for active participants</li>
+                <li><code>TWILIO_ACCOUNT_SID</code> - Twilio account SID</li>
+                <li><code>TWILIO_AUTH_TOKEN</code> - Twilio authentication token</li>
+                <li><code>TWILIO_FROM_NUMBER</code> - Twilio sending phone number</li>
+                <li><code>TWILIO_ADMIN_NUMBERS</code> - Comma-separated list of admin phone numbers</li>
+                <li><code>IP_PREFIX_ALLOWED</code> - First 3 digits of allowed IP addresses</li>
+                <li><code>REGISTRATION_KEY</code> - Secret key for admin registration</li>
+                <li><code>RISK_SCORE_THRESHOLD</code> - Risk score threshold (default: 0.7)</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

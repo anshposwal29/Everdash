@@ -1,0 +1,59 @@
+═══════════════════════════════════════════════════════════════════
+                   THERACHAT CRON JOB QUICK REFERENCE
+═══════════════════════════════════════════════════════════════════
+
+INSTALLATION
+────────────────────────────────────────────────────────────────────
+Run the automated setup:
+    cd /Users/mvh24011/theradash
+    ./setup_cron.sh
+
+MONITORING
+────────────────────────────────────────────────────────────────────
+View live logs:
+    tail -f /Users/mvh24011/theradash/logs/cron_sync.log
+
+View last 50 lines:
+    tail -50 /Users/mvh24011/theradash/logs/cron_sync.log
+
+View cron jobs:
+    crontab -l
+
+TESTING
+────────────────────────────────────────────────────────────────────
+Run sync manually:
+    cd /Users/mvh24011/theradash
+    ./venv/bin/python cron_sync.py
+
+MANAGEMENT
+────────────────────────────────────────────────────────────────────
+Edit cron jobs:
+    crontab -e
+
+Remove all cron jobs:
+    crontab -r
+
+Remove specific cron job:
+    crontab -l | grep -v "cron_sync.py" | crontab -
+
+TROUBLESHOOTING
+────────────────────────────────────────────────────────────────────
+Check cron service (macOS):
+    sudo launchctl list | grep cron
+
+Check system logs (macOS):
+    tail -f /var/log/system.log | grep cron
+
+Fix permissions:
+    chmod +x /Users/mvh24011/theradash/cron_sync.py
+
+WHAT IT DOES
+────────────────────────────────────────────────────────────────────
+• Runs automatically every 2 minutes
+• Syncs new messages from Firebase
+• Updates "Last Sync" timestamp in dashboard
+• Sends risk alerts for high-risk messages
+• Keeps study personnel informed in real-time
+
+For detailed documentation, see: CRON_SETUP.md
+═══════════════════════════════════════════════════════════════════

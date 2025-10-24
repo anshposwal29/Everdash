@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Users - Theradash{% endblock %}
+
+{% block content %}
+<div class="admin-users-header">
+    <h1>Admin User Management</h1>
+    <a href="{{ url_for('register') }}" class="btn btn-primary">Add New Admin</a>
+</div>
+
+<div class="admin-users-list">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Created</th>
+                <th>Last Login</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for admin in admins %}
+            <tr>
+                <td>{{ admin.username }}</td>
+                <td>{{ admin.email }}</td>
+                <td>{{ admin.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>
+                    {% if admin.last_login %}
+                    {{ admin.last_login.strftime('%Y-%m-%d %I:%M %p') }}
+                    {% else %}
+                    Never
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="status-badge {% if admin.is_active %}active{% else %}inactive{% endif %}">
+                        {{ 'Active' if admin.is_active else 'Inactive' }}
+                    </span>
+                </td>
+                <td>
+                    {% if admin.id != current_user.id %}
+                    <button class="btn btn-sm {% if admin.is_active %}btn-danger{% else %}btn-success{% endif %}"
+                            onclick="toggleAdminStatus({{ admin.id }})">
+                        {{ 'Deactivate' if admin.is_active else 'Activate' }}
+                    </button>
+                    {% else %}
+                    <span class="text-muted">Current User</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div id="status-message" class="status-message" style="display: none;"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleAdminStatus(adminId) {
+    if (!confirm('Are you sure you want to change this admin\'s status?')) {
+        return;
+    }
+
+    const statusMessage = document.getElementById('status-message');
+
+    fetch(`/admin/users/${adminId}/toggle`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            statusMessage.className = 'status-message success';
+            statusMessage.textContent = data.message;
+            statusMessage.style.display = 'block';
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            statusMessage.className = 'status-message error';
+            statusMessage.textContent = data.message;
+            statusMessage.style.display = 'block';
+        }
+    })
+    .catch(error => {
+        statusMessage.className = 'status-message error';
+        statusMessage.textContent = 'Error: ' + error.message;
+        statusMessage.style.display = 'block';
+    });
+}
+</script>
+{% endblock %}

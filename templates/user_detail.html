@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}User Detail - {{ user.firebase_id }} - Theradash{% endblock %}
+
+{% block content %}
+<div class="user-detail-header">
+    <div class="breadcrumb">
+        <a href="{{ url_for('dashboard') }}">Dashboard</a> &raquo; {{ user.firebase_id }}
+    </div>
+
+    <h1>Conversation Details</h1>
+    <div class="user-info">
+        <div class="info-item">
+            <strong>Firebase ID:</strong> {{ user.firebase_id }}
+        </div>
+        {% if user.redcap_id %}
+        <div class="info-item">
+            <strong>REDCap ID:</strong> {{ user.redcap_id }}
+        </div>
+        {% endif %}
+        <div class="info-item">
+            <strong>Status:</strong>
+            <span class="status-badge {% if user.is_active %}active{% else %}inactive{% endif %}">
+                {{ 'Active' if user.is_active else 'Inactive' }}
+            </span>
+        </div>
+        <div class="info-item">
+            <strong>Dark Mode:</strong> {{ 'Yes' if user.is_dark_mode else 'No' }}
+        </div>
+        <div class="info-item">
+            <strong>Animated Avatar:</strong> {{ 'Yes' if user.is_animated else 'No' }}
+        </div>
+    </div>
+
+    {% if start_date and end_date %}
+    <div class="date-filter-info">
+        Showing messages from {{ start_date.strftime('%b %d, %Y') }} to {{ end_date.strftime('%b %d, %Y') }}
+    </div>
+    {% endif %}
+</div>
+
+<div class="messages-container">
+    <h2>Messages ({{ messages|length }})</h2>
+
+    {% if messages %}
+    <div class="messages-list">
+        {% for message in messages %}
+        <div class="message-item {% if message.risk_score is not none and message.risk_score is number and message.risk_score > risk_threshold %}high-risk-message{% endif %}">
+            <div class="message-header">
+                <div class="message-timestamp">
+                    {{ message.timestamp_et.strftime('%Y-%m-%d %I:%M:%S %p %Z') }}
+                </div>
+                {% if message.risk_score is not none %}
+                <div class="message-risk">
+                    <span class="risk-label">Risk Score:</span>
+                    {% if message.risk_score is number %}
+                    <span class="risk-value {% if message.risk_score > risk_threshold %}high{% else %}low{% endif %}">
+                        {{ '%.2f'|format(message.risk_score) }}
+                    </span>
+                    {% else %}
+                    <span class="risk-value">{{ message.risk_score }}</span>
+                    {% endif %}
+                    {% if message.alert_sent %}
+                    <span class="alert-badge" title="Alert sent to admins">Alert Sent</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            <div class="message-text">
+                {{ message.text }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-messages">
+        <p>No messages found for this user in the selected date range.</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="back-link">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">&larr; Back to Dashboard</a>
+</div>
+{% endblock %}
