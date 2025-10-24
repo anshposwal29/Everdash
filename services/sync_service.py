@@ -15,6 +15,7 @@ User Selection Modes:
     redcap: Monitor only users found in REDCap with matching Firebase IDs
     uids: Monitor only specific Firebase UIDs (defined in config)
     both: Monitor all REDCap participants AND specific Firebase UIDs
+    all: Monitor all Firebase users (no filtering)
 
 The sync process:
 1. Get list of users to monitor (based on mode)
@@ -167,6 +168,61 @@ class SyncService:
         db.session.commit()
         print(f"Synced {synced_count} UID-specified users")
         return synced_count
+
+    def sync_all_firebase_users(self):
+        """
+        Sync all users from Firebase without any filtering.
+        This pulls every user from the Firebase users collection.
+        """
+        synced_count = 0
+
+        try:
+            firebase_users = firebase_service.get_users()
+            print(f"Found {len(firebase_users)} users in Firebase")
+
+            for fb_user in firebase_users:
+                firebase_id = fb_user.get('firebase_id')
+
+                if not firebase_id:
+                    print(f"Warning: Firebase user without ID found, skipping")
+                    continue
+
+                # Check if user exists in local database
+                user = User.query.filter_by(firebase_id=firebase_id).first()
+
+                if not user:
+                    # Create new user
+                    user = User(
+                        firebase_id=firebase_id,
+                        redcap_id=None,
+                        research_assistant='Firebase User',
+                        is_active=True
+                    )
+                    db.session.add(user)
+                    print(f"Created new user with Firebase ID {firebase_id}")
+                else:
+                    # Update existing user
+                    # Don't overwrite REDCap data if it exists
+                    if not user.redcap_id:
+                        user.research_assistant = 'Firebase User'
+                    user.is_active = True
+                    print(f"Updated existing user with Firebase ID {firebase_id}")
+
+                # Update Firebase-specific fields
+                user.current_convo_id = fb_user.get('convoID', '')
+                user.is_animated = fb_user.get('isAnimate', False)
+                user.is_dark_mode = fb_user.get('isDark', False)
+                user.last_synced = datetime.utcnow()
+                synced_count += 1
+
+            db.session.commit()
+            print(f"Synced {synced_count} Firebase users")
+            return synced_count
+
+        except Exception as e:
+            print(f"Error syncing all Firebase users: {e}")
+            db.session.rollback()
+            return 0
 
     def sync_redcap_participants(self):
         """
@@ -473,20 +529,26 @@ class SyncService:
                 users_synced = redcap_count + uid_count
                 print(f"Combined sync: {redcap_count} REDCap users + {uid_count} UID users")
 
+            elif Config.USER_SELECTION_MODE == 'all':
+                # Sync all Firebase users without filtering
+                users_synced = self.sync_all_firebase_users()
+
             else:
                 print(f"Warning: Unknown USER_SELECTION_MODE '{Config.USER_SELECTION_MODE}', defaulting to REDCap")
                 users_synced = self.sync_redcap_participants()
 
             # Then sync Firebase user data for those who have Firebase IDs
-            firebase_users = firebase_service.get_users()
-            for fb_user in firebase_users:
-                firebase_id = fb_user.get('firebase_id')
-                user = User.query.filter_by(firebase_id=firebase_id).first()
-                if user:
-                    user.current_convo_id = fb_user.get('convoID', '')
-                    user.is_animated = fb_user.get('isAnimate', False)
-                    user.is_dark_mode = fb_user.get('isDark', False)
-            db.session.commit()
+            # (Skip this for 'all' mode since sync_all_firebase_users already does this)
+            if Config.USER_SELECTION_MODE != 'all':
+                firebase_users = firebase_service.get_users()
+                for fb_user in firebase_users:
+                    firebase_id = fb_user.get('firebase_id')
+                    user = User.query.filter_by(firebase_id=firebase_id).first()
+                    if user:
+                        user.current_convo_id = fb_user.get('convoID', '')
+                        user.is_animated = fb_user.get('isAnimate', False)
+                        user.is_dark_mode = fb_user.get('isDark', False)
+                db.session.commit()
 
             # Get last sync timestamp to only fetch new data
             last_sync_timestamp = self.get_last_sync_timestamp()
@@ -496,7 +558,7 @@ class SyncService:
 
             # Sync messages
             # For UID mode, fetch ALL messages for UID users (ignore timestamp)
-            # For other modes, only fetch new messages since last sync
+            # For redcap and all modes, only fetch new messages since last sync
             uid_list = None
             if Config.USER_SELECTION_MODE in ['uids', 'both']:
                 # Get list of Firebase IDs to fetch all messages for
@@ -504,7 +566,7 @@ class SyncService:
                 print(f"UID mode active: will fetch ALL messages for {len(uid_list)} UIDs")
 
             messages_synced, alerts_sent = self.sync_messages(
-                since_timestamp=last_sync_timestamp if Config.USER_SELECTION_MODE == 'redcap' else None,
+                since_timestamp=last_sync_timestamp if Config.USER_SELECTION_MODE in ['redcap', 'all'] else None,
                 uid_list=uid_list
             )
 

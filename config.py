@@ -51,7 +51,7 @@ class Config:
     REDCAP_RA_FIELD = os.environ.get('REDCAP_RA_FIELD', 'ra')
 
     # User selection settings
-    # Options: 'redcap' (use REDCap filter only), 'uids' (use Firebase UIDs only), 'both' (combine both methods)
+    # Options: 'redcap' (use REDCap filter only), 'uids' (use Firebase UIDs only), 'both' (combine both methods), 'all' (pull all Firebase users)
     USER_SELECTION_MODE = os.environ.get('USER_SELECTION_MODE', 'redcap')
     # Comma-separated list of Firebase UIDs to monitor (used when mode is 'uids' or 'both')
     FIREBASE_UIDS = [uid.strip() for uid in os.environ.get('FIREBASE_UIDS', '').split(',') if uid.strip()]
