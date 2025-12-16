@@ -7,16 +7,47 @@
     <h1>Therabot Conversation Dashboard</h1>
 
     <div class="dashboard-controls">
-        <div class="date-range-controls">
-            <form method="GET" action="{{ url_for('dashboard') }}" class="date-range-form">
+        <div class="filter-controls">
+            <form method="GET" action="{{ url_for('dashboard') }}" class="filter-form">
                 <div class="form-inline">
+                    {% if projects|length > 1 %}
+                    <label for="project_filter">Study:</label>
+                    <select id="project_filter" name="project" onchange="this.form.submit()">
+                        <option value="all">All Studies</option>
+                        {% for project in projects %}
+                        <option value="{{ project.id }}" {% if project_filter == project.id %}selected{% endif %}>
+                            {{ project.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% endif %}
+
+                    {% if research_assistants|length > 0 %}
+                    <label for="ra_filter">RA:</label>
+                    <select id="ra_filter" name="ra" onchange="this.form.submit()">
+                        <option value="all">All RAs</option>
+                        {% for ra in research_assistants %}
+                        <option value="{{ ra }}" {% if ra_filter == ra %}selected{% endif %}>
+                            {{ ra }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% endif %}
+
+                    <label for="risk_filter">Risk:</label>
+                    <select id="risk_filter" name="risk" onchange="this.form.submit()">
+                        <option value="all" {% if risk_filter == 'all' %}selected{% endif %}>All Users</option>
+                        <option value="risky" {% if risk_filter == 'risky' %}selected{% endif %}>High Risk Only</option>
+                        <option value="not_risky" {% if risk_filter == 'not_risky' %}selected{% endif %}>No Risk</option>
+                    </select>
+
                     <label for="start_date">Start Date:</label>
                     <input type="date" id="start_date" name="start_date" value="{{ start_date.isoformat() }}" required>
 
                     <label for="end_date">End Date:</label>
                     <input type="date" id="end_date" name="end_date" value="{{ end_date.isoformat() }}" required>
 
-                    <button type="submit" class="btn btn-secondary">Update Range</button>
+                    <button type="submit" class="btn btn-secondary">Update</button>
                 </div>
             </form>
         </div>
@@ -45,8 +76,7 @@
         <strong>Date Range:</strong> {{ start_date.strftime('%b %d, %Y') }} - {{ end_date.strftime('%b %d, %Y') }}
     </div>
     <div class="info-box alert-info">
-        <strong>Risk Threshold:</strong> {{ risk_threshold }}
-        <span class="risk-indicator high">High Risk</span> = Red highlight
+        <span class="risk-indicator high">Risky</span> = Red highlight
     </div>
 </div>
 
@@ -54,10 +84,7 @@
     <table class="dashboard-grid">
         <thead>
             <tr>
-                <th class="sticky-col">Firebase ID</th>
-                <th class="sticky-col">REDCap ID</th>
-                <th class="sticky-col">Identifier</th>
-                <th class="sticky-col">RA</th>
+                <th class="sticky-col info-panel-header">User Info</th>
                 {% for date in date_range %}
                 <th class="date-col">
                     <div class="date-header">
@@ -71,38 +98,64 @@
         <tbody>
             {% for user_row in dashboard_data %}
             <tr>
-                <td class="sticky-col user-cell">
-                    <a href="{{ url_for('user_detail', firebase_id=user_row.firebase_id, start_date=start_date.isoformat(), end_date=end_date.isoformat()) }}" title="{{ user_row.firebase_id }}">
-                        {{ user_row.firebase_id[:12] }}...
+                <td class="sticky-col info-panel-cell">
+                    <a href="{{ url_for('user_detail', firebase_id=user_row.firebase_id, start_date=start_date.isoformat(), end_date=end_date.isoformat()) }}" class="info-panel-link">
+                        <div class="info-panel">
+                            <div class="info-row info-primary">
+                                <span class="info-id" title="REDCap: {{ user_row.redcap_id }}">{{ user_row.redcap_id }}</span>
+                                {% if user_row.identifier and user_row.identifier != user_row.redcap_id %}
+                                <span class="info-identifier">{{ user_row.identifier }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="info-row info-secondary">
+                                {% if user_row.research_assistant %}
+                                <span class="info-tag info-ra" title="RA">{{ user_row.research_assistant }}</span>
+                                {% endif %}
+                                {% if projects|length > 1 and user_row.project_name %}
+                                <span class="info-tag info-project" title="{{ user_row.project_name }}">{{ user_row.project_name[:10] }}{% if user_row.project_name|length > 10 %}..{% endif %}</span>
+                                {% endif %}
+                            </div>
+                            {% if user_row.dropped or user_row.dropped_surveys %}
+                            <div class="info-row info-dropped">
+                                {% if user_row.dropped %}
+                                <span class="info-tag info-dropped-app" title="Dropped from app">Dropped App</span>
+                                {% endif %}
+                                {% if user_row.dropped_surveys %}
+                                <span class="info-tag info-dropped-surveys" title="Dropped from surveys">Dropped Surveys</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            {% if user_row.study_start_date or user_row.study_end_date %}
+                            <div class="info-row info-dates">
+                                <span class="info-date-range" title="Study period">{{ user_row.study_start_date or '?' }} - {{ user_row.study_end_date or '?' }}</span>
+                            </div>
+                            {% endif %}
+                            {% if custom_field_labels %}
+                            <div class="info-row info-custom">
+                                {% for label in custom_field_labels %}
+                                {% set field_value = user_row.custom_fields.get(label, '') %}
+                                {% if field_value %}
+                                <span class="info-tag info-custom-field" title="{{ label }}: {{ field_value }}">{{ field_value[:8] }}{% if field_value|length > 8 %}..{% endif %}</span>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
                     </a>
-                </td>
-                <td class="sticky-col user-cell">
-                    <a href="{{ url_for('user_detail', firebase_id=user_row.firebase_id, start_date=start_date.isoformat(), end_date=end_date.isoformat()) }}">
-                        {{ user_row.redcap_id }}
-                    </a>
-                </td>
-                <td class="sticky-col user-cell">
-                    <a href="{{ url_for('user_detail', firebase_id=user_row.firebase_id, start_date=start_date.isoformat(), end_date=end_date.isoformat()) }}">
-                        {{ user_row.identifier }}
-                    </a>
-                </td>
-                <td class="sticky-col user-cell">
-                    {{ user_row.research_assistant }}
                 </td>
                 {% for date in date_range %}
                 {% set date_key = date.isoformat() %}
-                {% set cell_data = user_row.dates.get(date_key, {'count': 0, 'has_high_risk': False, 'max_risk_score': 0, 'has_unreviewed': False}) %}
-                <td class="message-cell {% if cell_data.has_high_risk %}high-risk{% elif cell_data.count > 0 %}has-messages{% endif %} {% if cell_data.has_unreviewed %}unreviewed{% endif %}"
+                {% set cell_data = user_row.dates.get(date_key, {'count': 0, 'has_risky': False, 'has_unreviewed': False}) %}
+                <td class="message-cell {% if cell_data.has_risky %}high-risk{% elif cell_data.count > 0 %}has-messages{% endif %} {% if cell_data.has_unreviewed %}unreviewed{% endif %}"
                     data-count="{{ cell_data.count }}"
-                    data-risk="{{ cell_data.max_risk_score }}"
                     data-firebase-id="{{ user_row.firebase_id }}"
                     data-date="{{ date_key }}"
                     onclick="{% if cell_data.count > 0 %}showMessages('{{ user_row.firebase_id }}', '{{ date_key }}'){% endif %}"
                     style="{% if cell_data.count > 0 %}cursor: pointer;{% endif %}"
-                    title="{% if cell_data.has_high_risk %}HIGH RISK ALERT! {% endif %}{{ cell_data.count }} message(s){% if cell_data.max_risk_score > 0 %}, Max risk: {{ '%.2f'|format(cell_data.max_risk_score) }}{% endif %}{% if cell_data.has_unreviewed %} - UNREVIEWED{% endif %}">
+                    title="{% if cell_data.has_risky %}RISKY MESSAGE! {% endif %}{{ cell_data.count }} message(s){% if cell_data.has_unreviewed %} - UNREVIEWED{% endif %}">
                     {% if cell_data.count > 0 %}
                         <span class="message-count">{{ cell_data.count }}</span>
-                        {% if cell_data.has_high_risk %}
+                        {% if cell_data.has_risky %}
                         <span class="risk-badge">!</span>
                         {% endif %}
                         {% if cell_data.has_unreviewed %}
@@ -229,11 +282,10 @@ function showMessages(firebaseId, date) {
                 if (data.messages.length > 0) {
                     let messagesHtml = '<div class="messages-list">';
                     data.messages.forEach(msg => {
-                        const riskClass = msg.has_high_risk ? 'high-risk' : '';
+                        const riskClass = msg.is_risky ? 'high-risk' : '';
                         const reviewedClass = msg.is_reviewed ? 'reviewed' : 'unreviewed';
-                        // Safely handle risk score - check if it's a number before formatting
-                        const riskBadge = msg.has_high_risk && typeof msg.risk_score === 'number'
-                            ? `<span class="risk-badge">! Risk: ${msg.risk_score.toFixed(2)}</span>`
+                        const riskBadge = msg.is_risky
+                            ? `<span class="risk-badge">!</span><span class="risk-score-text">Risky</span>`
                             : '';
                         const reviewedBadge = msg.is_reviewed ? '<span class="reviewed-badge">✓ Reviewed</span>' : '<span class="unreviewed-badge">⚠ Unreviewed</span>';
 

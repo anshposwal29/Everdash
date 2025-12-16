@@ -50,21 +50,14 @@
     {% if messages %}
     <div class="messages-list">
         {% for message in messages %}
-        <div class="message-item {% if message.risk_score is not none and message.risk_score is number and message.risk_score > risk_threshold %}high-risk-message{% endif %}">
+        <div class="message-item {% if message.is_risky %}high-risk-message{% endif %}">
             <div class="message-header">
                 <div class="message-timestamp">
                     {{ message.timestamp_et.strftime('%Y-%m-%d %I:%M:%S %p %Z') }}
                 </div>
-                {% if message.risk_score is not none %}
+                {% if message.is_risky %}
                 <div class="message-risk">
-                    <span class="risk-label">Risk Score:</span>
-                    {% if message.risk_score is number %}
-                    <span class="risk-value {% if message.risk_score > risk_threshold %}high{% else %}low{% endif %}">
-                        {{ '%.2f'|format(message.risk_score) }}
-                    </span>
-                    {% else %}
-                    <span class="risk-value">{{ message.risk_score }}</span>
-                    {% endif %}
+                    <span class="risk-value high">Risky</span>
                     {% if message.alert_sent %}
                     <span class="alert-badge" title="Alert sent to admins">Alert Sent</span>
                     {% endif %}

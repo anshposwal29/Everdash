@@ -17,9 +17,9 @@ class TwilioService:
         if self.account_sid and self.auth_token:
             self.client = Client(self.account_sid, self.auth_token)
 
-    def send_risk_alert(self, user_firebase_id, risk_score, message_text):
+    def send_risk_alert(self, user_firebase_id, message_text):
         """
-        Send SMS alert to study admins about high-risk message.
+        Send SMS alert to study admins about risky message.
         """
         if not self.client or not self.admin_numbers:
             print("Warning: Twilio not configured or no admin numbers specified")
@@ -32,9 +32,8 @@ class TwilioService:
         # Construct alert message
         alert_text = (
             f"THERABOT ALERT\n"
-            f"High-risk message detected!\n\n"
+            f"Risky message detected!\n\n"
             f"User: {user_firebase_id}\n"
-            f"Risk Score: {risk_score:.2f}\n"
             f"Time: {timestamp_et}\n\n"
             f"Message preview: {message_text[:100]}..."
         )

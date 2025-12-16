@@ -41,11 +41,9 @@
     <div class="settings-section">
         <h2>Risk Monitoring</h2>
         <div class="setting-item">
-            <strong>Risk Score Threshold:</strong>
-            <span class="setting-value">{{ settings.risk_threshold }}</span>
             <p class="setting-description">
-                Messages with a risk score above this threshold will trigger alerts.
-                To change this value, update the RISK_SCORE_THRESHOLD environment variable.
+                Messages flagged as "Risky" in Firebase will trigger SMS alerts to administrators
+                and be highlighted in the dashboard.
             </p>
         </div>
     </div>
@@ -81,6 +79,31 @@
                 To change alert recipients, update the TWILIO_ADMIN_NUMBERS environment variable
                 (comma-separated list of phone numbers).
             </p>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <h2>Test SMS</h2>
+        <div class="setting-item">
+            <p class="setting-description">
+                Send a test SMS message to verify your Twilio configuration is working correctly.
+            </p>
+            {% if settings.twilio_configured %}
+            <div class="test-sms-form">
+                <div class="form-group">
+                    <label for="test-phone">Phone Number:</label>
+                    <input type="tel" id="test-phone" class="form-control"
+                           placeholder="+1234567890 or (123) 456-7890"
+                           style="max-width: 300px; margin-right: 10px;">
+                    <button type="button" id="send-test-sms" class="btn btn-primary">
+                        Send Test SMS
+                    </button>
+                </div>
+                <div id="test-sms-result" class="test-result" style="margin-top: 10px; display: none;"></div>
+            </div>
+            {% else %}
+            <p class="text-warning">Twilio is not configured. Please set up Twilio credentials to test SMS functionality.</p>
+            {% endif %}
         </div>
     </div>
 
@@ -135,4 +158,65 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sendTestBtn = document.getElementById('send-test-sms');
+    const phoneInput = document.getElementById('test-phone');
+    const resultDiv = document.getElementById('test-sms-result');
+
+    if (sendTestBtn) {
+        sendTestBtn.addEventListener('click', function() {
+            const phoneNumber = phoneInput.value.trim();
+
+            if (!phoneNumber) {
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'test-result error';
+                resultDiv.innerHTML = 'Please enter a phone number';
+                return;
+            }
+
+            // Disable button and show loading state
+            sendTestBtn.disabled = true;
+            sendTestBtn.textContent = 'Sending...';
+            resultDiv.style.display = 'none';
+
+            fetch('/api/test-sms', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ phone_number: phoneNumber })
+            })
+            .then(response => response.json())
+            .then(data => {
+                resultDiv.style.display = 'block';
+                if (data.success) {
+                    resultDiv.className = 'test-result success';
+                    resultDiv.innerHTML = '<span class="status-icon success">✓</span> ' + data.message;
+                } else {
+                    resultDiv.className = 'test-result error';
+                    resultDiv.innerHTML = '<span class="status-icon error">✗</span> ' + data.message;
+                }
+            })
+            .catch(error => {
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'test-result error';
+                resultDiv.innerHTML = '<span class="status-icon error">✗</span> Error: ' + error.message;
+            })
+            .finally(() => {
+                sendTestBtn.disabled = false;
+                sendTestBtn.textContent = 'Send Test SMS';
+            });
+        });
+
+        // Allow pressing Enter to send
+        phoneInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendTestBtn.click();
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

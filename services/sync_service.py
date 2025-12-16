@@ -29,9 +29,9 @@ Author: Theradash Team
 Last Updated: October 2025
 """
 
-from models import db, User, Conversation, Message, SyncLog
+from models import db, User, Conversation, Message, SyncLog, REDCapProject, UserCustomField
 from services.firebase_service import firebase_service
-from services.redcap_service import redcap_service
+from services.redcap_service import redcap_service, REDCapService
 from services.twilio_service import twilio_service
 from datetime import datetime
 from config import Config
@@ -59,50 +59,32 @@ class SyncService:
         """
         Fetch authentication data from Firebase Auth and update user's identifier.
         The identifier is typically the email address from Firebase Authentication.
+        If Firebase Auth doesn't provide an identifier, preserve the existing one (e.g., username from REDCap).
         """
         try:
             auth_data = firebase_service.get_auth_user(user.firebase_id)
             if auth_data:
                 # Use email as the identifier, fall back to phone number or display name
-                user.identifier = auth_data.get('email') or auth_data.get('phone_number') or auth_data.get('display_name') or '-'
-                print(f"Updated identifier for {user.firebase_id}: {user.identifier}")
-            else:
-                user.identifier = '-'
+                auth_identifier = auth_data.get('email') or auth_data.get('phone_number') or auth_data.get('display_name')
+                if auth_identifier:
+                    user.identifier = auth_identifier
+                    print(f"Updated identifier for {user.firebase_id}: {user.identifier}")
+                # If no auth identifier, keep existing identifier (e.g., username from REDCap)
+            # If no auth_data, keep existing identifier (don't overwrite with '-')
         except Exception as e:
             print(f"Error fetching auth identifier for {user.firebase_id}: {e}")
-            user.identifier = '-'
+            # Keep existing identifier on error (don't overwrite with '-')
 
-    def _normalize_risk_score(self, risk_score):
+    def _is_risky(self, risk_value):
         """
-        Normalize risk score to handle multiple formats:
-        - If numeric: return as is
-        - If string "Risky": return a high value (e.g., 1.0)
-        - If string "Not Risky": return a low value (e.g., 0.0)
-        - If None or missing: return None
+        Check if message is risky based on Firebase riskScore field.
+        Returns True if value is "Risky", False otherwise.
         """
-        if risk_score is None:
-            return None
-
-        # If it's already a number, return it
-        if isinstance(risk_score, (int, float)):
-            return float(risk_score)
-
-        # If it's a string, convert based on value
-        if isinstance(risk_score, str):
-            risk_score_lower = risk_score.strip().lower()
-            if risk_score_lower == "risky":
-                return 1.0  # High risk value
-            elif risk_score_lower == "not risky":
-                return 0.0  # Low risk value
-            else:
-                # Try to parse as a number
-                try:
-                    return float(risk_score)
-                except ValueError:
-                    print(f"Warning: Unknown risk score string value: {risk_score}")
-                    return None
-
-        return None
+        if risk_value is None:
+            return False
+        if isinstance(risk_value, str):
+            return risk_value.strip().lower() == "risky"
+        return False
 
     def get_last_sync_timestamp(self):
         """Get the timestamp of the last successful sync"""
@@ -110,6 +92,77 @@ class SyncService:
         if last_sync:
             return last_sync.last_sync_timestamp
         return None
+
+    def _parse_date(self, date_str):
+        """Parse date string from REDCap into a date object"""
+        if not date_str or not date_str.strip():
+            return None
+        try:
+            # Try common REDCap date formats
+            for fmt in ['%Y-%m-%d', '%m/%d/%Y', '%d-%m-%Y', '%m-%d-%Y']:
+                try:
+                    return datetime.strptime(date_str.strip(), fmt).date()
+                except ValueError:
+                    continue
+        except Exception as e:
+            print(f"Error parsing date '{date_str}': {e}")
+        return None
+
+    def _parse_boolean(self, value):
+        """Parse REDCap boolean-like values (1, '1', 'yes', 'true') to Python bool"""
+        if value is None or value == '':
+            return False
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, int):
+            return value == 1
+        if isinstance(value, str):
+            return value.strip().lower() in ('1', 'yes', 'true')
+        return False
+
+    def _sync_project_to_db(self, project_config):
+        """Ensure project exists in database"""
+        project = REDCapProject.query.filter_by(project_id=project_config.id).first()
+        if not project:
+            project = REDCapProject(
+                project_id=project_config.id,
+                name=project_config.name,
+                api_url=project_config.api_url,
+                is_active=True
+            )
+            db.session.add(project)
+            db.session.commit()
+            print(f"Created REDCap project record: {project_config.id}")
+        return project
+
+    def _sync_user_custom_fields(self, user, participant_data, project_config):
+        """Sync custom REDCap fields for a user"""
+        for custom_field_config in project_config.custom_display_fields:
+            field_name = custom_field_config.get('field')
+            field_label = custom_field_config.get('label', field_name)
+            field_value = participant_data.get(field_name, '')
+
+            if not field_name:
+                continue
+
+            # Find or create custom field record
+            custom_field = UserCustomField.query.filter_by(
+                user_id=user.id,
+                field_name=field_name
+            ).first()
+
+            if not custom_field:
+                custom_field = UserCustomField(
+                    user_id=user.id,
+                    field_name=field_name,
+                    field_label=field_label,
+                    field_value=str(field_value) if field_value else ''
+                )
+                db.session.add(custom_field)
+            else:
+                custom_field.field_value = str(field_value) if field_value else ''
+                custom_field.field_label = field_label
+                custom_field.last_updated = datetime.utcnow()
 
     def sync_uid_users(self):
         """
@@ -251,123 +304,226 @@ class SyncService:
 
     def sync_redcap_participants(self):
         """
-        Sync participants from REDCap to local database based on filter logic.
-        Creates user records even if they don't have Firebase ID yet (shows 0 or - for messages).
+        Sync participants from ALL REDCap projects to local database.
+        Iterates through each configured project and syncs participants with
+        project_id, study dates, and custom fields.
 
         The firebase_id from REDCap should match the Firebase document ID in the users collection.
         """
-        redcap_participants = redcap_service.get_all_participants()
-        synced_count = 0
-        firebase_id_field = Config.REDCAP_FIREBASE_ID_FIELD
-        ra_field = Config.REDCAP_RA_FIELD
+        total_synced = 0
 
-        for participant in redcap_participants:
-            record_id = participant.get('record_id') or participant.get('id')
-            firebase_id = participant.get(firebase_id_field, '').strip()
-            research_assistant = participant.get(ra_field, '').strip()
+        # Get all configured projects
+        projects = Config.get_all_projects()
+        print(f"Syncing participants from {len(projects)} REDCap project(s)")
 
-            print(f"Processing participant: record_id={record_id}, firebase_id={firebase_id}, RA={research_assistant}")
+        for project_config in projects:
+            print(f"\n--- Syncing project: {project_config.name} ({project_config.id}) ---")
 
-            if not firebase_id or firebase_id == '':
-                # No Firebase ID - create placeholder user with REDCap ID only
-                if not record_id:
-                    print(f"Skipping participant with no record_id and no firebase_id")
-                    continue
+            # Ensure project exists in database
+            self._sync_project_to_db(project_config)
 
-                user = User.query.filter_by(redcap_id=str(record_id)).first()
-                if not user:
-                    # Create user with no Firebase ID (placeholder) - will show 0 or - for messages
-                    user = User(
-                        firebase_id=f'redcap_{record_id}',  # Temporary placeholder
-                        redcap_id=str(record_id),
-                        research_assistant=research_assistant,
-                        is_active=True
-                    )
-                    db.session.add(user)
-                    print(f"Created placeholder user for REDCap ID {record_id}")
-                else:
-                    # Update existing placeholder user
-                    user.research_assistant = research_assistant
-                    user.is_active = True
-                    print(f"Updated placeholder user for REDCap ID {record_id}")
-                synced_count += 1
-            else:
-                # Has Firebase ID - verify it exists in Firebase and create/update user
-                try:
-                    # Check if this Firebase user actually exists
-                    firebase_user = firebase_service.get_user_by_id(firebase_id)
+            # Create service for this specific project
+            project_service = REDCapService(project_config)
 
-                    if not firebase_user:
-                        print(f"Warning: Firebase ID '{firebase_id}' from REDCap record {record_id} not found in Firebase users collection")
-                        # Create placeholder user with REDCap ID
-                        user = User.query.filter_by(redcap_id=str(record_id)).first()
-                        if not user:
-                            user = User(
-                                firebase_id=f'redcap_{record_id}',
-                                redcap_id=str(record_id),
-                                research_assistant=research_assistant,
-                                is_active=True
-                            )
-                            db.session.add(user)
-                            print(f"Created placeholder user for REDCap ID {record_id} (Firebase user not found)")
-                        else:
-                            user.research_assistant = research_assistant
-                            user.is_active = True
-                        synced_count += 1
+            try:
+                redcap_participants = project_service.get_all_participants()
+            except Exception as e:
+                print(f"Error fetching participants from {project_config.name}: {e}")
+                continue
+
+            firebase_id_field = project_config.firebase_id_field
+            ra_field = project_config.ra_field
+            synced_count = 0
+
+            for participant in redcap_participants:
+                record_id = participant.get('record_id') or participant.get('id')
+                firebase_id = participant.get(firebase_id_field, '').strip()
+                research_assistant = participant.get(ra_field, '').strip()
+                username = participant.get('username', '').strip()  # Get username from REDCap
+
+                # Parse study dates
+                study_start = self._parse_date(
+                    participant.get(project_config.study_start_date_field, '')
+                ) if project_config.study_start_date_field else None
+
+                study_end = self._parse_date(
+                    participant.get(project_config.study_end_date_field, '')
+                ) if project_config.study_end_date_field else None
+
+                # Parse dropped status fields
+                dropped = self._parse_boolean(participant.get('dropped', ''))
+                dropped_surveys = self._parse_boolean(participant.get('dropped_surveys', ''))
+
+                print(f"Processing participant: record_id={record_id}, firebase_id={firebase_id}, RA={research_assistant}")
+
+                if not firebase_id or firebase_id == '':
+                    # No Firebase ID - create placeholder user with REDCap ID only
+                    if not record_id:
+                        print(f"Skipping participant with no record_id and no firebase_id")
                         continue
 
-                    # Firebase user exists - create or update local user
-                    user = User.query.filter_by(firebase_id=firebase_id).first()
-
-                    if not user:
-                        # Check if there's a placeholder user for this REDCap ID
-                        placeholder_user = User.query.filter_by(redcap_id=str(record_id)).first()
-                        if placeholder_user and placeholder_user.firebase_id.startswith('redcap_'):
-                            # Update the placeholder user with actual Firebase ID
-                            user = placeholder_user
-                            user.firebase_id = firebase_id
-                            print(f"Updated placeholder user {placeholder_user.firebase_id} with actual Firebase ID {firebase_id}")
-                        else:
-                            # Create new user
-                            user = User(
-                                firebase_id=firebase_id,
-                                redcap_id=str(record_id) if record_id else None,
-                                research_assistant=research_assistant
-                            )
-                            db.session.add(user)
-                            print(f"Created new user with Firebase ID {firebase_id}")
-                    else:
-                        user.redcap_id = str(record_id) if record_id else user.redcap_id
-                        user.research_assistant = research_assistant
-                        print(f"Updated existing user with Firebase ID {firebase_id}")
-
-                    user.research_assistant = research_assistant
-                    user.is_active = True
-                    user.last_synced = datetime.utcnow()
-
-                    # Fetch and update identifier from Firebase Authentication
-                    if not user.firebase_id.startswith('redcap_'):
-                        self._fetch_and_update_auth_identifier(user)
-
-                    synced_count += 1
-
-                except Exception as e:
-                    print(f"Error checking Firebase user {firebase_id}: {e}")
-                    # Create placeholder user on error
-                    user = User.query.filter_by(redcap_id=str(record_id)).first()
+                    # Use project-specific placeholder ID
+                    placeholder_firebase_id = f'redcap_{project_config.id}_{record_id}'
+                    user = User.query.filter_by(firebase_id=placeholder_firebase_id).first()
                     if not user:
                         user = User(
-                            firebase_id=f'redcap_{record_id}',
+                            firebase_id=placeholder_firebase_id,
+                            redcap_firebase_id='',  # No firebase_id in REDCap
                             redcap_id=str(record_id),
+                            identifier=username or '-',  # Use username from REDCap
                             research_assistant=research_assistant,
+                            project_id=project_config.id,
+                            study_start_date=study_start,
+                            study_end_date=study_end,
+                            dropped=dropped,
+                            dropped_surveys=dropped_surveys,
                             is_active=True
                         )
                         db.session.add(user)
-                    synced_count += 1
+                        print(f"Created placeholder user for REDCap ID {record_id}")
+                    else:
+                        user.redcap_firebase_id = ''
+                        user.identifier = username or user.identifier or '-'  # Use username from REDCap
+                        user.research_assistant = research_assistant
+                        user.project_id = project_config.id
+                        user.study_start_date = study_start
+                        user.study_end_date = study_end
+                        user.dropped = dropped
+                        user.dropped_surveys = dropped_surveys
+                        user.is_active = True
+                        print(f"Updated placeholder user for REDCap ID {record_id}")
 
-        db.session.commit()
-        print(f"Synced {synced_count} REDCap participants")
-        return synced_count
+                    # Sync custom fields
+                    db.session.flush()  # Ensure user.id is set
+                    self._sync_user_custom_fields(user, participant, project_config)
+                    synced_count += 1
+                else:
+                    # Has Firebase ID - verify it exists in Firebase and create/update user
+                    try:
+                        firebase_user = firebase_service.get_user_by_id(firebase_id)
+
+                        if not firebase_user:
+                            print(f"Warning: Firebase ID '{firebase_id}' from REDCap record {record_id} not found in Firebase")
+                            placeholder_firebase_id = f'redcap_{project_config.id}_{record_id}'
+                            user = User.query.filter_by(firebase_id=placeholder_firebase_id).first()
+                            if not user:
+                                user = User(
+                                    firebase_id=placeholder_firebase_id,
+                                    redcap_firebase_id=firebase_id,  # Store actual firebase_id from REDCap
+                                    redcap_id=str(record_id),
+                                    identifier=username or '-',  # Use username from REDCap
+                                    research_assistant=research_assistant,
+                                    project_id=project_config.id,
+                                    study_start_date=study_start,
+                                    study_end_date=study_end,
+                                    dropped=dropped,
+                                    dropped_surveys=dropped_surveys,
+                                    is_active=True
+                                )
+                                db.session.add(user)
+                            else:
+                                user.redcap_firebase_id = firebase_id  # Store actual firebase_id from REDCap
+                                user.identifier = username or user.identifier or '-'  # Use username from REDCap
+                                user.research_assistant = research_assistant
+                                user.project_id = project_config.id
+                                user.study_start_date = study_start
+                                user.study_end_date = study_end
+                                user.dropped = dropped
+                                user.dropped_surveys = dropped_surveys
+                                user.is_active = True
+
+                            db.session.flush()
+                            self._sync_user_custom_fields(user, participant, project_config)
+                            synced_count += 1
+                            continue
+
+                        # Firebase user exists - create or update local user
+                        user = User.query.filter_by(firebase_id=firebase_id).first()
+
+                        if not user:
+                            # Check for placeholder user
+                            placeholder_firebase_id = f'redcap_{project_config.id}_{record_id}'
+                            placeholder_user = User.query.filter_by(firebase_id=placeholder_firebase_id).first()
+                            if placeholder_user:
+                                user = placeholder_user
+                                user.firebase_id = firebase_id
+                                user.redcap_firebase_id = firebase_id  # Store actual firebase_id from REDCap
+                                print(f"Updated placeholder with actual Firebase ID {firebase_id}")
+                            else:
+                                user = User(
+                                    firebase_id=firebase_id,
+                                    redcap_firebase_id=firebase_id,  # Store actual firebase_id from REDCap
+                                    redcap_id=str(record_id) if record_id else None,
+                                    identifier=username or '-',  # Use username from REDCap as default
+                                    research_assistant=research_assistant,
+                                    project_id=project_config.id,
+                                    study_start_date=study_start,
+                                    study_end_date=study_end,
+                                    dropped=dropped,
+                                    dropped_surveys=dropped_surveys
+                                )
+                                db.session.add(user)
+                                print(f"Created new user with Firebase ID {firebase_id}")
+                        else:
+                            user.redcap_firebase_id = firebase_id  # Store actual firebase_id from REDCap
+                            user.redcap_id = str(record_id) if record_id else user.redcap_id
+                            # Use username from REDCap if no identifier exists yet
+                            if not user.identifier or user.identifier == '-':
+                                user.identifier = username or '-'
+                            user.research_assistant = research_assistant
+                            user.project_id = project_config.id
+                            user.study_start_date = study_start
+                            user.study_end_date = study_end
+                            user.dropped = dropped
+                            user.dropped_surveys = dropped_surveys
+                            print(f"Updated existing user with Firebase ID {firebase_id}")
+
+                        user.is_active = True
+                        user.last_synced = datetime.utcnow()
+
+                        # Fetch identifier from Firebase Auth (will override username if user has Firebase Auth)
+                        if not user.firebase_id.startswith('redcap_'):
+                            self._fetch_and_update_auth_identifier(user)
+
+                        # Sync custom fields
+                        db.session.flush()
+                        self._sync_user_custom_fields(user, participant, project_config)
+                        synced_count += 1
+
+                    except Exception as e:
+                        print(f"Error checking Firebase user {firebase_id}: {e}")
+                        placeholder_firebase_id = f'redcap_{project_config.id}_{record_id}'
+                        user = User.query.filter_by(firebase_id=placeholder_firebase_id).first()
+                        if not user:
+                            user = User(
+                                firebase_id=placeholder_firebase_id,
+                                redcap_firebase_id=firebase_id,  # Store actual firebase_id from REDCap
+                                redcap_id=str(record_id),
+                                identifier=username or '-',  # Use username from REDCap
+                                research_assistant=research_assistant,
+                                project_id=project_config.id,
+                                study_start_date=study_start,
+                                study_end_date=study_end,
+                                dropped=dropped,
+                                dropped_surveys=dropped_surveys,
+                                is_active=True
+                            )
+                            db.session.add(user)
+                        else:
+                            user.redcap_firebase_id = firebase_id
+                            user.identifier = username or user.identifier or '-'
+                            user.dropped = dropped
+                            user.dropped_surveys = dropped_surveys
+                        db.session.flush()
+                        self._sync_user_custom_fields(user, participant, project_config)
+                        synced_count += 1
+
+            db.session.commit()
+            print(f"Synced {synced_count} participants from project {project_config.name}")
+            total_synced += synced_count
+
+        print(f"\nTotal synced across all projects: {total_synced}")
+        return total_synced
 
     def sync_users(self, active_firebase_ids=None):
         """
@@ -493,9 +649,8 @@ class SyncService:
                 print(f"Warning: User {user_firebase_id} not found for message {firebase_message_id}")
                 continue
 
-            # Normalize risk score - handle numeric, string, or missing values
-            raw_risk_score = fb_message.get('riskScore')
-            normalized_risk_score = self._normalize_risk_score(raw_risk_score)
+            # Check if message is risky (binary "Risky" / "Not Risky")
+            is_risky = self._is_risky(fb_message.get('riskScore'))
 
             # Create new message
             message = Message(
@@ -504,25 +659,24 @@ class SyncService:
                 user_id=user.id,
                 text=fb_message.get('text', ''),
                 timestamp=fb_message.get('timestamp'),
-                risk_score=normalized_risk_score
+                is_risky=is_risky
             )
 
             db.session.add(message)
             synced_count += 1
 
-            # Check risk score and send alert if needed
-            if normalized_risk_score is not None and normalized_risk_score > Config.RISK_SCORE_THRESHOLD:
+            # Send alert if message is risky
+            if is_risky:
                 try:
                     alert_sent = twilio_service.send_risk_alert(
                         user_firebase_id,
-                        message.risk_score,
                         message.text
                     )
 
                     if alert_sent:
                         message.alert_sent = True
                         alerts_sent += 1
-                        print(f"Risk alert sent for message {firebase_message_id} (score: {message.risk_score})")
+                        print(f"Risk alert sent for message {firebase_message_id}")
                 except Exception as e:
                     print(f"Error sending risk alert: {e}")
 
@@ -543,6 +697,14 @@ class SyncService:
         try:
             # Initialize Firebase if not already done
             firebase_service.initialize()
+
+            # Reset all users to inactive before syncing
+            # The sync process will reactivate users that match the current selection mode
+            # This ensures users from a previous mode (e.g., switching from 'uids' to 'redcap')
+            # are properly deactivated
+            deactivated_count = User.query.filter_by(is_active=True).update({'is_active': False})
+            db.session.commit()
+            print(f"Reset {deactivated_count} users to inactive (will reactivate matching users)")
 
             # Sync users based on selection mode
             users_synced = 0

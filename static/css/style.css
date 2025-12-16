@@ -336,12 +336,10 @@ body {
     left: 0;
     background-color: #34495e;
     z-index: 20;
-    min-width: 150px;
 }
 
 .dashboard-grid tbody .sticky-col {
-    background-color: #ecf0f1;
-    font-weight: 600;
+    background-color: #f8f9fa;
 }
 
 .dashboard-grid td {
@@ -411,15 +409,24 @@ body {
 }
 
 .risk-badge {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background-color: #e74c3c;
     color: white;
     border-radius: 50%;
     width: 20px;
     height: 20px;
-    line-height: 20px;
     margin-left: 0.25rem;
     font-size: 0.875rem;
+    font-weight: bold;
+}
+
+.risk-score-text {
+    color: #e74c3c;
+    font-weight: 600;
+    font-size: 0.8rem;
+    margin-left: 0.35rem;
 }
 
 .no-messages {
@@ -637,6 +644,62 @@ body {
     color: #7f8c8d;
 }
 
+/* Admin Sections */
+.admin-section {
+    margin-bottom: 2rem;
+}
+
+.admin-section h2 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #3498db;
+}
+
+.pending-section {
+    background-color: #fff3cd;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 2px solid #ffc107;
+    margin-bottom: 2rem;
+}
+
+.pending-section h2 {
+    color: #856404;
+    border-bottom-color: #ffc107;
+}
+
+.pending-section .admin-table {
+    background: white;
+}
+
+.rejected-section {
+    background-color: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    margin-bottom: 2rem;
+}
+
+.rejected-section h2 {
+    color: #6c757d;
+    border-bottom-color: #dee2e6;
+}
+
+.rejected-section .admin-table {
+    background: white;
+}
+
+.status-badge.rejected {
+    background-color: #6c757d;
+    color: white;
+}
+
+.status-badge.pending {
+    background-color: #ffc107;
+    color: #856404;
+}
+
 /* Settings Page */
 .settings-container {
     display: flex;
@@ -749,6 +812,50 @@ body {
     border-radius: 4px;
     font-family: monospace;
     font-weight: 600;
+}
+
+/* Test SMS Form */
+.test-sms-form {
+    margin-top: 1rem;
+}
+
+.test-sms-form .form-group {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.test-sms-form .form-control {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.test-sms-form .form-control:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.test-result {
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.test-result.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.test-result.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
 }
 
 /* Error Pages */
@@ -910,10 +1017,154 @@ body {
     font-size: 1rem;
 }
 
-/* Second sticky column for RA */
-.dashboard-grid th.sticky-col:nth-child(2),
-.dashboard-grid td.sticky-col:nth-child(2) {
-    left: 150px;
+/* Project filter dropdown */
+.filter-controls select {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    min-width: 150px;
+    cursor: pointer;
+}
+
+.filter-controls select:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+/* Project column styling */
+.project-cell {
+    max-width: 120px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Date columns styling */
+.date-cell {
+    white-space: nowrap;
+    font-size: 0.85rem;
+    min-width: 90px;
+}
+
+/* Custom field columns styling */
+.custom-field-cell {
+    max-width: 100px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.85rem;
+}
+
+/* User Info Panel */
+.info-panel-header {
+    min-width: 180px;
+    max-width: 220px;
+}
+
+.info-panel-cell {
+    min-width: 180px;
+    max-width: 220px;
+    padding: 0.5rem !important;
+    vertical-align: top;
+}
+
+.info-panel-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.info-panel-link:hover .info-panel {
+    background-color: #e8f4f8;
+}
+
+.info-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.35rem;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.info-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+.info-primary {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.info-id {
+    font-size: 0.9rem;
+}
+
+.info-identifier {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+    font-weight: normal;
+}
+
+.info-identifier::before {
+    content: '|';
+    margin-right: 0.25rem;
+    color: #bdc3c7;
+}
+
+.info-secondary {
+    font-size: 0.75rem;
+}
+
+.info-tag {
+    display: inline-block;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+.info-ra {
+    background-color: #e8f4f8;
+    color: #0c5460;
+}
+
+.info-project {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.info-dropped-app {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.info-dropped-surveys {
+    background-color: #ffe0b2;
+    color: #e65100;
+}
+
+.info-dates {
+    font-size: 0.7rem;
+    color: #7f8c8d;
+}
+
+.info-date-range {
+    font-family: monospace;
+    font-size: 0.65rem;
+}
+
+.info-custom {
+    margin-top: 0.1rem;
+}
+
+.info-custom-field {
+    background-color: #ecf0f1;
+    color: #2c3e50;
 }
 
 /* Responsive */
