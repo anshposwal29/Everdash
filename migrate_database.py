@@ -10,8 +10,9 @@ Migrations included:
 2. Add 'research_assistant' column to users table (for assigned RA)
 3. Add 'dropped' and 'dropped_surveys' columns to users table (participant status)
 4. Add 'redcap_firebase_id' column to users table (display ID from REDCap)
-5. Add 'is_risky' column to messages table (replaces risk_score)
-6. Migrate data from risk_score to is_risky (if risk_score exists)
+5. Add 'is_approved' column to admins table (for admin approval workflow)
+6. Add 'is_risky' column to messages table (replaces risk_score)
+7. Migrate data from risk_score to is_risky (if risk_score exists)
 
 Usage:
     python migrate_database.py
@@ -81,6 +82,33 @@ def migrate_users_table(conn, inspector):
     return True
 
 
+def migrate_admins_table(conn, inspector):
+    """Apply all migrations to the admins table."""
+    print("\n--- Admins Table Migrations ---")
+
+    columns = get_table_columns(inspector, 'admins')
+    if not columns:
+        print("  [ERROR] Admins table not found")
+        return False
+
+    migrations_applied = 0
+
+    # Migration: is_approved field
+    if add_column_if_missing(conn, 'admins', 'is_approved', 'BOOLEAN DEFAULT 0', columns):
+        migrations_applied += 1
+        # Set existing admins to approved by default
+        print("  [DATA] Setting existing admins to approved...")
+        result = conn.execute(text('UPDATE admins SET is_approved = 1'))
+        print(f"  [DATA] Set {result.rowcount} existing admin(s) to approved")
+
+    if migrations_applied > 0:
+        print(f"  Applied {migrations_applied} migration(s) to admins table")
+    else:
+        print("  No migrations needed for admins table")
+
+    return True
+
+
 def migrate_messages_table(conn, inspector):
     """Apply all migrations to the messages table."""
     print("\n--- Messages Table Migrations ---")
@@ -127,13 +155,14 @@ def run_migrations():
         with db.engine.connect() as conn:
             # Run all migrations
             users_ok = migrate_users_table(conn, inspector)
+            admins_ok = migrate_admins_table(conn, inspector)
             messages_ok = migrate_messages_table(conn, inspector)
 
             # Commit all changes
             conn.commit()
 
         print("\n" + "=" * 60)
-        if users_ok and messages_ok:
+        if users_ok and admins_ok and messages_ok:
             print("Migration completed successfully!")
             print("\nNext steps:")
             print("1. Run a sync to populate new fields from REDCap/Firebase")
