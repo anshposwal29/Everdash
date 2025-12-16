@@ -6,15 +6,21 @@ This script handles all database schema updates in a single file.
 It is idempotent - safe to run multiple times on the same database.
 
 Migrations included:
-1. Add 'identifier' column to users table (for Firebase Auth email/phone)
-2. Add 'research_assistant' column to users table (for assigned RA)
-3. Add 'dropped' and 'dropped_surveys' columns to users table (participant status)
-4. Add 'redcap_firebase_id' column to users table (display ID from REDCap)
-5. Add 'project_id' column to users table (multi-project support)
-6. Add 'study_start_date' and 'study_end_date' columns to users table
-7. Add 'is_approved' column to admins table (for admin approval workflow)
-8. Add 'is_risky' column to messages table (replaces risk_score)
-9. Migrate data from risk_score to is_risky (if risk_score exists)
+
+Tables (created if missing):
+- redcap_projects: Multi-project REDCap configuration
+- user_custom_fields: Custom REDCap field values per user
+- participant_notes: Notes about study participants
+
+Columns (added if missing):
+- users.identifier: Firebase Auth email/phone
+- users.research_assistant: Assigned RA
+- users.dropped, users.dropped_surveys: Participant status
+- users.redcap_firebase_id: Display ID from REDCap
+- users.project_id: Multi-project support
+- users.study_start_date, users.study_end_date: Study dates
+- admins.is_approved: Admin approval workflow
+- messages.is_risky: Risk flag (migrates from risk_score if exists)
 
 Usage:
     python migrate_database.py
@@ -33,6 +39,88 @@ def get_table_columns(inspector, table_name):
         return [col['name'] for col in inspector.get_columns(table_name)]
     except Exception:
         return []
+
+
+def table_exists(inspector, table_name):
+    """Check if a table exists in the database."""
+    return table_name in inspector.get_table_names()
+
+
+def create_redcap_projects_table(conn, inspector):
+    """Create the redcap_projects table if it doesn't exist."""
+    print("\n--- REDCap Projects Table ---")
+
+    if table_exists(inspector, 'redcap_projects'):
+        print("  [SKIP] redcap_projects table already exists")
+        return True
+
+    print("  [CREATE] Creating redcap_projects table...")
+    conn.execute(text('''
+        CREATE TABLE redcap_projects (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id VARCHAR(50) NOT NULL UNIQUE,
+            name VARCHAR(200) NOT NULL,
+            api_url VARCHAR(500) NOT NULL,
+            is_active BOOLEAN DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    '''))
+    conn.execute(text('CREATE INDEX idx_redcap_projects_project_id ON redcap_projects(project_id)'))
+    print("  [CREATE] redcap_projects table created successfully")
+    return True
+
+
+def create_user_custom_fields_table(conn, inspector):
+    """Create the user_custom_fields table if it doesn't exist."""
+    print("\n--- User Custom Fields Table ---")
+
+    if table_exists(inspector, 'user_custom_fields'):
+        print("  [SKIP] user_custom_fields table already exists")
+        return True
+
+    print("  [CREATE] Creating user_custom_fields table...")
+    conn.execute(text('''
+        CREATE TABLE user_custom_fields (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            field_name VARCHAR(100) NOT NULL,
+            field_label VARCHAR(200),
+            field_value TEXT,
+            last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+    '''))
+    conn.execute(text('CREATE INDEX idx_user_custom_fields_user_id ON user_custom_fields(user_id)'))
+    conn.execute(text('CREATE INDEX idx_user_field ON user_custom_fields(user_id, field_name)'))
+    print("  [CREATE] user_custom_fields table created successfully")
+    return True
+
+
+def create_participant_notes_table(conn, inspector):
+    """Create the participant_notes table if it doesn't exist."""
+    print("\n--- Participant Notes Table ---")
+
+    if table_exists(inspector, 'participant_notes'):
+        print("  [SKIP] participant_notes table already exists")
+        return True
+
+    print("  [CREATE] Creating participant_notes table...")
+    conn.execute(text('''
+        CREATE TABLE participant_notes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            admin_id INTEGER NOT NULL,
+            note_text TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id),
+            FOREIGN KEY (admin_id) REFERENCES admins(id)
+        )
+    '''))
+    conn.execute(text('CREATE INDEX idx_participant_notes_user_id ON participant_notes(user_id)'))
+    conn.execute(text('CREATE INDEX idx_participant_notes_created_at ON participant_notes(created_at)'))
+    print("  [CREATE] participant_notes table created successfully")
+    return True
 
 
 def add_column_if_missing(conn, table_name, column_name, column_type, columns):
@@ -166,7 +254,12 @@ def run_migrations():
         inspector = inspect(db.engine)
 
         with db.engine.connect() as conn:
-            # Run all migrations
+            # First, create any missing tables
+            redcap_ok = create_redcap_projects_table(conn, inspector)
+            custom_fields_ok = create_user_custom_fields_table(conn, inspector)
+            notes_ok = create_participant_notes_table(conn, inspector)
+
+            # Then, run column migrations on existing tables
             users_ok = migrate_users_table(conn, inspector)
             admins_ok = migrate_admins_table(conn, inspector)
             messages_ok = migrate_messages_table(conn, inspector)
@@ -175,7 +268,8 @@ def run_migrations():
             conn.commit()
 
         print("\n" + "=" * 60)
-        if users_ok and admins_ok and messages_ok:
+        all_ok = redcap_ok and custom_fields_ok and notes_ok and users_ok and admins_ok and messages_ok
+        if all_ok:
             print("Migration completed successfully!")
             print("\nNext steps:")
             print("1. Run a sync to populate new fields from REDCap/Firebase")
