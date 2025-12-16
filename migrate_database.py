@@ -10,9 +10,11 @@ Migrations included:
 2. Add 'research_assistant' column to users table (for assigned RA)
 3. Add 'dropped' and 'dropped_surveys' columns to users table (participant status)
 4. Add 'redcap_firebase_id' column to users table (display ID from REDCap)
-5. Add 'is_approved' column to admins table (for admin approval workflow)
-6. Add 'is_risky' column to messages table (replaces risk_score)
-7. Migrate data from risk_score to is_risky (if risk_score exists)
+5. Add 'project_id' column to users table (multi-project support)
+6. Add 'study_start_date' and 'study_end_date' columns to users table
+7. Add 'is_approved' column to admins table (for admin approval workflow)
+8. Add 'is_risky' column to messages table (replaces risk_score)
+9. Migrate data from risk_score to is_risky (if risk_score exists)
 
 Usage:
     python migrate_database.py
@@ -72,6 +74,17 @@ def migrate_users_table(conn, inspector):
 
     # Migration 4: redcap_firebase_id field
     if add_column_if_missing(conn, 'users', 'redcap_firebase_id', 'VARCHAR(100)', columns):
+        migrations_applied += 1
+
+    # Migration 5: project_id field (multi-project support)
+    if add_column_if_missing(conn, 'users', 'project_id', 'VARCHAR(50)', columns):
+        migrations_applied += 1
+
+    # Migration 6: study_start_date and study_end_date fields
+    if add_column_if_missing(conn, 'users', 'study_start_date', 'DATE', columns):
+        migrations_applied += 1
+
+    if add_column_if_missing(conn, 'users', 'study_end_date', 'DATE', columns):
         migrations_applied += 1
 
     if migrations_applied > 0:
