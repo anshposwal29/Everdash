@@ -35,7 +35,7 @@ class TwilioService:
             f"Risky message detected!\n\n"
             f"User: {user_firebase_id}\n"
             f"Time: {timestamp_et}\n\n"
-            f"Message preview: {message_text[:100]}..."
+            f"Message: {message_text}"
         )
 
         success_count = 0
