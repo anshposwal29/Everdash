@@ -84,3 +84,5 @@ demo_users*.csv
 Network Trash Folder
 Temporary Items
 .apdisk
+
+token_cache.bin

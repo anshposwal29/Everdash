@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Theradash{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
@@ -14,6 +17,7 @@
             <a href="{{ url_for('dashboard') }}" class="nav-brand">Theradash</a>
             <ul class="nav-menu">
                 <li><a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a></li>
+                <li><a href="{{ url_for('all_notes') }}" class="nav-link">All Notes</a></li>
                 <li><a href="{{ url_for('admin_users') }}" class="nav-link">Admin Users</a></li>
                 <li><a href="{{ url_for('settings') }}" class="nav-link">Settings</a></li>
                 <li><a href="{{ url_for('logout') }}" class="nav-link">Logout ({{ current_user.username }})</a></li>

@@ -773,7 +773,7 @@ class SyncService:
             duration = (end_time - start_time).total_seconds()
 
             sync_log = SyncLog(
-                last_sync_timestamp=end_time,
+                last_sync_timestamp=start_time,
                 messages_synced=messages_synced,
                 conversations_synced=conversations_synced,
                 users_synced=users_synced,

@@ -10,7 +10,7 @@ Migrations included:
 Tables (created if missing):
 - redcap_projects: Multi-project REDCap configuration
 - user_custom_fields: Custom REDCap field values per user
-- participant_notes: Notes about study participants
+- notes: Notes about study participants (with type, reason, duration fields)
 
 Columns (added if missing):
 - users.identifier: Firebase Auth email/phone
@@ -20,6 +20,7 @@ Columns (added if missing):
 - users.project_id: Multi-project support
 - users.study_start_date, users.study_end_date: Study dates
 - admins.is_approved: Admin approval workflow
+- conversations.timestamp: Made nullable (messages have their own timestamps)
 - messages.is_risky: Risk flag (migrates from risk_score if exists)
 
 Usage:
@@ -96,30 +97,29 @@ def create_user_custom_fields_table(conn, inspector):
     return True
 
 
-def create_participant_notes_table(conn, inspector):
-    """Create the participant_notes table if it doesn't exist."""
-    print("\n--- Participant Notes Table ---")
+def create_notes_table(conn, inspector):
+    """Create the notes table if it doesn't exist."""
+    print("\n--- Notes Table ---")
 
-    if table_exists(inspector, 'participant_notes'):
-        print("  [SKIP] participant_notes table already exists")
+    if table_exists(inspector, 'notes'):
+        print("  [SKIP] notes table already exists")
         return True
 
-    print("  [CREATE] Creating participant_notes table...")
+    print("  [CREATE] Creating notes table...")
     conn.execute(text('''
-        CREATE TABLE participant_notes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            admin_id INTEGER NOT NULL,
-            note_text TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id),
-            FOREIGN KEY (admin_id) REFERENCES admins(id)
+        CREATE TABLE notes (
+            note_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            admin_id INTEGER,
+            participant_id VARCHAR(16),
+            note_type VARCHAR(256),
+            note_reason VARCHAR(256),
+            datetime VARCHAR(256),
+            duration VARCHAR(25),
+            note VARCHAR(2500)
         )
     '''))
-    conn.execute(text('CREATE INDEX idx_participant_notes_user_id ON participant_notes(user_id)'))
-    conn.execute(text('CREATE INDEX idx_participant_notes_created_at ON participant_notes(created_at)'))
-    print("  [CREATE] participant_notes table created successfully")
+    conn.execute(text('CREATE INDEX idx_notes_participant_id ON notes(participant_id)'))
+    print("  [CREATE] notes table created successfully")
     return True
 
 
@@ -210,6 +210,65 @@ def migrate_admins_table(conn, inspector):
     return True
 
 
+def migrate_conversations_table(conn, inspector):
+    """Apply all migrations to the conversations table (make timestamp nullable)."""
+    print("\n--- Conversations Table Migrations ---")
+
+    if not table_exists(inspector, 'conversations'):
+        print("  [ERROR] Conversations table not found")
+        return False
+
+    # Check if timestamp is already nullable by trying to find the constraint
+    # SQLite doesn't support ALTER COLUMN, so we need to recreate the table
+    # We'll check if the migration is needed by looking at the table schema
+    result = conn.execute(text("SELECT sql FROM sqlite_master WHERE type='table' AND name='conversations'"))
+    row = result.fetchone()
+    if row:
+        create_sql = row[0]
+        # If timestamp is NOT NULL, we need to migrate
+        if 'timestamp' in create_sql and 'NOT NULL' in create_sql and 'timestamp DATETIME NOT NULL' in create_sql.replace('\n', ' '):
+            print("  [MIGRATE] Making conversations.timestamp nullable...")
+
+            # Step 1: Create new table with nullable timestamp
+            conn.execute(text('''
+                CREATE TABLE conversations_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    firebase_convo_id VARCHAR(100) NOT NULL UNIQUE,
+                    user_id INTEGER NOT NULL,
+                    prompt TEXT,
+                    timestamp DATETIME,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id)
+                )
+            '''))
+
+            # Step 2: Copy data from old table
+            conn.execute(text('''
+                INSERT INTO conversations_new (id, firebase_convo_id, user_id, prompt, timestamp, created_at)
+                SELECT id, firebase_convo_id, user_id, prompt, timestamp, created_at FROM conversations
+            '''))
+
+            # Step 3: Drop old table
+            conn.execute(text('DROP TABLE conversations'))
+
+            # Step 4: Rename new table
+            conn.execute(text('ALTER TABLE conversations_new RENAME TO conversations'))
+
+            # Step 5: Recreate indexes
+            conn.execute(text('CREATE UNIQUE INDEX idx_conversations_firebase_convo_id ON conversations(firebase_convo_id)'))
+            conn.execute(text('CREATE INDEX idx_conversations_user_id ON conversations(user_id)'))
+            conn.execute(text('CREATE INDEX idx_conversations_timestamp ON conversations(timestamp)'))
+
+            print("  [MIGRATE] conversations.timestamp is now nullable")
+            return True
+        else:
+            print("  [SKIP] conversations.timestamp is already nullable")
+            return True
+
+    print("  [SKIP] No migrations needed for conversations table")
+    return True
+
+
 def migrate_messages_table(conn, inspector):
     """Apply all migrations to the messages table."""
     print("\n--- Messages Table Migrations ---")
@@ -257,18 +316,19 @@ def run_migrations():
             # First, create any missing tables
             redcap_ok = create_redcap_projects_table(conn, inspector)
             custom_fields_ok = create_user_custom_fields_table(conn, inspector)
-            notes_ok = create_participant_notes_table(conn, inspector)
+            notes_ok = create_notes_table(conn, inspector)
 
             # Then, run column migrations on existing tables
             users_ok = migrate_users_table(conn, inspector)
             admins_ok = migrate_admins_table(conn, inspector)
+            conversations_ok = migrate_conversations_table(conn, inspector)
             messages_ok = migrate_messages_table(conn, inspector)
 
             # Commit all changes
             conn.commit()
 
         print("\n" + "=" * 60)
-        all_ok = redcap_ok and custom_fields_ok and notes_ok and users_ok and admins_ok and messages_ok
+        all_ok = redcap_ok and custom_fields_ok and notes_ok and users_ok and admins_ok and conversations_ok and messages_ok
         if all_ok:
             print("Migration completed successfully!")
             print("\nNext steps:")

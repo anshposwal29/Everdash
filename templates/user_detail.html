@@ -3,81 +3,684 @@
 {% block title %}User Detail - {{ user.firebase_id }} - Theradash{% endblock %}
 
 {% block content %}
-<div class="user-detail-header">
-    <div class="breadcrumb">
-        <a href="{{ url_for('dashboard') }}">Dashboard</a> &raquo; {{ user.firebase_id }}
+<!-- User Detail Header V2 -->
+<div class="user-detail-header-v2">
+    <div class="detail-breadcrumb">
+        <a href="{{ url_for('dashboard') }}">← Back to Dashboard</a>
     </div>
 
-    <h1>Conversation Details</h1>
-    <div class="user-info">
-        <div class="info-item">
-            <strong>Firebase ID:</strong> {{ user.firebase_id }}
+    <div class="detail-header-content">
+        <div class="detail-header-main">
+            <h1 class="detail-title">{{ user.identifier or user.redcap_id or user.firebase_id }}</h1>
+            <div class="detail-badges">
+                <span class="detail-badge {% if user.is_active %}badge-active{% else %}badge-inactive{% endif %}">
+                    {{ 'Active' if user.is_active else 'Inactive' }}
+                </span>
+                {% if user.dropped %}
+                <span class="detail-badge badge-dropped">Dropped</span>
+                {% endif %}
+            </div>
         </div>
-        {% if user.redcap_id %}
-        <div class="info-item">
-            <strong>REDCap ID:</strong> {{ user.redcap_id }}
-        </div>
-        {% endif %}
-        {% if user.identifier %}
-        <div class="info-item">
-            <strong>Identifier:</strong> {{ user.identifier }}
-        </div>
-        {% endif %}
-        <div class="info-item">
-            <strong>Status:</strong>
-            <span class="status-badge {% if user.is_active %}active{% else %}inactive{% endif %}">
-                {{ 'Active' if user.is_active else 'Inactive' }}
-            </span>
-        </div>
-        <div class="info-item">
-            <strong>Dark Mode:</strong> {{ 'Yes' if user.is_dark_mode else 'No' }}
-        </div>
-        <div class="info-item">
-            <strong>Animated Avatar:</strong> {{ 'Yes' if user.is_animated else 'No' }}
+
+        <div class="detail-header-actions">
+            {% if user.redcap_id %}
+            <button class="btn-detail btn-detail-primary" onclick="openEmailModal()">
+                <span>&#9993;</span> Send Email
+            </button>
+            <button class="btn-detail btn-detail-secondary" onclick="openNoteModal()">
+                <span>&#9998;</span> Add Note
+            </button>
+            {% endif %}
         </div>
     </div>
+
+    <!-- User Info Cards -->
+    <div class="detail-info-grid">
+        <div class="detail-info-card">
+            <div class="info-card-label">REDCap ID</div>
+            <div class="info-card-value">{{ user.redcap_id or '-' }}</div>
+        </div>
+        <div class="detail-info-card">
+            <div class="info-card-label">Firebase ID</div>
+            <div class="info-card-value info-card-mono">{{ user.firebase_id[:20] }}{% if user.firebase_id|length > 20 %}...{% endif %}</div>
+        </div>
+        {% if user.research_assistant %}
+        <div class="detail-info-card">
+            <div class="info-card-label">Research Assistant</div>
+            <div class="info-card-value">{{ user.research_assistant }}</div>
+        </div>
+        {% endif %}
+        {% if user.study_start_date %}
+        <div class="detail-info-card">
+            <div class="info-card-label">Study Period</div>
+            <div class="info-card-value">{{ user.study_start_date.strftime('%b %d') }} - {{ user.study_end_date.strftime('%b %d, %Y') if user.study_end_date else 'Ongoing' }}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Stats Bar -->
+    {% if user_stats %}
+    <div class="detail-stats-bar">
+        <div class="detail-stat">
+            <span class="detail-stat-value">{{ user_stats.total_messages }}</span>
+            <span class="detail-stat-label">Messages</span>
+        </div>
+        <div class="detail-stat">
+            <span class="detail-stat-value">{{ user_stats.total_conversations }}</span>
+            <span class="detail-stat-label">Conversations</span>
+        </div>
+        <div class="detail-stat">
+            <span class="detail-stat-value">{{ user_stats.days_with_activity }}</span>
+            <span class="detail-stat-label">Active Days</span>
+        </div>
+        {% if user_stats.last_message_date %}
+        <div class="detail-stat">
+            <span class="detail-stat-value">{{ user_stats.last_message_date.strftime('%b %d') }}</span>
+            <span class="detail-stat-label">Last Activity</span>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
 
     {% if start_date and end_date %}
-    <div class="date-filter-info">
+    <div class="date-filter-banner">
+        <span class="filter-icon">&#128197;</span>
         Showing messages from {{ start_date.strftime('%b %d, %Y') }} to {{ end_date.strftime('%b %d, %Y') }}
+        <a href="{{ url_for('user_detail', firebase_id=user.firebase_id) }}" class="clear-filter">Show All</a>
     </div>
     {% endif %}
 </div>
 
-<div class="messages-container">
-    <h2>Messages ({{ messages|length }})</h2>
+<!-- Messages Container V2 -->
+<div class="messages-container-v2">
+    <div class="messages-header">
+        <h2>All Messages</h2>
+        <span class="messages-count">{{ messages|length }} message{% if messages|length != 1 %}s{% endif %}</span>
+    </div>
 
     {% if messages %}
-    <div class="messages-list">
+    <div class="messages-timeline">
+        {% set current_date = namespace(value=None) %}
         {% for message in messages %}
-        <div class="message-item {% if message.is_risky %}high-risk-message{% endif %}">
-            <div class="message-header">
-                <div class="message-timestamp">
-                    {{ message.timestamp_et.strftime('%Y-%m-%d %I:%M:%S %p %Z') }}
-                </div>
-                {% if message.is_risky %}
-                <div class="message-risk">
-                    <span class="risk-value high">Risky</span>
-                    {% if message.alert_sent %}
-                    <span class="alert-badge" title="Alert sent to admins">Alert Sent</span>
-                    {% endif %}
+        {% set msg_date = message.timestamp_et.strftime('%Y-%m-%d') %}
+
+        {% if current_date.value != msg_date %}
+        {% set current_date.value = msg_date %}
+        <div class="timeline-date-marker">
+            <span class="date-marker-text">{{ message.timestamp_et.strftime('%A, %B %d, %Y') }}</span>
+        </div>
+        {% endif %}
+
+        <div class="message-card {% if message.is_risky %}message-risky{% endif %}">
+            <div class="message-card-header">
+                <div class="message-time">{{ message.timestamp_et.strftime('%I:%M %p') }}</div>
+                {% if message.conversation_info %}
+                <div class="conversation-tag" title="Conversation: {{ message.conversation_info.prompt[:50] if message.conversation_info.prompt else 'No prompt' }}...">
+                    <span class="conv-icon">&#128172;</span>
+                    <span class="conv-id">Conv #{{ message.conversation_info.id }}</span>
                 </div>
                 {% endif %}
+                {% if message.is_risky %}
+                <div class="risk-tag">
+                    <span class="risk-icon">&#9888;</span> Risky
+                </div>
+                {% endif %}
+                {% if message.is_reviewed %}
+                <div class="reviewed-tag">&#10003; Reviewed</div>
+                {% endif %}
             </div>
-            <div class="message-text">
+            <div class="message-card-body">
                 {{ message.text }}
             </div>
+            {% if message.conversation_info and message.conversation_info.prompt %}
+            <div class="message-card-footer">
+                <span class="prompt-label">Prompt:</span>
+                <span class="prompt-text">{{ message.conversation_info.prompt[:100] }}{% if message.conversation_info.prompt|length > 100 %}...{% endif %}</span>
+            </div>
+            {% endif %}
         </div>
         {% endfor %}
     </div>
     {% else %}
-    <div class="no-messages">
-        <p>No messages found for this user in the selected date range.</p>
+    <div class="no-messages-v2">
+        <div class="no-messages-icon">&#128172;</div>
+        <p class="no-messages-text">No messages found</p>
+        <p class="no-messages-subtext">This participant hasn't sent any messages{% if start_date %} in the selected date range{% endif %}.</p>
     </div>
     {% endif %}
+</div>
+
+<!-- Notes Section -->
+<div class="notes-section">
+    <div class="notes-header">
+        <h2>Notes</h2>
+        {% if user.redcap_id %}
+        <div class="notes-header-buttons">
+            <button class="btn btn-success btn-sm" onclick="openEmailModal()">Send Email</button>
+            <button class="btn btn-primary btn-sm" onclick="openNoteModal()">Add Note</button>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if not user.redcap_id %}
+    <div class="no-notes">
+        <p>Notes require a REDCap ID. This participant does not have a REDCap ID assigned.</p>
+    </div>
+    {% else %}
+    <div id="notes-container" class="notes-list">
+        <p class="loading-notes">Loading notes...</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Notes Modal -->
+<div id="noteModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add Note</h2>
+            <span class="close" onclick="closeNoteModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="noteForm">
+                <input type="hidden" id="participantId" value="{{ user.redcap_id }}">
+
+                <div class="form-group">
+                    <label for="noteType">Note Type</label>
+                    <select id="noteType" class="form-control">
+                        <option value="">Select type...</option>
+                        <option value="Phone Call">Phone Call</option>
+                        <option value="Email">Email</option>
+                        <option value="Text Message">Text Message</option>
+                        <option value="In-Person">In-Person</option>
+                        <option value="General">General</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="noteReason">Reason</label>
+                    <select id="noteReason" class="form-control">
+                        <option value="">Select reason...</option>
+                        <option value="Check-in">Check-in</option>
+                        <option value="Technical Issue">Technical Issue</option>
+                        <option value="Study Question">Study Question</option>
+                        <option value="Scheduling">Scheduling</option>
+                        <option value="Follow-up">Follow-up</option>
+                        <option value="Concern">Concern</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="noteDateTime">Date & Time</label>
+                    <input type="datetime-local" id="noteDateTime" class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label for="noteDuration">Duration</label>
+                    <select id="noteDuration" class="form-control">
+                        <option value="">Select duration...</option>
+                        <option value="< 5 min">&lt; 5 min</option>
+                        <option value="5-10 min">5-10 min</option>
+                        <option value="10-15 min">10-15 min</option>
+                        <option value="15-30 min">15-30 min</option>
+                        <option value="30-60 min">30-60 min</option>
+                        <option value="> 60 min">&gt; 60 min</option>
+                        <option value="N/A">N/A</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="noteContent">Note</label>
+                    <textarea id="noteContent" class="form-control" rows="4" placeholder="Enter note details..."></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeNoteModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="saveNote()">Save Note</button>
+        </div>
+    </div>
+</div>
+
+<!-- Email Modal -->
+<div id="emailModal" class="modal">
+    <div class="modal-content email-modal-content">
+        <div class="modal-header">
+            <h2>Send Email</h2>
+            <span class="close" onclick="closeEmailModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <!-- Step 1: Template Selection -->
+            <div id="emailStep1" class="email-step">
+                <div class="email-info-section">
+                    <div class="email-meta-row">
+                        <span class="email-label">Participant:</span>
+                        <span id="emailParticipantName" class="email-value">Loading...</span>
+                    </div>
+                    <div class="email-meta-row">
+                        <span class="email-label">To:</span>
+                        <span id="emailToAddress" class="email-value">Loading...</span>
+                    </div>
+                    <div class="email-meta-row">
+                        <span class="email-label">From:</span>
+                        <span id="emailFromAddress" class="email-value">Loading...</span>
+                    </div>
+                    <div class="email-meta-row last-communication">
+                        <span class="email-label">Last Email Sent:</span>
+                        <span id="lastEmailSent" class="email-value">Loading...</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="emailTemplateSelect">Select Email Type</label>
+                    <select id="emailTemplateSelect" class="form-control" onchange="onTemplateChange()">
+                        <option value="">-- Select a template --</option>
+                    </select>
+                    <small id="templateDescription" class="template-description"></small>
+                </div>
+
+                <div id="customMessageGroup" class="form-group" style="display: none;">
+                    <label for="customMessage">Custom Message</label>
+                    <textarea id="customMessage" class="form-control" rows="4" placeholder="Enter your custom message..."></textarea>
+                </div>
+
+                <div class="email-step-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="closeEmailModal()">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="previewEmailBtn" onclick="previewEmail()" disabled>Preview Email</button>
+                </div>
+            </div>
+
+            <!-- Step 2: Email Preview -->
+            <div id="emailStep2" class="email-step" style="display: none;">
+                <div class="email-preview-header">
+                    <div class="email-meta-row">
+                        <span class="email-label">To:</span>
+                        <span id="previewToAddress" class="email-value"></span>
+                    </div>
+                    <div class="email-meta-row">
+                        <span class="email-label">From:</span>
+                        <span id="previewFromAddress" class="email-value"></span>
+                    </div>
+                    <div class="email-meta-row">
+                        <span class="email-label">Subject:</span>
+                        <span id="previewSubject" class="email-value email-subject"></span>
+                    </div>
+                </div>
+
+                <div class="email-preview-body">
+                    <div id="previewBody" class="email-body-content"></div>
+                </div>
+
+                <div class="email-step-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="backToStep1()">Back</button>
+                    <button type="button" class="btn btn-success" id="sendEmailBtn" onclick="sendEmail()">Send Email</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Sending/Success -->
+            <div id="emailStep3" class="email-step" style="display: none;">
+                <div id="emailSendingIndicator" class="email-status">
+                    <div class="spinner"></div>
+                    <p>Sending email...</p>
+                </div>
+                <div id="emailSuccessIndicator" class="email-status" style="display: none;">
+                    <div class="success-icon">&#10003;</div>
+                    <p>Email sent successfully!</p>
+                    <p class="email-logged-note">This email has been logged to the participant's notes.</p>
+                </div>
+                <div id="emailErrorIndicator" class="email-status" style="display: none;">
+                    <div class="error-icon">&#10007;</div>
+                    <p id="emailErrorMessage">Error sending email</p>
+                </div>
+                <div class="email-step-buttons" id="emailStep3Buttons" style="display: none;">
+                    <button type="button" class="btn btn-primary" onclick="closeEmailModal()">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="back-link">
     <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">&larr; Back to Dashboard</a>
 </div>
+
+<script>
+const participantId = "{{ user.redcap_id }}";
+
+// Load notes on page load
+document.addEventListener('DOMContentLoaded', function() {
+    if (participantId) {
+        loadNotes();
+    }
+});
+
+function loadNotes() {
+    fetch(`/api/notes/${participantId}`)
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('notes-container');
+            if (data.success) {
+                if (data.notes.length === 0) {
+                    container.innerHTML = '<p class="no-notes">No notes found for this participant.</p>';
+                } else {
+                    container.innerHTML = data.notes.map(note => createNoteCard(note)).join('');
+                }
+            } else {
+                container.innerHTML = `<p class="error-message">Error loading notes: ${data.message}</p>`;
+            }
+        })
+        .catch(error => {
+            const container = document.getElementById('notes-container');
+            container.innerHTML = `<p class="error-message">Error loading notes: ${error.message}</p>`;
+        });
+}
+
+function createNoteCard(note) {
+    const dateDisplay = note.datetime ? formatDateTime(note.datetime) : 'No date';
+    return `
+        <div class="note-card">
+            <div class="note-card-header">
+                <div class="note-meta">
+                    <span class="note-type">${note.note_type || 'General'}</span>
+                    ${note.note_reason ? `<span class="note-reason">${note.note_reason}</span>` : ''}
+                </div>
+            </div>
+            <div class="note-card-body">
+                <p class="note-text">${note.note || ''}</p>
+            </div>
+            <div class="note-card-footer">
+                <span class="note-datetime">${dateDisplay}</span>
+                ${note.duration ? `<span class="note-duration">${note.duration}</span>` : ''}
+                ${note.admin_username ? `<span class="note-author">by ${note.admin_username}</span>` : ''}
+            </div>
+        </div>
+    `;
+}
+
+function formatDateTime(dateStr) {
+    if (!dateStr) return '';
+    try {
+        const date = new Date(dateStr);
+        return date.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+    } catch (e) {
+        return dateStr;
+    }
+}
+
+function openNoteModal() {
+    const modal = document.getElementById('noteModal');
+    const form = document.getElementById('noteForm');
+
+    // Reset form
+    form.reset();
+
+    // Set default datetime to now
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('noteDateTime').value = now.toISOString().slice(0, 16);
+
+    modal.style.display = 'block';
+}
+
+function closeNoteModal() {
+    document.getElementById('noteModal').style.display = 'none';
+}
+
+function saveNote() {
+    const noteData = {
+        participant_id: participantId,
+        note_type: document.getElementById('noteType').value,
+        note_reason: document.getElementById('noteReason').value,
+        datetime: document.getElementById('noteDateTime').value,
+        duration: document.getElementById('noteDuration').value,
+        note: document.getElementById('noteContent').value
+    };
+
+    fetch('/api/notes', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(noteData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeNoteModal();
+            loadNotes();
+        } else {
+            alert('Error saving note: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error saving note: ' + error.message);
+    });
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const noteModal = document.getElementById('noteModal');
+    const emailModal = document.getElementById('emailModal');
+    if (event.target === noteModal) {
+        closeNoteModal();
+    }
+    if (event.target === emailModal) {
+        closeEmailModal();
+    }
+}
+
+// Email Modal Functions
+let emailParticipantData = null;
+let emailTemplates = [];
+
+function openEmailModal() {
+    const modal = document.getElementById('emailModal');
+
+    // Reset to step 1
+    document.getElementById('emailStep1').style.display = 'block';
+    document.getElementById('emailStep2').style.display = 'none';
+    document.getElementById('emailStep3').style.display = 'none';
+
+    // Reset form
+    document.getElementById('emailTemplateSelect').value = '';
+    document.getElementById('templateDescription').textContent = '';
+    document.getElementById('customMessageGroup').style.display = 'none';
+    document.getElementById('customMessage').value = '';
+    document.getElementById('previewEmailBtn').disabled = true;
+
+    // Show modal
+    modal.style.display = 'block';
+
+    // Load data
+    loadEmailData();
+}
+
+function closeEmailModal() {
+    document.getElementById('emailModal').style.display = 'none';
+    // Reload notes if an email was sent
+    if (document.getElementById('emailSuccessIndicator').style.display !== 'none') {
+        loadNotes();
+    }
+}
+
+function loadEmailData() {
+    // Load participant info and templates in parallel
+    Promise.all([
+        fetch(`/api/email/participant/${participantId}`).then(r => r.json()),
+        fetch('/api/email/templates').then(r => r.json())
+    ]).then(([participantResponse, templatesResponse]) => {
+        if (participantResponse.success) {
+            emailParticipantData = participantResponse.participant;
+
+            // Update UI
+            const firstName = emailParticipantData.first_name || 'Unknown';
+            document.getElementById('emailParticipantName').textContent =
+                `${firstName} (ID: ${participantId})`;
+            document.getElementById('emailToAddress').textContent =
+                emailParticipantData.email || 'No email available';
+
+            // Last email sent
+            if (emailParticipantData.last_email_sent) {
+                const lastEmailDate = formatDateTime(emailParticipantData.last_email_sent);
+                const lastEmailBy = emailParticipantData.last_email_by || 'Unknown';
+                document.getElementById('lastEmailSent').textContent =
+                    `${lastEmailDate} by ${lastEmailBy}`;
+            } else {
+                document.getElementById('lastEmailSent').textContent = 'No emails sent yet';
+            }
+        } else {
+            document.getElementById('emailParticipantName').textContent = 'Error loading participant';
+            document.getElementById('emailToAddress').textContent = 'Error';
+        }
+
+        if (templatesResponse.success) {
+            emailTemplates = templatesResponse.templates;
+            document.getElementById('emailFromAddress').textContent = templatesResponse.from_address;
+
+            // Populate template dropdown
+            const select = document.getElementById('emailTemplateSelect');
+            select.innerHTML = '<option value="">-- Select a template --</option>';
+            emailTemplates.forEach(template => {
+                const option = document.createElement('option');
+                option.value = template.id;
+                option.textContent = template.name;
+                select.appendChild(option);
+            });
+        }
+    }).catch(error => {
+        console.error('Error loading email data:', error);
+        document.getElementById('emailParticipantName').textContent = 'Error loading data';
+    });
+}
+
+function onTemplateChange() {
+    const templateId = document.getElementById('emailTemplateSelect').value;
+    const descriptionEl = document.getElementById('templateDescription');
+    const customGroup = document.getElementById('customMessageGroup');
+    const previewBtn = document.getElementById('previewEmailBtn');
+
+    if (!templateId) {
+        descriptionEl.textContent = '';
+        customGroup.style.display = 'none';
+        previewBtn.disabled = true;
+        return;
+    }
+
+    // Find template and show description
+    const template = emailTemplates.find(t => t.id === templateId);
+    if (template) {
+        descriptionEl.textContent = template.description;
+    }
+
+    // Show custom message field for custom template
+    customGroup.style.display = templateId === 'custom' ? 'block' : 'none';
+
+    // Enable preview button if email is available
+    previewBtn.disabled = !emailParticipantData || !emailParticipantData.email;
+}
+
+function previewEmail() {
+    const templateId = document.getElementById('emailTemplateSelect').value;
+    const customMessage = document.getElementById('customMessage').value;
+
+    if (!templateId || !emailParticipantData) return;
+
+    // Get RA name - use current user or participant's RA
+    let raName = emailParticipantData.research_assistant || 'The Research Team';
+
+    const requestData = {
+        template_id: templateId,
+        first_name: emailParticipantData.first_name,
+        ra_first_name: raName,
+        username: emailParticipantData.username || '',
+        password: emailParticipantData.password || '',
+        custom_message: customMessage
+    };
+
+    fetch('/api/email/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show step 2
+            document.getElementById('emailStep1').style.display = 'none';
+            document.getElementById('emailStep2').style.display = 'block';
+
+            // Populate preview
+            document.getElementById('previewToAddress').textContent = emailParticipantData.email;
+            document.getElementById('previewFromAddress').textContent = data.from_address;
+            document.getElementById('previewSubject').textContent = data.subject;
+            document.getElementById('previewBody').innerHTML = data.body;
+        } else {
+            alert('Error generating preview: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error generating preview: ' + error.message);
+    });
+}
+
+function backToStep1() {
+    document.getElementById('emailStep1').style.display = 'block';
+    document.getElementById('emailStep2').style.display = 'none';
+}
+
+function sendEmail() {
+    const templateId = document.getElementById('emailTemplateSelect').value;
+    const subject = document.getElementById('previewSubject').textContent;
+    const body = document.getElementById('previewBody').innerHTML;
+
+    // Show step 3 with sending indicator
+    document.getElementById('emailStep2').style.display = 'none';
+    document.getElementById('emailStep3').style.display = 'block';
+    document.getElementById('emailSendingIndicator').style.display = 'flex';
+    document.getElementById('emailSuccessIndicator').style.display = 'none';
+    document.getElementById('emailErrorIndicator').style.display = 'none';
+    document.getElementById('emailStep3Buttons').style.display = 'none';
+
+    const requestData = {
+        participant_id: participantId,
+        to_email: emailParticipantData.email,
+        subject: subject,
+        body: body,
+        template_id: templateId,
+        password: emailParticipantData.password || ''
+    };
+
+    fetch('/api/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('emailSendingIndicator').style.display = 'none';
+        document.getElementById('emailStep3Buttons').style.display = 'flex';
+
+        if (data.success) {
+            document.getElementById('emailSuccessIndicator').style.display = 'flex';
+        } else {
+            document.getElementById('emailErrorIndicator').style.display = 'flex';
+            document.getElementById('emailErrorMessage').textContent = data.message || 'Error sending email';
+        }
+    })
+    .catch(error => {
+        document.getElementById('emailSendingIndicator').style.display = 'none';
+        document.getElementById('emailErrorIndicator').style.display = 'flex';
+        document.getElementById('emailErrorMessage').textContent = error.message;
+        document.getElementById('emailStep3Buttons').style.display = 'flex';
+    });
+}
+</script>
 {% endblock %}

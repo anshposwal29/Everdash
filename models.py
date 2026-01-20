@@ -163,20 +163,18 @@ class SyncLog(db.Model):
         return f'<SyncLog {self.created_at} - {self.messages_synced} messages>'
 
 
-class ParticipantNote(db.Model):
+class Notes(db.Model):
     """Notes about study participants"""
-    __tablename__ = 'participant_notes'
+    __tablename__ = 'notes'
 
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
-    admin_id = db.Column(db.Integer, db.ForeignKey('admins.id'), nullable=False)
-    note_text = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Relationships
-    user = db.relationship('User', backref='notes')
-    admin = db.relationship('Admin', backref='participant_notes')
+    note_id = db.Column(db.Integer, primary_key=True)
+    admin_id = db.Column(db.Integer)
+    participant_id = db.Column(db.String(16), index=True)  # stores redcap_id
+    note_type = db.Column(db.String(256))
+    note_reason = db.Column(db.String(256))
+    datetime = db.Column(db.String(256))
+    duration = db.Column(db.String(25))
+    note = db.Column(db.String(2500))
 
     def __repr__(self):
-        return f'<ParticipantNote {self.id} for User {self.user_id}>'
+        return f'<Notes {self.note_id} for Participant {self.participant_id}>'

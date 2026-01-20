@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}All Notes - Theradash{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="breadcrumb">
+        <a href="{{ url_for('dashboard') }}">Dashboard</a> &raquo; All Notes
+    </div>
+    <h1>All Participant Notes</h1>
+</div>
+
+<div id="notes-container" class="notes-list">
+    <p class="loading-notes">Loading notes...</p>
+</div>
+
+<div class="back-link">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">&larr; Back to Dashboard</a>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadAllNotes();
+});
+
+function loadAllNotes() {
+    fetch('/api/notes/all')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('notes-container');
+            if (data.success) {
+                if (data.notes.length === 0) {
+                    container.innerHTML = '<p class="no-notes">No notes found.</p>';
+                } else {
+                    container.innerHTML = data.notes.map(note => createNoteCard(note)).join('');
+                }
+            } else {
+                container.innerHTML = `<p class="error-message">Error loading notes: ${data.message}</p>`;
+            }
+        })
+        .catch(error => {
+            const container = document.getElementById('notes-container');
+            container.innerHTML = `<p class="error-message">Error loading notes: ${error.message}</p>`;
+        });
+}
+
+function createNoteCard(note) {
+    const dateDisplay = note.datetime ? formatDateTime(note.datetime) : 'No date';
+    const participantDisplay = note.participant_identifier
+        ? `${note.participant_id} (${note.participant_identifier})`
+        : note.participant_id;
+
+    return `
+        <div class="note-card">
+            <div class="note-card-header">
+                <div class="note-meta">
+                    <span class="note-participant">${participantDisplay}</span>
+                    <span class="note-type">${note.note_type || 'General'}</span>
+                    ${note.note_reason ? `<span class="note-reason">${note.note_reason}</span>` : ''}
+                </div>
+            </div>
+            <div class="note-card-body">
+                <p class="note-text">${note.note || ''}</p>
+            </div>
+            <div class="note-card-footer">
+                <span class="note-datetime">${dateDisplay}</span>
+                ${note.duration ? `<span class="note-duration">${note.duration}</span>` : ''}
+                ${note.admin_username ? `<span class="note-author">by ${note.admin_username}</span>` : ''}
+            </div>
+        </div>
+    `;
+}
+
+function formatDateTime(dateStr) {
+    if (!dateStr) return '';
+    try {
+        const date = new Date(dateStr);
+        return date.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+    } catch (e) {
+        return dateStr;
+    }
+}
+</script>
+{% endblock %}

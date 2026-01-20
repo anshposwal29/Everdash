@@ -40,6 +40,8 @@ class REDCapProjectConfig:
         self.study_start_date_field = config_dict.get('study_start_date_field')
         self.study_end_date_field = config_dict.get('study_end_date_field')
         self.custom_display_fields = config_dict.get('custom_display_fields', [])
+        # Optional: event where email field is stored (if different from main event)
+        self.email_event = config_dict.get('email_event', 'screening_part_1_arm_1	')
 
     def is_valid(self):
         """Check if minimum required fields are configured"""

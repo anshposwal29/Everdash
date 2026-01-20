@@ -201,6 +201,27 @@ class FirebaseService:
             print(f"Error fetching auth user {firebase_id}: {e}")
             return None
 
+    def has_user_ever_logged_in(self, firebase_id):
+        """
+        Check if a user has ever logged in by checking their last_sign_in_timestamp.
+        Returns True if user has logged in at least once, False if never logged in,
+        or None if user not found or error occurred.
+        """
+        if not self.initialized:
+            self.initialize()
+
+        try:
+            user_record = auth.get_user(firebase_id)
+            # user_metadata.last_sign_in_timestamp is None if user has never signed in
+            last_sign_in = user_record.user_metadata.last_sign_in_timestamp
+            return last_sign_in is not None
+        except auth.UserNotFoundError:
+            print(f"Authentication user {firebase_id} not found")
+            return None
+        except Exception as e:
+            print(f"Error checking login status for {firebase_id}: {e}")
+            return None
+
 
 # Singleton instance
 firebase_service = FirebaseService()

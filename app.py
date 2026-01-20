@@ -1,12 +1,14 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from models import db, Admin, User, Message, Conversation, SyncLog
+from models import db, Admin, User, Message, Conversation, SyncLog, Notes
 from config import Config
 from middleware import require_ip_whitelist, ip_and_admin_required
 from services.sync_service import sync_service
 from services.twilio_service import twilio_service
+import services.email_service as email_service
 from datetime import datetime, timedelta
 import pytz
+import requests
 from sqlalchemy import func, and_
 
 app = Flask(__name__)
@@ -160,6 +162,7 @@ def dashboard():
     project_filter = request.args.get('project', 'all')
     ra_filter = request.args.get('ra', 'all')
     risk_filter = request.args.get('risk', 'all')  # 'all', 'risky', 'not_risky'
+    attention_filter = request.args.get('attention', 'all')  # 'all', 'needs_attention'
 
     # Default to last 7 days if not specified
     if not end_date_str:
@@ -205,6 +208,43 @@ def dashboard():
             label = cf.get('label', cf.get('field'))
             if label and label not in all_custom_field_labels:
                 all_custom_field_labels.append(label)
+
+    # Pre-fetch all notes for participants in the date range to avoid N+1 queries
+    # Get all redcap_ids for current users
+    user_redcap_ids = [u.redcap_id for u in users if u.redcap_id]
+
+    # Convert date range to string format for comparison with notes datetime
+    start_date_str = start_date.strftime('%Y-%m-%d')
+    end_date_str = (end_date + timedelta(days=1)).strftime('%Y-%m-%d')  # Include end date
+
+    # Fetch all notes in date range for these participants
+    notes_in_range = []
+    if user_redcap_ids:
+        notes_in_range = Notes.query.filter(
+            Notes.participant_id.in_(user_redcap_ids),
+            Notes.datetime >= start_date_str,
+            Notes.datetime < end_date_str
+        ).all()
+
+    # Organize notes by participant_id and date
+    notes_by_participant_date = {}
+    for note in notes_in_range:
+        if not note.datetime:
+            continue
+        # Extract date from datetime string (format: YYYY-MM-DDTHH:MM or YYYY-MM-DD HH:MM)
+        note_date = note.datetime[:10]  # Get YYYY-MM-DD part
+        key = (note.participant_id, note_date)
+        if key not in notes_by_participant_date:
+            notes_by_participant_date[key] = {'phone': False, 'email': False, 'text': False}
+
+        # Check note type
+        note_type = (note.note_type or '').lower()
+        if 'phone' in note_type or 'call' in note_type:
+            notes_by_participant_date[key]['phone'] = True
+        elif 'email' in note_type:
+            notes_by_participant_date[key]['email'] = True
+        elif 'text' in note_type or 'sms' in note_type:
+            notes_by_participant_date[key]['text'] = True
 
     # Build dashboard data structure
     dashboard_data = []
@@ -258,10 +298,18 @@ def dashboard():
             has_risky = any(msg.is_risky for msg in messages)
             has_unreviewed = any(not msg.is_reviewed for msg in messages)
 
-            user_row['dates'][date.isoformat()] = {
+            # Get communication data for this date
+            date_key = date.isoformat()
+            comm_key = (user.redcap_id, date_key) if user.redcap_id else None
+            comm_data = notes_by_participant_date.get(comm_key, {'phone': False, 'email': False, 'text': False})
+
+            user_row['dates'][date_key] = {
                 'count': message_count,
                 'has_risky': has_risky,
-                'has_unreviewed': has_unreviewed
+                'has_unreviewed': has_unreviewed,
+                'has_phone': comm_data['phone'],
+                'has_email': comm_data['email'],
+                'has_text': comm_data['text']
             }
 
         # Check if user has any risky messages in the date range
@@ -272,6 +320,54 @@ def dashboard():
         )
         user_row['has_any_risky'] = user_has_risky
 
+        # Check if user needs attention (no messages for 2+ consecutive days from most recent, and not dropped)
+        needs_attention = False
+        if not user.dropped:
+            # Check last 2 days (most recent dates in the range)
+            recent_dates = sorted(date_range, reverse=True)[:2]
+            consecutive_zero_days = 0
+            for d in recent_dates:
+                date_key = d.isoformat()
+                if date_key in user_row['dates'] and user_row['dates'][date_key]['count'] == 0:
+                    consecutive_zero_days += 1
+                else:
+                    break
+            needs_attention = consecutive_zero_days >= 2
+        user_row['needs_attention'] = needs_attention
+
+        # Calculate utilization category
+        # Check total messages ever sent by this user
+        total_messages = Message.query.filter_by(user_id=user.id).count()
+
+        # Count days with activity in the date range
+        days_with_activity = sum(1 for d in date_range if user_row['dates'].get(d.isoformat(), {}).get('count', 0) > 0)
+        total_days = len(date_range)
+
+        # Count consecutive days without activity from most recent
+        recent_dates_sorted = sorted(date_range, reverse=True)
+        consecutive_inactive_days = 0
+        for d in recent_dates_sorted:
+            date_key = d.isoformat()
+            if user_row['dates'].get(date_key, {}).get('count', 0) == 0:
+                consecutive_inactive_days += 1
+            else:
+                break
+
+        # Determine utilization category
+        if total_messages == 0:
+            utilization_status = 'never_utilized'
+        elif consecutive_inactive_days >= 3:
+            utilization_status = 'inactive_3plus'
+        elif days_with_activity >= (total_days * 0.5):  # Active at least 50% of days
+            utilization_status = 'consistent'
+        else:
+            utilization_status = 'moderate'  # Some activity but not consistent
+
+        user_row['utilization_status'] = utilization_status
+        user_row['total_messages'] = total_messages
+        user_row['days_with_activity'] = days_with_activity
+        user_row['consecutive_inactive_days'] = consecutive_inactive_days
+
         dashboard_data.append(user_row)
 
     # Apply risk filter
@@ -280,8 +376,15 @@ def dashboard():
     elif risk_filter == 'not_risky':
         dashboard_data = [u for u in dashboard_data if not u['has_any_risky']]
 
-    # Sort: risky users first by default, then by redcap_id
-    dashboard_data.sort(key=lambda x: (not x['has_any_risky'], x['redcap_id']))
+    # Apply attention filter
+    if attention_filter == 'needs_attention':
+        dashboard_data = [u for u in dashboard_data if u['needs_attention']]
+
+    # Count users needing attention (for display)
+    attention_count = sum(1 for u in dashboard_data if u['needs_attention'])
+
+    # Sort: needs attention first, then risky users, then by redcap_id
+    dashboard_data.sort(key=lambda x: (not x['needs_attention'], not x['has_any_risky'], x['redcap_id']))
 
     # Get last sync info
     last_sync = SyncLog.query.order_by(SyncLog.created_at.desc()).first()
@@ -296,6 +399,8 @@ def dashboard():
                          project_filter=project_filter,
                          ra_filter=ra_filter,
                          risk_filter=risk_filter,
+                         attention_filter=attention_filter,
+                         attention_count=attention_count,
                          research_assistants=research_assistants,
                          custom_field_labels=all_custom_field_labels)
 
@@ -467,7 +572,7 @@ def user_detail(firebase_id):
         date_start_utc, _ = date_to_utc_range(start_date)
         _, date_end_utc = date_to_utc_range(end_date)
 
-        # Get messages in date range
+        # Get messages in date range with conversation info
         messages = Message.query.filter(
             and_(
                 Message.user_id == user.id,
@@ -476,20 +581,58 @@ def user_detail(firebase_id):
             )
         ).order_by(Message.timestamp.desc()).all()
     else:
-        # Get all messages
+        # Get all messages with conversation info
         messages = Message.query.filter_by(user_id=user.id).order_by(Message.timestamp.desc()).all()
         start_date = None
         end_date = None
 
-    # Convert timestamps to Eastern Time for display
+    # Convert timestamps to Eastern Time for display and add conversation info
+    conversations_dict = {}
     for message in messages:
         message.timestamp_et = message.timestamp.replace(tzinfo=pytz.utc).astimezone(et_tz)
+        # Get conversation info if available
+        if message.conversation_id:
+            if message.conversation_id not in conversations_dict:
+                conv = Conversation.query.get(message.conversation_id)
+                if conv:
+                    conversations_dict[message.conversation_id] = {
+                        'id': conv.id,
+                        'firebase_convo_id': conv.firebase_convo_id,
+                        'prompt': conv.prompt,
+                        'timestamp': conv.timestamp.replace(tzinfo=pytz.utc).astimezone(et_tz) if conv.timestamp else None
+                    }
+            message.conversation_info = conversations_dict.get(message.conversation_id)
+        else:
+            message.conversation_info = None
+
+    # Calculate utilization stats
+    total_messages = len(messages)
+    total_conversations = len(conversations_dict)
+
+    # Calculate days with activity
+    message_dates = set()
+    for msg in messages:
+        message_dates.add(msg.timestamp_et.date())
+    days_with_activity = len(message_dates)
+
+    # Get first and last message dates
+    first_message_date = messages[-1].timestamp_et if messages else None
+    last_message_date = messages[0].timestamp_et if messages else None
+
+    user_stats = {
+        'total_messages': total_messages,
+        'total_conversations': total_conversations,
+        'days_with_activity': days_with_activity,
+        'first_message_date': first_message_date,
+        'last_message_date': last_message_date
+    }
 
     return render_template('user_detail.html',
                          user=user,
                          messages=messages,
                          start_date=start_date,
-                         end_date=end_date)
+                         end_date=end_date,
+                         user_stats=user_stats)
 
 
 @app.route('/admin/users')
@@ -609,6 +752,452 @@ def test_sms():
         return jsonify({
             'success': False,
             'message': f"Error sending test SMS: {str(e)}"
+        }), 500
+
+
+@app.route('/api/notes/<participant_id>', methods=['GET'])
+@login_required
+def get_notes(participant_id):
+    """Get all notes for a participant"""
+    try:
+        notes = Notes.query.filter_by(participant_id=participant_id).order_by(Notes.datetime.desc()).all()
+
+        notes_data = []
+        for note in notes:
+            # Get admin username if available
+            admin_username = None
+            if note.admin_id:
+                admin = Admin.query.get(note.admin_id)
+                if admin:
+                    admin_username = admin.username
+
+            notes_data.append({
+                'note_id': note.note_id,
+                'admin_id': note.admin_id,
+                'admin_username': admin_username,
+                'participant_id': note.participant_id,
+                'note_type': note.note_type,
+                'note_reason': note.note_reason,
+                'datetime': note.datetime,
+                'duration': note.duration,
+                'note': note.note
+            })
+
+        return jsonify({
+            'success': True,
+            'notes': notes_data
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f"Error fetching notes: {str(e)}"
+        }), 500
+
+
+@app.route('/api/notes', methods=['POST'])
+@login_required
+def create_note():
+    """Create a new note for a participant"""
+    try:
+        data = request.get_json()
+
+        if not data.get('participant_id'):
+            return jsonify({
+                'success': False,
+                'message': 'participant_id is required'
+            }), 400
+
+        note = Notes(
+            admin_id=current_user.id,
+            participant_id=data.get('participant_id'),
+            note_type=data.get('note_type'),
+            note_reason=data.get('note_reason'),
+            datetime=data.get('datetime'),
+            duration=data.get('duration'),
+            note=data.get('note')
+        )
+
+        db.session.add(note)
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'Note created successfully',
+            'note_id': note.note_id
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': f"Error creating note: {str(e)}"
+        }), 500
+
+
+@app.route('/all-notes')
+@login_required
+def all_notes():
+    """View all notes for all participants"""
+    return render_template('all_notes.html')
+
+
+@app.route('/api/notes/all', methods=['GET'])
+@login_required
+def get_all_notes():
+    """Get all notes for all participants"""
+    try:
+        notes = Notes.query.order_by(Notes.datetime.desc()).all()
+
+        notes_data = []
+        for note in notes:
+            # Get admin username if available
+            admin_username = None
+            if note.admin_id:
+                admin = Admin.query.get(note.admin_id)
+                if admin:
+                    admin_username = admin.username
+
+            # Get participant info from User table
+            participant_identifier = None
+            user = User.query.filter_by(redcap_id=note.participant_id).first()
+            if user:
+                participant_identifier = user.identifier
+
+            notes_data.append({
+                'note_id': note.note_id,
+                'admin_id': note.admin_id,
+                'admin_username': admin_username,
+                'participant_id': note.participant_id,
+                'participant_identifier': participant_identifier,
+                'note_type': note.note_type,
+                'note_reason': note.note_reason,
+                'datetime': note.datetime,
+                'duration': note.duration,
+                'note': note.note
+            })
+
+        return jsonify({
+            'success': True,
+            'notes': notes_data
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f"Error fetching notes: {str(e)}"
+        }), 500
+
+
+@app.route('/api/email/templates', methods=['GET'])
+@login_required
+def get_email_templates():
+    """Get available email templates"""
+    try:
+        templates = email_service.get_email_templates()
+        return jsonify({
+            'success': True,
+            'templates': templates,
+            'from_address': email_service.get_from_address()
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f"Error fetching templates: {str(e)}"
+        }), 500
+
+
+@app.route('/api/email/participant/<participant_id>', methods=['GET'])
+@login_required
+def get_participant_email_info(participant_id):
+    """Get participant email info from REDCap for manual email sending"""
+    try:
+        # Find the user by redcap_id
+        user = User.query.filter_by(redcap_id=participant_id).first()
+        if not user:
+            return jsonify({
+                'success': False,
+                'message': f'Participant {participant_id} not found in database'
+            }), 404
+
+        # Initialize participant data with defaults from local database
+        participant_data = {
+            'record_id': participant_id,
+            'first_name': user.identifier or '',
+            'email': '',
+            'username': '',
+            'password': '',
+            'research_assistant': user.research_assistant or ''
+        }
+
+        # Get project config
+        project_config = Config.get_project_by_id(user.project_id) if user.project_id else None
+        if not project_config:
+            # Try to get the first available project
+            projects = Config.get_all_projects()
+            if projects:
+                project_config = projects[0]
+
+        # Try to fetch from REDCap if configured
+        if project_config and project_config.api_url and project_config.api_token:
+            try:
+                # Fetch participant data from REDCap
+                fields = ['record_id', 'first_name', 'email', 'username', 'password']
+                if project_config.ra_field:
+                    fields.append(project_config.ra_field)
+
+                data = {
+                    'token': project_config.api_token,
+                    'content': 'record',
+                    'format': 'json',
+                    'type': 'flat',
+                    'records': participant_id,
+                    'fields': ','.join(fields),
+                    'returnFormat': 'json'
+                }
+
+                if project_config.event_name:
+                    data['events'] = project_config.event_name
+
+                response = requests.post(project_config.api_url, data=data, timeout=30)
+                response.raise_for_status()
+                redcap_data = response.json()
+
+                if redcap_data and len(redcap_data) > 0:
+                    entry = redcap_data[0]
+                    if entry.get('first_name', '').strip():
+                        participant_data['first_name'] = entry.get('first_name', '').strip()
+                    if entry.get('email', '').strip():
+                        participant_data['email'] = entry.get('email', '').strip()
+                    if entry.get('username', '').strip():
+                        participant_data['username'] = entry.get('username', '').strip()
+                    if entry.get('password', '').strip():
+                        participant_data['password'] = entry.get('password', '').strip()
+                    if project_config.ra_field and entry.get(project_config.ra_field, '').strip():
+                        participant_data['research_assistant'] = entry.get(project_config.ra_field, '').strip()
+
+                # If email_event is configured and we don't have email yet, fetch from that event
+                if project_config.email_event and not participant_data['email']:
+                    email_data = {
+                        'token': project_config.api_token,
+                        'content': 'record',
+                        'format': 'json',
+                        'type': 'flat',
+                        'records': participant_id,
+                        'fields': 'record_id,email',
+                        'events': project_config.email_event.strip(),
+                        'returnFormat': 'json'
+                    }
+
+                    try:
+                        email_response = requests.post(project_config.api_url, data=email_data, timeout=30)
+                        email_response.raise_for_status()
+                        email_records = email_response.json()
+
+                        if email_records and len(email_records) > 0:
+                            email_val = email_records[0].get('email', '').strip()
+                            if email_val:
+                                participant_data['email'] = email_val
+                    except Exception as email_err:
+                        # Log but don't fail - email event fetch is optional
+                        print(f"Warning: Could not fetch email from event: {email_err}")
+
+            except requests.exceptions.RequestException as redcap_err:
+                # Log but don't fail - we can still show the modal with partial data
+                print(f"Warning: REDCap fetch failed: {redcap_err}")
+            except Exception as redcap_err:
+                print(f"Warning: Error processing REDCap data: {redcap_err}")
+
+        # Get last communication sent date
+        last_email = Notes.query.filter(
+            Notes.participant_id == participant_id,
+            Notes.note_type == 'Email'
+        ).order_by(Notes.datetime.desc()).first()
+
+        participant_data['last_email_sent'] = last_email.datetime if last_email else None
+        participant_data['last_email_by'] = None
+        if last_email and last_email.admin_id:
+            admin = Admin.query.get(last_email.admin_id)
+            if admin:
+                participant_data['last_email_by'] = admin.username
+
+        return jsonify({
+            'success': True,
+            'participant': participant_data
+        })
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': f"Error fetching participant info: {str(e)}"
+        }), 500
+
+
+@app.route('/api/email/preview', methods=['POST'])
+@login_required
+def preview_email():
+    """Preview an email before sending"""
+    try:
+        data = request.get_json()
+        template_id = data.get('template_id')
+        first_name = data.get('first_name', 'Participant')
+        ra_first_name = data.get('ra_first_name', 'The Research Team')
+        username = data.get('username', '')
+        password = data.get('password', '')
+        custom_message = data.get('custom_message', '')
+
+        # Get RA first name only (first part of full name)
+        if ra_first_name and ' ' in ra_first_name:
+            ra_first_name = ra_first_name.split()[0]
+
+        # Capitalize first name
+        if first_name:
+            first_name = first_name.strip()
+            if first_name:
+                first_name = first_name[0].upper() + first_name[1:] if len(first_name) > 1 else first_name.upper()
+
+        body = email_service.format_email_body(
+            template_id,
+            first_name,
+            ra_first_name,
+            username=username,
+            password=password,
+            custom_message=custom_message
+        )
+
+        if not body:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid template'
+            }), 400
+
+        subject = email_service.get_template_subject(template_id)
+
+        return jsonify({
+            'success': True,
+            'subject': subject,
+            'body': body,
+            'from_address': email_service.get_from_address()
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f"Error generating preview: {str(e)}"
+        }), 500
+
+
+@app.route('/api/email/send', methods=['POST'])
+@login_required
+def send_manual_email():
+    """Send a manual email to a participant"""
+    try:
+        data = request.get_json()
+        participant_id = data.get('participant_id')
+        to_email = data.get('to_email')
+        subject = data.get('subject')
+        body = data.get('body')
+        template_id = data.get('template_id', 'custom')
+
+        if not participant_id or not to_email or not subject or not body:
+            return jsonify({
+                'success': False,
+                'message': 'Missing required fields'
+            }), 400
+
+        # Send the email
+        success, message = email_service.send_email(to_email, subject, body)
+
+        if success:
+            # Log to notes table
+            # Redact password if present in body
+            logged_body = body
+            password = data.get('password')
+            if password:
+                logged_body = body.replace(password, '********')
+
+            template_name = email_service.EMAIL_TEMPLATES.get(template_id, {}).get('name', 'Manual')
+            note_reason = f'Manual - {template_name}'
+
+            note = Notes(
+                admin_id=current_user.id,
+                participant_id=str(participant_id),
+                note_type='Email',
+                note_reason=note_reason,
+                datetime=datetime.now().strftime('%Y-%m-%dT%H:%M'),
+                duration='N/A',
+                note=f"Subject: {subject}\n\n{logged_body}"
+            )
+            db.session.add(note)
+            db.session.commit()
+
+            return jsonify({
+                'success': True,
+                'message': 'Email sent successfully and logged to notes'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': message
+            }), 500
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': f"Error sending email: {str(e)}"
+        }), 500
+
+
+@app.route('/api/email/last-communication/<participant_id>', methods=['GET'])
+@login_required
+def get_last_communication(participant_id):
+    """Get the last communication sent to a participant"""
+    try:
+        # Get last email
+        last_email = Notes.query.filter(
+            Notes.participant_id == participant_id,
+            Notes.note_type == 'Email'
+        ).order_by(Notes.datetime.desc()).first()
+
+        # Get last communication of any type
+        last_any = Notes.query.filter(
+            Notes.participant_id == participant_id
+        ).order_by(Notes.datetime.desc()).first()
+
+        result = {
+            'last_email': None,
+            'last_communication': None
+        }
+
+        if last_email:
+            admin = Admin.query.get(last_email.admin_id) if last_email.admin_id else None
+            result['last_email'] = {
+                'datetime': last_email.datetime,
+                'reason': last_email.note_reason,
+                'by': admin.username if admin else 'System'
+            }
+
+        if last_any:
+            admin = Admin.query.get(last_any.admin_id) if last_any.admin_id else None
+            result['last_communication'] = {
+                'datetime': last_any.datetime,
+                'type': last_any.note_type,
+                'reason': last_any.note_reason,
+                'by': admin.username if admin else 'System'
+            }
+
+        return jsonify({
+            'success': True,
+            **result
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f"Error fetching communication history: {str(e)}"
         }), 500
 
 
