@@ -92,7 +92,7 @@ def find_missing_messages(dry_run=False):
 
     print(f"Found {len(missing_messages)} missing messages")
 
-    if missing_messages and len(missing_messages) <= 50:
+    if missing_messages and len(missing_messages) <= 1000:
         print("\nMissing messages:")
         for msg in missing_messages:
             convo_id = msg.get('convoID', 'unknown')
