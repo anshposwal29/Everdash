@@ -1338,6 +1338,13 @@ body {
     color: #2c3e50;
 }
 
+.message-date {
+    font-size: 0.75em;
+    font-weight: 400;
+    color: #6b7280;
+    margin-left: 0.25rem;
+}
+
 .reviewed-badge {
     background-color: #27ae60;
     color: white;
@@ -1354,6 +1361,43 @@ body {
     border-radius: 4px;
     font-size: 0.75rem;
     font-weight: 600;
+}
+
+/* Conversation badges */
+.convo-badge {
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+    white-space: nowrap;
+}
+
+.conversation-legend {
+    background-color: #f8fafc;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.conversation-legend strong {
+    margin-right: 0.5rem;
+    color: #475569;
+}
+
+.convo-legend-item {
+    color: white;
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    display: inline-block;
 }
 
 /* Unreviewed cell indicator */
@@ -1935,20 +1979,23 @@ body {
 
 .comm-icons {
     display: flex;
-    gap: 2px;
+    gap: 1px;
     justify-content: center;
+    flex-wrap: wrap;
     font-size: 0.7rem;
     line-height: 1;
+    max-width: 100%;
+    margin-top: 2px;
 }
 
 .comm-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 16px;
-    height: 16px;
-    border-radius: 3px;
-    font-size: 0.65rem;
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    font-size: 0.55rem;
 }
 
 .comm-phone {

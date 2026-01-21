@@ -515,7 +515,7 @@ def log_email_to_notes(participant_id, email_body, dry_run=False):
             participant_id=str(participant_id),
             note_type='Email',
             note_reason='Auto-Compliance',
-            datetime=datetime.now().strftime('%Y-%m-%dT%H:%M'),
+            datetime=datetime.now(ET_TZ).strftime('%Y-%m-%dT%H:%M'),
             duration='N/A',
             note=email_body
         )

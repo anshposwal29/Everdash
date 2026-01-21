@@ -22,16 +22,6 @@
             </div>
         </div>
 
-        <div class="detail-header-actions">
-            {% if user.redcap_id %}
-            <button class="btn-detail btn-detail-primary" onclick="openEmailModal()">
-                <span>&#9993;</span> Send Email
-            </button>
-            <button class="btn-detail btn-detail-secondary" onclick="openNoteModal()">
-                <span>&#9998;</span> Add Note
-            </button>
-            {% endif %}
-        </div>
     </div>
 
     <!-- User Info Cards -->
@@ -113,7 +103,7 @@
 
         <div class="message-card {% if message.is_risky %}message-risky{% endif %}">
             <div class="message-card-header">
-                <div class="message-time">{{ message.timestamp_et.strftime('%I:%M %p') }}</div>
+                <div class="message-time">{{ message.timestamp_et.strftime('%I:%M %p') }} <span class="message-date">{{ message.timestamp_et.strftime('%b %d') }}</span></div>
                 {% if message.conversation_info %}
                 <div class="conversation-tag" title="Conversation: {{ message.conversation_info.prompt[:50] if message.conversation_info.prompt else 'No prompt' }}...">
                     <span class="conv-icon">&#128172;</span>
@@ -154,12 +144,6 @@
 <div class="notes-section">
     <div class="notes-header">
         <h2>Notes</h2>
-        {% if user.redcap_id %}
-        <div class="notes-header-buttons">
-            <button class="btn btn-success btn-sm" onclick="openEmailModal()">Send Email</button>
-            <button class="btn btn-primary btn-sm" onclick="openNoteModal()">Add Note</button>
-        </div>
-        {% endif %}
     </div>
 
     {% if not user.redcap_id %}
@@ -403,6 +387,7 @@ function formatDateTime(dateStr) {
     try {
         const date = new Date(dateStr);
         return date.toLocaleString('en-US', {
+            timeZone: 'America/New_York',
             year: 'numeric',
             month: 'short',
             day: 'numeric',

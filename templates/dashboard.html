@@ -216,14 +216,14 @@
                 </td>
                 {% for date in date_range %}
                 {% set date_key = date.isoformat() %}
-                {% set cell_data = user_row.dates.get(date_key, {'count': 0, 'has_risky': False, 'has_unreviewed': False, 'has_phone': False, 'has_email': False, 'has_text': False}) %}
+                {% set cell_data = user_row.dates.get(date_key, {'count': 0, 'has_risky': False, 'has_unreviewed': False, 'phone_count': 0, 'email_count': 0, 'text_count': 0}) %}
                 <td class="message-cell {% if cell_data.has_risky %}high-risk{% elif cell_data.count > 0 %}has-messages{% endif %} {% if cell_data.has_unreviewed %}unreviewed{% endif %}"
                     data-count="{{ cell_data.count }}"
                     data-firebase-id="{{ user_row.firebase_id }}"
                     data-date="{{ date_key }}"
                     onclick="{% if cell_data.count > 0 %}showMessages('{{ user_row.firebase_id }}', '{{ date_key }}'){% endif %}"
                     style="{% if cell_data.count > 0 %}cursor: pointer;{% endif %}"
-                    title="{% if cell_data.has_risky %}RISKY MESSAGE! {% endif %}{{ cell_data.count }} message(s){% if cell_data.has_unreviewed %} - UNREVIEWED{% endif %}{% if cell_data.has_phone %} | Phone call logged{% endif %}{% if cell_data.has_email %} | Email sent{% endif %}{% if cell_data.has_text %} | Text sent{% endif %}">
+                    title="{% if cell_data.has_risky %}RISKY MESSAGE! {% endif %}{{ cell_data.count }} message(s){% if cell_data.has_unreviewed %} - UNREVIEWED{% endif %}{% if cell_data.phone_count > 0 %} | {{ cell_data.phone_count }} phone call(s){% endif %}{% if cell_data.email_count > 0 %} | {{ cell_data.email_count }} email(s){% endif %}{% if cell_data.text_count > 0 %} | {{ cell_data.text_count }} text(s){% endif %}">
                     <div class="cell-content">
                         {% if cell_data.count > 0 %}
                             <span class="message-count">{{ cell_data.count }}</span>
@@ -236,11 +236,11 @@
                         {% else %}
                             <span class="no-messages">-</span>
                         {% endif %}
-                        {% if cell_data.has_phone or cell_data.has_email or cell_data.has_text %}
+                        {% if cell_data.phone_count > 0 or cell_data.email_count > 0 or cell_data.text_count > 0 %}
                         <div class="comm-icons">
-                            {% if cell_data.has_phone %}<span class="comm-icon comm-phone" title="Phone call">&#128222;</span>{% endif %}
-                            {% if cell_data.has_email %}<span class="comm-icon comm-email" title="Email sent">&#9993;</span>{% endif %}
-                            {% if cell_data.has_text %}<span class="comm-icon comm-text" title="Text message">&#128172;</span>{% endif %}
+                            {% for i in range(cell_data.phone_count) %}<span class="comm-icon comm-phone" title="Phone call">&#128222;</span>{% endfor %}
+                            {% for i in range(cell_data.email_count) %}<span class="comm-icon comm-email" title="Email sent">&#9993;</span>{% endfor %}
+                            {% for i in range(cell_data.text_count) %}<span class="comm-icon comm-text" title="Text message">&#128172;</span>{% endfor %}
                         </div>
                         {% endif %}
                     </div>
@@ -644,16 +644,45 @@ function showMessages(firebaseId, date) {
 
                 modalInfo.innerHTML = `
                     <div class="message-info">
-                        <p><strong>Firebase ID:</strong> ${user.firebase_id}</p>
                         <p><strong>REDCap ID:</strong> ${user.redcap_id}</p>
                         <p><strong>Identifier:</strong> ${user.identifier}</p>
                         <p><strong>Research Assistant:</strong> ${user.research_assistant}</p>
-                        <p><strong>Date:</strong> ${dateFormatted}</p>
+                        <p><strong>Viewing Messages From:</strong> ${dateFormatted}</p>
                     </div>
                 `;
 
                 if (data.messages.length > 0) {
-                    let messagesHtml = '<div class="messages-list">';
+                    // Collect unique conversations and assign colors
+                    const conversationColors = [
+                        '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
+                        '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'
+                    ];
+                    const conversationMap = {};
+                    let colorIndex = 0;
+                    data.messages.forEach(msg => {
+                        if (msg.conversation_id && !conversationMap[msg.conversation_id]) {
+                            conversationMap[msg.conversation_id] = {
+                                color: conversationColors[colorIndex % conversationColors.length],
+                                index: colorIndex + 1,
+                                prompt: msg.conversation_prompt || 'No topic'
+                            };
+                            colorIndex++;
+                        }
+                    });
+
+                    // Build conversation legend if multiple conversations
+                    let legendHtml = '';
+                    const numConversations = Object.keys(conversationMap).length;
+                    if (numConversations > 1) {
+                        legendHtml = '<div class="conversation-legend"><strong>Conversations:</strong> ';
+                        for (const [convId, convInfo] of Object.entries(conversationMap)) {
+                            const shortPrompt = convInfo.prompt.length > 30 ? convInfo.prompt.substring(0, 30) + '...' : convInfo.prompt;
+                            legendHtml += `<span class="convo-legend-item" style="background-color: ${convInfo.color};" title="${escapeHtml(convInfo.prompt)}">Conv ${convInfo.index}: ${escapeHtml(shortPrompt)}</span> `;
+                        }
+                        legendHtml += '</div>';
+                    }
+
+                    let messagesHtml = legendHtml + '<div class="messages-list">';
                     data.messages.forEach(msg => {
                         const riskClass = msg.is_risky ? 'high-risk' : '';
                         const reviewedClass = msg.is_reviewed ? 'reviewed' : 'unreviewed';
@@ -662,10 +691,19 @@ function showMessages(firebaseId, date) {
                             : '';
                         const reviewedBadge = msg.is_reviewed ? '<span class="reviewed-badge">✓ Reviewed</span>' : '<span class="unreviewed-badge">⚠ Unreviewed</span>';
 
+                        // Conversation badge
+                        let convBadge = '';
+                        if (msg.conversation_id && conversationMap[msg.conversation_id]) {
+                            const convInfo = conversationMap[msg.conversation_id];
+                            const shortPrompt = convInfo.prompt.length > 20 ? convInfo.prompt.substring(0, 20) + '...' : convInfo.prompt;
+                            convBadge = `<span class="convo-badge" style="background-color: ${convInfo.color};" title="${escapeHtml(convInfo.prompt)}">Conv ${convInfo.index}</span>`;
+                        }
+
                         messagesHtml += `
                             <div class="message-item ${riskClass} ${reviewedClass}">
                                 <div class="message-header">
-                                    <span class="message-time">${msg.timestamp}</span>
+                                    <span class="message-time">${msg.timestamp} <span class="message-date">${msg.timestamp_date}</span></span>
+                                    ${convBadge}
                                     ${riskBadge}
                                     ${reviewedBadge}
                                 </div>

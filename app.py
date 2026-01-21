@@ -235,16 +235,16 @@ def dashboard():
         note_date = note.datetime[:10]  # Get YYYY-MM-DD part
         key = (note.participant_id, note_date)
         if key not in notes_by_participant_date:
-            notes_by_participant_date[key] = {'phone': False, 'email': False, 'text': False}
+            notes_by_participant_date[key] = {'phone': 0, 'email': 0, 'text': 0}
 
-        # Check note type
+        # Check note type and increment count
         note_type = (note.note_type or '').lower()
         if 'phone' in note_type or 'call' in note_type:
-            notes_by_participant_date[key]['phone'] = True
+            notes_by_participant_date[key]['phone'] += 1
         elif 'email' in note_type:
-            notes_by_participant_date[key]['email'] = True
+            notes_by_participant_date[key]['email'] += 1
         elif 'text' in note_type or 'sms' in note_type:
-            notes_by_participant_date[key]['text'] = True
+            notes_by_participant_date[key]['text'] += 1
 
     # Build dashboard data structure
     dashboard_data = []
@@ -301,15 +301,15 @@ def dashboard():
             # Get communication data for this date
             date_key = date.isoformat()
             comm_key = (user.redcap_id, date_key) if user.redcap_id else None
-            comm_data = notes_by_participant_date.get(comm_key, {'phone': False, 'email': False, 'text': False})
+            comm_data = notes_by_participant_date.get(comm_key, {'phone': 0, 'email': 0, 'text': 0})
 
             user_row['dates'][date_key] = {
                 'count': message_count,
                 'has_risky': has_risky,
                 'has_unreviewed': has_unreviewed,
-                'has_phone': comm_data['phone'],
-                'has_email': comm_data['email'],
-                'has_text': comm_data['text']
+                'phone_count': comm_data['phone'],
+                'email_count': comm_data['email'],
+                'text_count': comm_data['text']
             }
 
         # Check if user has any risky messages in the date range
@@ -457,17 +457,33 @@ def get_messages_for_date(firebase_id, date_str):
             )
         ).order_by(Message.timestamp.asc()).all()
 
+        # Get conversation info for messages
+        conversation_ids = set(msg.conversation_id for msg in messages if msg.conversation_id)
+        conversations = {}
+        if conversation_ids:
+            for conv in Conversation.query.filter(Conversation.id.in_(conversation_ids)).all():
+                conversations[conv.id] = {
+                    'id': conv.id,
+                    'firebase_convo_id': conv.firebase_convo_id,
+                    'prompt': conv.prompt
+                }
+
         # Format messages for response
         messages_data = []
         for msg in messages:
             timestamp_et = msg.timestamp.replace(tzinfo=pytz.utc).astimezone(et_tz)
+            conv_info = conversations.get(msg.conversation_id, {})
             messages_data.append({
                 'id': msg.id,
                 'text': msg.text,
                 'timestamp': timestamp_et.strftime('%I:%M %p'),
+                'timestamp_date': timestamp_et.strftime('%b %d'),
                 'timestamp_full': timestamp_et.strftime('%Y-%m-%d %I:%M:%S %p'),
                 'is_risky': msg.is_risky,
-                'is_reviewed': msg.is_reviewed
+                'is_reviewed': msg.is_reviewed,
+                'conversation_id': msg.conversation_id,
+                'conversation_prompt': conv_info.get('prompt', ''),
+                'firebase_convo_id': conv_info.get('firebase_convo_id', '')
             })
 
         return jsonify({
@@ -1126,7 +1142,7 @@ def send_manual_email():
                 participant_id=str(participant_id),
                 note_type='Email',
                 note_reason=note_reason,
-                datetime=datetime.now().strftime('%Y-%m-%dT%H:%M'),
+                datetime=datetime.now(et_tz).strftime('%Y-%m-%dT%H:%M'),
                 duration='N/A',
                 note=f"Subject: {subject}\n\n{logged_body}"
             )
