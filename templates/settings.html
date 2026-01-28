@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Theradash{% endblock %}
+
+{% block content %}
+<div class="settings-header">
+    <h1>Application Settings</h1>
+</div>
+
+<div class="settings-container">
+    <div class="settings-section">
+        <h2>Configuration Status</h2>
+
+        <div class="config-status">
+            <div class="status-item">
+                <span class="status-icon {% if settings.firebase_configured %}success{% else %}error{% endif %}">
+                    {% if settings.firebase_configured %}✓{% else %}✗{% endif %}
+                </span>
+                <strong>Firebase:</strong>
+                {{ 'Configured' if settings.firebase_configured else 'Not Configured' }}
+            </div>
+
+            <div class="status-item">
+                <span class="status-icon {% if settings.redcap_configured %}success{% else %}error{% endif %}">
+                    {% if settings.redcap_configured %}✓{% else %}✗{% endif %}
+                </span>
+                <strong>REDCap:</strong>
+                {{ 'Configured' if settings.redcap_configured else 'Not Configured' }}
+            </div>
+
+            <div class="status-item">
+                <span class="status-icon {% if settings.twilio_configured %}success{% else %}error{% endif %}">
+                    {% if settings.twilio_configured %}✓{% else %}✗{% endif %}
+                </span>
+                <strong>Twilio SMS:</strong>
+                {{ 'Configured' if settings.twilio_configured else 'Not Configured' }}
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <h2>Risk Monitoring</h2>
+        <div class="setting-item">
+            <p class="setting-description">
+                Messages flagged as "Risky" in Firebase will trigger SMS alerts to administrators
+                and be highlighted in the dashboard.
+            </p>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <h2>Security</h2>
+        <div class="setting-item">
+            <strong>Allowed IP Prefix:</strong>
+            <span class="setting-value">{{ settings.ip_prefix }}.*.*</span>
+            <p class="setting-description">
+                Only IP addresses starting with this prefix can access the application.
+                To change this value, update the IP_PREFIX_ALLOWED environment variable.
+            </p>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <h2>Alert Recipients</h2>
+        <div class="setting-item">
+            {% if settings.admin_numbers %}
+            <strong>Admin Phone Numbers:</strong>
+            <ul class="admin-numbers-list">
+                {% for number in settings.admin_numbers %}
+                {% if number %}
+                <li>{{ number }}</li>
+                {% endif %}
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-warning">No admin phone numbers configured</p>
+            {% endif %}
+            <p class="setting-description">
+                To change alert recipients, update the TWILIO_ADMIN_NUMBERS environment variable
+                (comma-separated list of phone numbers).
+            </p>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <h2>Test SMS</h2>
+        <div class="setting-item">
+            <p class="setting-description">
+                Send a test SMS message to verify your Twilio configuration is working correctly.
+            </p>
+            {% if settings.twilio_configured %}
+            <div class="test-sms-form">
+                <div class="form-group">
+                    <label for="test-phone">Phone Number:</label>
+                    <input type="tel" id="test-phone" class="form-control"
+                           placeholder="+1234567890 or (123) 456-7890"
+                           style="max-width: 300px; margin-right: 10px;">
+                    <button type="button" id="send-test-sms" class="btn btn-primary">
+                        Send Test SMS
+                    </button>
+                </div>
+                <div id="test-sms-result" class="test-result" style="margin-top: 10px; display: none;"></div>
+            </div>
+            {% else %}
+            <p class="text-warning">Twilio is not configured. Please set up Twilio credentials to test SMS functionality.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <h2>Sync History</h2>
+        {% if settings.last_sync %}
+        <div class="sync-history">
+            <div class="sync-stat">
+                <strong>Last Sync:</strong>
+                {{ settings.last_sync.created_at.strftime('%Y-%m-%d %I:%M:%S %p') }}
+            </div>
+            <div class="sync-stat">
+                <strong>Messages Synced:</strong>
+                {{ settings.last_sync.messages_synced }}
+            </div>
+            <div class="sync-stat">
+                <strong>Conversations Synced:</strong>
+                {{ settings.last_sync.conversations_synced }}
+            </div>
+            <div class="sync-stat">
+                <strong>Users Synced:</strong>
+                {{ settings.last_sync.users_synced }}
+            </div>
+            <div class="sync-stat">
+                <strong>Duration:</strong>
+                {{ '%.2f'|format(settings.last_sync.sync_duration_seconds) }} seconds
+            </div>
+        </div>
+        {% else %}
+        <p>No sync has been performed yet.</p>
+        {% endif %}
+    </div>
+
+    <div class="settings-section">
+        <h2>Environment Variables Guide</h2>
+        <div class="env-guide">
+            <p>To configure this application, set the following environment variables:</p>
+            <ul class="env-list">
+                <li><code>SECRET_KEY</code> - Flask secret key for sessions</li>
+                <li><code>FIREBASE_CREDENTIALS_PATH</code> - Path to Firebase credentials JSON</li>
+                <li><code>REDCAP_API_URL</code> - REDCap API endpoint URL</li>
+                <li><code>REDCAP_API_TOKEN</code> - REDCap API access token</li>
+                <li><code>REDCAP_FILTER_LOGIC</code> - REDCap filter logic for active participants</li>
+                <li><code>TWILIO_ACCOUNT_SID</code> - Twilio account SID</li>
+                <li><code>TWILIO_AUTH_TOKEN</code> - Twilio authentication token</li>
+                <li><code>TWILIO_FROM_NUMBER</code> - Twilio sending phone number</li>
+                <li><code>TWILIO_ADMIN_NUMBERS</code> - Comma-separated list of admin phone numbers</li>
+                <li><code>IP_PREFIX_ALLOWED</code> - First 3 digits of allowed IP addresses</li>
+                <li><code>REGISTRATION_KEY</code> - Secret key for admin registration</li>
+                <li><code>RISK_SCORE_THRESHOLD</code> - Risk score threshold (default: 0.7)</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sendTestBtn = document.getElementById('send-test-sms');
+    const phoneInput = document.getElementById('test-phone');
+    const resultDiv = document.getElementById('test-sms-result');
+
+    if (sendTestBtn) {
+        sendTestBtn.addEventListener('click', function() {
+            const phoneNumber = phoneInput.value.trim();
+
+            if (!phoneNumber) {
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'test-result error';
+                resultDiv.innerHTML = 'Please enter a phone number';
+                return;
+            }
+
+            // Disable button and show loading state
+            sendTestBtn.disabled = true;
+            sendTestBtn.textContent = 'Sending...';
+            resultDiv.style.display = 'none';
+
+            fetch('/api/test-sms', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ phone_number: phoneNumber })
+            })
+            .then(response => response.json())
+            .then(data => {
+                resultDiv.style.display = 'block';
+                if (data.success) {
+                    resultDiv.className = 'test-result success';
+                    resultDiv.innerHTML = '<span class="status-icon success">✓</span> ' + data.message;
+                } else {
+                    resultDiv.className = 'test-result error';
+                    resultDiv.innerHTML = '<span class="status-icon error">✗</span> ' + data.message;
+                }
+            })
+            .catch(error => {
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'test-result error';
+                resultDiv.innerHTML = '<span class="status-icon error">✗</span> Error: ' + error.message;
+            })
+            .finally(() => {
+                sendTestBtn.disabled = false;
+                sendTestBtn.textContent = 'Send Test SMS';
+            });
+        });
+
+        // Allow pressing Enter to send
+        phoneInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendTestBtn.click();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

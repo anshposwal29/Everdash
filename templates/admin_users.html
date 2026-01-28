@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Users - Theradash{% endblock %}
+
+{% block content %}
+<div class="admin-users-header">
+    <h1>Admin User Management</h1>
+    <a href="{{ url_for('register') }}" class="btn btn-primary">Add New Admin</a>
+</div>
+
+<!-- Pending Approvals Section -->
+{% if pending_admins %}
+<div class="admin-section pending-section">
+    <h2>Pending Approval ({{ pending_admins|length }})</h2>
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Registered</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for admin in pending_admins %}
+            <tr>
+                <td>{{ admin.username }}</td>
+                <td>{{ admin.email }}</td>
+                <td>{{ admin.created_at.strftime('%Y-%m-%d %I:%M %p') }}</td>
+                <td>
+                    <button class="btn btn-sm btn-success" onclick="approveAdmin({{ admin.id }})">
+                        Approve
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="rejectAdmin({{ admin.id }})">
+                        Reject
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- Active Admins Section -->
+<div class="admin-section">
+    <h2>Active Admins ({{ active_admins|length }})</h2>
+    {% if active_admins %}
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Created</th>
+                <th>Last Login</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for admin in active_admins %}
+            <tr>
+                <td>{{ admin.username }}</td>
+                <td>{{ admin.email }}</td>
+                <td>{{ admin.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>
+                    {% if admin.last_login %}
+                    {{ admin.last_login.strftime('%Y-%m-%d %I:%M %p') }}
+                    {% else %}
+                    Never
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="status-badge active">Active</span>
+                </td>
+                <td>
+                    {% if admin.id != current_user.id %}
+                    <button class="btn btn-sm btn-danger" onclick="toggleAdminStatus({{ admin.id }})">
+                        Deactivate
+                    </button>
+                    {% else %}
+                    <span class="text-muted">Current User</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No active admins.</p>
+    {% endif %}
+</div>
+
+<!-- Deactivated Admins Section -->
+{% if deactivated_admins %}
+<div class="admin-section">
+    <h2>Deactivated Admins ({{ deactivated_admins|length }})</h2>
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Created</th>
+                <th>Last Login</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for admin in deactivated_admins %}
+            <tr>
+                <td>{{ admin.username }}</td>
+                <td>{{ admin.email }}</td>
+                <td>{{ admin.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>
+                    {% if admin.last_login %}
+                    {{ admin.last_login.strftime('%Y-%m-%d %I:%M %p') }}
+                    {% else %}
+                    Never
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="status-badge inactive">Deactivated</span>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-success" onclick="toggleAdminStatus({{ admin.id }})">
+                        Reactivate
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- Rejected Registrations Section -->
+{% if rejected_admins %}
+<div class="admin-section rejected-section">
+    <h2>Rejected Registrations ({{ rejected_admins|length }})</h2>
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Attempted Registration</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for admin in rejected_admins %}
+            <tr>
+                <td>{{ admin.username }}</td>
+                <td>{{ admin.email }}</td>
+                <td>{{ admin.created_at.strftime('%Y-%m-%d %I:%M %p') }}</td>
+                <td>
+                    <span class="status-badge rejected">Rejected</span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<div id="status-message" class="status-message" style="display: none;"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function approveAdmin(adminId) {
+    if (!confirm('Approve this user? They will be able to log in and access the system.')) {
+        return;
+    }
+
+    const statusMessage = document.getElementById('status-message');
+
+    fetch(`/admin/users/${adminId}/approve`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            statusMessage.className = 'status-message success';
+            statusMessage.textContent = data.message;
+            statusMessage.style.display = 'block';
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            statusMessage.className = 'status-message error';
+            statusMessage.textContent = data.message;
+            statusMessage.style.display = 'block';
+        }
+    })
+    .catch(error => {
+        statusMessage.className = 'status-message error';
+        statusMessage.textContent = 'Error: ' + error.message;
+        statusMessage.style.display = 'block';
+    });
+}
+
+function rejectAdmin(adminId) {
+    if (!confirm('Reject this registration? The user will not be able to access the system.')) {
+        return;
+    }
+
+    const statusMessage = document.getElementById('status-message');
+
+    fetch(`/admin/users/${adminId}/reject`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            statusMessage.className = 'status-message success';
+            statusMessage.textContent = data.message;
+            statusMessage.style.display = 'block';
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            statusMessage.className = 'status-message error';
+            statusMessage.textContent = data.message;
+            statusMessage.style.display = 'block';
+        }
+    })
+    .catch(error => {
+        statusMessage.className = 'status-message error';
+        statusMessage.textContent = 'Error: ' + error.message;
+        statusMessage.style.display = 'block';
+    });
+}
+
+function toggleAdminStatus(adminId) {
+    if (!confirm('Are you sure you want to change this admin\'s status?')) {
+        return;
+    }
+
+    const statusMessage = document.getElementById('status-message');
+
+    fetch(`/admin/users/${adminId}/toggle`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            statusMessage.className = 'status-message success';
+            statusMessage.textContent = data.message;
+            statusMessage.style.display = 'block';
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            statusMessage.className = 'status-message error';
+            statusMessage.textContent = data.message;
+            statusMessage.style.display = 'block';
+        }
+    })
+    .catch(error => {
+        statusMessage.className = 'status-message error';
+        statusMessage.textContent = 'Error: ' + error.message;
+        statusMessage.style.display = 'block';
+    });
+}
+</script>
+{% endblock %}

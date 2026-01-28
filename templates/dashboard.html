@@ -1,0 +1,1239 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Theradash{% endblock %}
+
+{% block content %}
+<!-- Modern Dashboard Header -->
+<div class="dashboard-header-v2">
+    <div class="header-top">
+        <h1 class="dashboard-title">Conversation Dashboard</h1>
+        <div class="header-actions">
+            <button id="sync-btn" class="btn-icon" title="Refresh Data">
+                <span class="sync-icon">&#x21bb;</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Unified Filter Bar -->
+    <form method="GET" action="{{ url_for('dashboard') }}" class="filter-bar" id="filterForm">
+        <div class="filter-group filters-left">
+            {% if projects|length > 1 %}
+            <div class="filter-item">
+                <select id="project_filter" name="project" onchange="this.form.submit()" class="filter-select">
+                    <option value="all">All Studies</option>
+                    {% for project in projects %}
+                    <option value="{{ project.id }}" {% if project_filter == project.id %}selected{% endif %}>
+                        {{ project.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
+            {% if research_assistants|length > 0 %}
+            <div class="filter-item">
+                <select id="ra_filter" name="ra" onchange="this.form.submit()" class="filter-select">
+                    <option value="all">All RAs</option>
+                    {% for ra in research_assistants %}
+                    <option value="{{ ra }}" {% if ra_filter == ra %}selected{% endif %}>
+                        {{ ra }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
+            <div class="filter-item">
+                <select id="risk_filter" name="risk" onchange="this.form.submit()" class="filter-select">
+                    <option value="all" {% if risk_filter == 'all' %}selected{% endif %}>All Risk</option>
+                    <option value="risky" {% if risk_filter == 'risky' %}selected{% endif %}>High Risk</option>
+                    <option value="not_risky" {% if risk_filter == 'not_risky' %}selected{% endif %}>No Risk</option>
+                </select>
+            </div>
+
+            <div class="filter-item">
+                <select id="attention_filter" name="attention" onchange="this.form.submit()" class="filter-select">
+                    <option value="all" {% if attention_filter == 'all' %}selected{% endif %}>All Status</option>
+                    <option value="needs_attention" {% if attention_filter == 'needs_attention' %}selected{% endif %}>Needs Attention</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="filter-group filters-right">
+            <div class="filter-item date-range-picker">
+                <span class="date-icon">&#128197;</span>
+                <input type="date" id="start_date" name="start_date" value="{{ start_date.isoformat() }}" class="date-input">
+                <span class="date-separator">–</span>
+                <input type="date" id="end_date" name="end_date" value="{{ end_date.isoformat() }}" class="date-input">
+                <button type="submit" class="btn-apply" title="Apply date range">
+                    <span>&#10003;</span>
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Stats Bar -->
+<div class="stats-bar">
+    <div class="stat-item">
+        <span class="stat-value">{{ dashboard_data|length }}</span>
+        <span class="stat-label">Total Users</span>
+    </div>
+
+    <div class="stat-divider"></div>
+
+    {% if attention_count > 0 %}
+    <a href="{{ url_for('dashboard', project=project_filter, ra=ra_filter, risk=risk_filter, attention='needs_attention', start_date=start_date.isoformat(), end_date=end_date.isoformat()) }}" class="stat-item stat-attention clickable">
+        <span class="stat-value">{{ attention_count }}</span>
+        <span class="stat-label">Need Attention</span>
+    </a>
+    {% else %}
+    <div class="stat-item stat-good">
+        <span class="stat-value">0</span>
+        <span class="stat-label">Need Attention</span>
+    </div>
+    {% endif %}
+
+    <div class="stat-divider"></div>
+
+    <!-- Legend Key -->
+    <div class="legend-key">
+        <div class="legend-item">
+            <span class="legend-dot legend-risky"></span>
+            <span class="legend-text">Risky</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-dot legend-attention"></span>
+            <span class="legend-text">Inactive 2+ days</span>
+        </div>
+        <div class="legend-separator"></div>
+        <div class="legend-item legend-contact">
+            <span class="legend-text-muted">Contact:</span>
+            <span class="comm-icon comm-phone" title="Phone">&#128222;</span>
+            <span class="comm-icon comm-email" title="Email">&#9993;</span>
+            <span class="comm-icon comm-text" title="Text">&#128172;</span>
+        </div>
+    </div>
+
+    <!-- Last Sync (Discreet) -->
+    <div class="sync-status-v2">
+        {% if last_sync %}
+        <span class="sync-time">Synced {{ last_sync.created_at.strftime('%b %d, %I:%M %p') }}</span>
+        {% else %}
+        <span class="sync-time">Not synced</span>
+        {% endif %}
+    </div>
+</div>
+
+<div class="dashboard-grid-container">
+    <table class="dashboard-grid">
+        <thead>
+            <tr>
+                <th class="sticky-col info-panel-header">User Info</th>
+                <th class="actions-col">Actions</th>
+                {% for date in date_range %}
+                <th class="date-col">
+                    <div class="date-header">
+                        <div class="day-name">{{ date.strftime('%a') }}</div>
+                        <div class="date-number">{{ date.strftime('%m/%d') }}</div>
+                    </div>
+                </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for user_row in dashboard_data %}
+            <tr class="{% if user_row.needs_attention %}needs-attention-row{% endif %}">
+                <td class="sticky-col info-panel-cell {% if user_row.needs_attention %}needs-attention-cell{% endif %}">
+                    <a href="{{ url_for('user_detail', firebase_id=user_row.firebase_id) }}" class="info-panel-link">
+                        <div class="info-panel">
+                            <div class="info-row info-primary">
+                                <span class="info-id" title="REDCap: {{ user_row.redcap_id }}">{{ user_row.redcap_id }}</span>
+                                {% if user_row.identifier and user_row.identifier != user_row.redcap_id %}
+                                <span class="info-identifier">{{ user_row.identifier }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="info-row info-secondary">
+                                {% if user_row.research_assistant %}
+                                <span class="info-tag info-ra" title="RA">{{ user_row.research_assistant }}</span>
+                                {% endif %}
+                                {% if projects|length > 1 and user_row.project_name %}
+                                {% set short_project = user_row.project_name|replace('Therabot-', '') %}
+                                <span class="info-tag info-project" title="{{ user_row.project_name }}">{{ short_project[:10] }}{% if short_project|length > 10 %}..{% endif %}</span>
+                                {% endif %}
+                            </div>
+                            {% if user_row.dropped or user_row.dropped_surveys %}
+                            <div class="info-row info-dropped">
+                                {% if user_row.dropped %}
+                                <span class="info-tag info-dropped-app" title="Dropped from app">Dropped App</span>
+                                {% endif %}
+                                {% if user_row.dropped_surveys %}
+                                <span class="info-tag info-dropped-surveys" title="Dropped from surveys">Dropped Surveys</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            <!-- Utilization Status Badge -->
+                            <div class="info-row info-utilization">
+                                {% if user_row.utilization_status == 'never_utilized' %}
+                                <span class="utilization-badge utilization-never" title="Never logged in or sent messages">Never Used</span>
+                                {% elif user_row.utilization_status == 'inactive_3plus' %}
+                                <span class="utilization-badge utilization-inactive" title="{{ user_row.consecutive_inactive_days }} days without activity">{{ user_row.consecutive_inactive_days }}+ Days Inactive</span>
+                                {% elif user_row.utilization_status == 'consistent' %}
+                                <span class="utilization-badge utilization-consistent" title="Active {{ user_row.days_with_activity }}/{{ date_range|length }} days">Consistent</span>
+                                {% else %}
+                                <span class="utilization-badge utilization-moderate" title="Active {{ user_row.days_with_activity }}/{{ date_range|length }} days">Moderate Use</span>
+                                {% endif %}
+                            </div>
+                            {% if user_row.study_start_date or user_row.study_end_date %}
+                            <div class="info-row info-dates">
+                                <span class="info-date-range" title="Study period">{{ user_row.study_start_date or '?' }} - {{ user_row.study_end_date or '?' }}</span>
+                            </div>
+                            {% endif %}
+                            {% if custom_field_labels %}
+                            <div class="info-row info-custom">
+                                {% for label in custom_field_labels %}
+                                {% set field_value = user_row.custom_fields.get(label, '') %}
+                                {% if field_value %}
+                                <span class="info-tag info-custom-field" title="{{ label }}: {{ field_value }}">{{ field_value[:8] }}{% if field_value|length > 8 %}..{% endif %}</span>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </a>
+                </td>
+                <td class="actions-cell">
+                    {% if user_row.redcap_id and user_row.redcap_id != '-' %}
+                    <div class="action-buttons">
+                        <button class="btn btn-action btn-email" onclick="openDashboardEmailModal('{{ user_row.redcap_id }}', '{{ user_row.identifier }}', '{{ user_row.utilization_status }}', {{ 'true' if user_row.dropped else 'false' }})" title="Send Email">
+                            &#9993;
+                        </button>
+                        <button class="btn btn-action btn-note" onclick="openDashboardNoteModal('{{ user_row.redcap_id }}', '{{ user_row.identifier }}')" title="Add Note">
+                            &#9998;
+                        </button>
+                    </div>
+                    {% endif %}
+                </td>
+                {% for date in date_range %}
+                {% set date_key = date.isoformat() %}
+                {% set cell_data = user_row.dates.get(date_key, {'count': 0, 'has_risky': False, 'has_unreviewed': False, 'phone_count': 0, 'email_count': 0, 'text_count': 0}) %}
+                <td class="message-cell {% if cell_data.has_risky %}high-risk{% elif cell_data.count > 0 %}has-messages{% endif %} {% if cell_data.has_unreviewed %}unreviewed{% endif %}"
+                    data-count="{{ cell_data.count }}"
+                    data-firebase-id="{{ user_row.firebase_id }}"
+                    data-date="{{ date_key }}"
+                    onclick="{% if cell_data.count > 0 %}showMessages('{{ user_row.firebase_id }}', '{{ date_key }}'){% endif %}"
+                    style="{% if cell_data.count > 0 %}cursor: pointer;{% endif %}"
+                    title="{% if cell_data.has_risky %}RISKY MESSAGE! {% endif %}{{ cell_data.count }} message(s){% if cell_data.has_unreviewed %} - UNREVIEWED{% endif %}{% if cell_data.phone_count > 0 %} | {{ cell_data.phone_count }} phone call(s){% endif %}{% if cell_data.email_count > 0 %} | {{ cell_data.email_count }} email(s){% endif %}{% if cell_data.text_count > 0 %} | {{ cell_data.text_count }} text(s){% endif %}">
+                    <div class="cell-content">
+                        {% if cell_data.count > 0 %}
+                            <span class="message-count">{{ cell_data.count }}</span>
+                            {% if cell_data.has_risky %}
+                            <span class="risk-badge">!</span>
+                            {% endif %}
+                            {% if cell_data.has_unreviewed %}
+                            <span class="unreviewed-badge">⚠</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="no-messages">-</span>
+                        {% endif %}
+                        {% if cell_data.phone_count > 0 or cell_data.email_count > 0 or cell_data.text_count > 0 %}
+                        <div class="comm-icons">
+                            {% for i in range(cell_data.phone_count) %}<span class="comm-icon comm-phone" title="Phone call">&#128222;</span>{% endfor %}
+                            {% for i in range(cell_data.email_count) %}<span class="comm-icon comm-email" title="Email sent">&#9993;</span>{% endfor %}
+                            {% for i in range(cell_data.text_count) %}<span class="comm-icon comm-text" title="Text message">&#128172;</span>{% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div id="sync-status-message" class="status-message" style="display: none;"></div>
+
+<!-- Message Modal -->
+<div id="message-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Messages</h2>
+            <span class="close" onclick="closeMessageModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="message-modal-info"></div>
+            <div id="message-modal-messages"></div>
+        </div>
+        <div class="modal-footer">
+            <button id="mark-reviewed-btn" class="btn btn-primary" onclick="markDateReviewed()">
+                Mark All as Reviewed
+            </button>
+            <button class="btn btn-secondary" onclick="closeMessageModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Dashboard Email Modal - Redesigned -->
+<div id="dashboard-email-modal" class="modal" style="display: none;">
+    <div class="modal-content email-modal-v2">
+        <div class="modal-header-v2">
+            <div class="modal-title-section">
+                <h2>Send Email</h2>
+                <p class="modal-subtitle" id="dashEmailParticipantName">Loading participant...</p>
+            </div>
+            <span class="close" onclick="closeDashboardEmailModal()">&times;</span>
+        </div>
+
+        <div class="modal-body">
+            <!-- Step 1: Template Selection -->
+            <div id="dashEmailStep1" class="email-step">
+                <!-- Dropped Warning Banner -->
+                <div class="dropped-warning-banner" id="droppedWarningBanner" style="display: none;">
+                    <div class="warning-icon">&#9888;</div>
+                    <div class="warning-content">
+                        <strong>Warning: Participant Has Dropped</strong>
+                        <p>This participant has dropped from the study. Are you sure you want to send them an email?</p>
+                    </div>
+                    <label class="warning-confirm">
+                        <input type="checkbox" id="droppedConfirmCheckbox" onchange="onDroppedConfirmChange()">
+                        <span>I understand and want to proceed anyway</span>
+                    </label>
+                </div>
+
+                <!-- Participant Status Card -->
+                <div class="participant-status-card" id="participantStatusCard">
+                    <div class="status-card-header">
+                        <span class="status-card-label">Participant Status</span>
+                        <span class="status-badge-lg" id="participantUtilizationBadge">Loading...</span>
+                    </div>
+                    <div class="status-card-details">
+                        <div class="status-detail">
+                            <span class="detail-icon">&#9993;</span>
+                            <span class="detail-text" id="dashEmailToAddress">Loading email...</span>
+                        </div>
+                        <div class="status-detail">
+                            <span class="detail-icon">&#128337;</span>
+                            <span class="detail-text" id="dashLastEmailSent">Last contact: Loading...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Template Selection Cards -->
+                <div class="template-section">
+                    <h3 class="template-section-title">Choose a Message Type</h3>
+                    <p class="template-section-subtitle">Select the template that best fits the participant's situation</p>
+
+                    <div class="template-cards">
+                        <!-- Great Job Card -->
+                        <div class="template-card" data-template="great_job" onclick="selectTemplateCard(this, 'great_job')">
+                            <div class="template-card-icon template-icon-success">&#9733;</div>
+                            <div class="template-card-content">
+                                <h4 class="template-card-title">Great Job!</h4>
+                                <p class="template-card-description">Positive reinforcement for consistent daily engagement</p>
+                                <div class="template-card-when">
+                                    <span class="when-label">Best for:</span>
+                                    <span class="when-value">Consistent users who are engaging regularly</span>
+                                </div>
+                            </div>
+                            <div class="template-card-check">&#10003;</div>
+                        </div>
+
+                        <!-- Needs Improvement Card -->
+                        <div class="template-card" data-template="needs_improvement" onclick="selectTemplateCard(this, 'needs_improvement')">
+                            <div class="template-card-icon template-icon-warning">&#9888;</div>
+                            <div class="template-card-content">
+                                <h4 class="template-card-title">Needs Improvement</h4>
+                                <p class="template-card-description">Gentle reminder for participants who've missed 2-3 days</p>
+                                <div class="template-card-when">
+                                    <span class="when-label">Best for:</span>
+                                    <span class="when-value">Users showing decreased engagement (2-3 days inactive)</span>
+                                </div>
+                            </div>
+                            <div class="template-card-check">&#10003;</div>
+                        </div>
+
+                        <!-- Never Logged In Card -->
+                        <div class="template-card" data-template="never_logged_in" onclick="selectTemplateCard(this, 'never_logged_in')">
+                            <div class="template-card-icon template-icon-danger">&#128274;</div>
+                            <div class="template-card-content">
+                                <h4 class="template-card-title">Getting Started</h4>
+                                <p class="template-card-description">Welcome email with login credentials and setup instructions</p>
+                                <div class="template-card-when">
+                                    <span class="when-label">Best for:</span>
+                                    <span class="when-value">Participants who haven't logged into the app yet</span>
+                                </div>
+                            </div>
+                            <div class="template-card-check">&#10003;</div>
+                        </div>
+
+                        <!-- Custom Email Card -->
+                        <div class="template-card template-card-custom" data-template="custom" onclick="selectTemplateCard(this, 'custom')">
+                            <div class="template-card-icon template-icon-neutral">&#9998;</div>
+                            <div class="template-card-content">
+                                <h4 class="template-card-title">Custom Message</h4>
+                                <p class="template-card-description">Write a personalized message for specific situations</p>
+                                <div class="template-card-when">
+                                    <span class="when-label">Best for:</span>
+                                    <span class="when-value">Unique circumstances not covered by templates</span>
+                                </div>
+                            </div>
+                            <div class="template-card-check">&#10003;</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Message Input (hidden by default) -->
+                <div id="dashCustomMessageGroup" class="custom-message-section" style="display: none;">
+                    <label for="dashCustomMessage" class="custom-message-label">Your Message</label>
+                    <textarea id="dashCustomMessage" class="custom-message-input" rows="4" placeholder="Enter your personalized message here..."></textarea>
+                    <p class="custom-message-hint">Your message will be wrapped with a greeting and signature automatically.</p>
+                </div>
+
+                <!-- Hidden select for compatibility -->
+                <select id="dashEmailTemplateSelect" style="display: none;">
+                    <option value="">-- Select a template --</option>
+                </select>
+                <input type="hidden" id="dashEmailFromAddress" value="">
+
+                <div class="email-step-buttons">
+                    <button type="button" class="btn-modal btn-modal-secondary" onclick="closeDashboardEmailModal()">Cancel</button>
+                    <button type="button" class="btn-modal btn-modal-primary" id="dashPreviewEmailBtn" onclick="dashPreviewEmail()" disabled>
+                        Preview Email <span class="btn-arrow">→</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: Email Preview & Edit -->
+            <div id="dashEmailStep2" class="email-step" style="display: none;">
+                <div class="preview-edit-notice">
+                    <span class="edit-icon">&#9998;</span>
+                    <span>You can edit the subject and message below before sending</span>
+                </div>
+
+                <div class="preview-header-card">
+                    <div class="preview-row">
+                        <span class="preview-label">To:</span>
+                        <span class="preview-value" id="dashPreviewToAddress"></span>
+                    </div>
+                    <div class="preview-row">
+                        <span class="preview-label">From:</span>
+                        <span class="preview-value" id="dashPreviewFromAddress"></span>
+                    </div>
+                    <div class="preview-row preview-subject-row">
+                        <span class="preview-label">Subject:</span>
+                        <input type="text" id="dashPreviewSubject" class="preview-subject-input" placeholder="Email subject...">
+                    </div>
+                </div>
+
+                <div class="preview-body-card">
+                    <div class="preview-body-label">
+                        <span>Message Content</span>
+                        <div class="editor-toggle">
+                            <button type="button" class="toggle-btn active" id="visualEditorBtn" onclick="toggleEditor('visual')">Visual</button>
+                            <button type="button" class="toggle-btn" id="htmlEditorBtn" onclick="toggleEditor('html')">HTML</button>
+                        </div>
+                    </div>
+                    <div id="dashPreviewBodyVisual" class="preview-body-editable" contenteditable="true"></div>
+                    <textarea id="dashPreviewBodyHtml" class="preview-body-html" style="display: none;"></textarea>
+                </div>
+
+                <div class="email-step-buttons">
+                    <button type="button" class="btn-modal btn-modal-secondary" onclick="dashBackToStep1()">
+                        <span class="btn-arrow">←</span> Back
+                    </button>
+                    <button type="button" class="btn-modal btn-modal-success" id="dashSendEmailBtn" onclick="dashSendEmail()">
+                        Send Email <span class="btn-arrow">&#10003;</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Sending/Success -->
+            <div id="dashEmailStep3" class="email-step" style="display: none;">
+                <div id="dashEmailSendingIndicator" class="email-status-v2">
+                    <div class="status-spinner"></div>
+                    <p class="status-text">Sending email...</p>
+                </div>
+                <div id="dashEmailSuccessIndicator" class="email-status-v2" style="display: none;">
+                    <div class="status-icon-success">&#10003;</div>
+                    <p class="status-text">Email sent successfully!</p>
+                    <p class="status-subtext">This email has been logged to the participant's notes.</p>
+                </div>
+                <div id="dashEmailErrorIndicator" class="email-status-v2" style="display: none;">
+                    <div class="status-icon-error">&#10007;</div>
+                    <p class="status-text" id="dashEmailErrorMessage">Error sending email</p>
+                </div>
+                <div class="email-step-buttons" id="dashEmailStep3Buttons" style="display: none;">
+                    <button type="button" class="btn-modal btn-modal-primary" onclick="closeDashboardEmailModal()">Done</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dashboard Note Modal - Redesigned -->
+<div id="dashboard-note-modal" class="modal" style="display: none;">
+    <div class="modal-content note-modal-v2">
+        <div class="modal-header-v2">
+            <div class="modal-title-section">
+                <h2>Add Note</h2>
+                <p class="modal-subtitle" id="dashNoteParticipantName">Loading participant...</p>
+            </div>
+            <span class="close" onclick="closeDashboardNoteModal()">&times;</span>
+        </div>
+
+        <div class="modal-body">
+            <form id="dashNoteForm" class="note-form-v2">
+                <input type="hidden" id="dashNoteParticipantId" value="">
+
+                <!-- Contact Type Selection -->
+                <div class="note-section">
+                    <h3 class="note-section-title">Contact Type</h3>
+                    <div class="note-type-cards">
+                        <div class="note-type-card" data-type="Phone Call" onclick="selectNoteType(this, 'Phone Call')">
+                            <span class="note-type-icon">&#128222;</span>
+                            <span class="note-type-label">Phone Call</span>
+                        </div>
+                        <div class="note-type-card" data-type="Email" onclick="selectNoteType(this, 'Email')">
+                            <span class="note-type-icon">&#9993;</span>
+                            <span class="note-type-label">Email</span>
+                        </div>
+                        <div class="note-type-card" data-type="Text Message" onclick="selectNoteType(this, 'Text Message')">
+                            <span class="note-type-icon">&#128172;</span>
+                            <span class="note-type-label">Text</span>
+                        </div>
+                        <div class="note-type-card" data-type="In-Person" onclick="selectNoteType(this, 'In-Person')">
+                            <span class="note-type-icon">&#128100;</span>
+                            <span class="note-type-label">In-Person</span>
+                        </div>
+                        <div class="note-type-card" data-type="General" onclick="selectNoteType(this, 'General')">
+                            <span class="note-type-icon">&#128203;</span>
+                            <span class="note-type-label">General</span>
+                        </div>
+                    </div>
+                    <input type="hidden" id="dashNoteType" value="">
+                </div>
+
+                <!-- Details Row -->
+                <div class="note-details-row">
+                    <div class="note-field">
+                        <label for="dashNoteReason" class="note-field-label">Reason</label>
+                        <select id="dashNoteReason" class="note-select">
+                            <option value="">Select reason...</option>
+                            <option value="Check-in">Check-in</option>
+                            <option value="Technical Issue">Technical Issue</option>
+                            <option value="Study Question">Study Question</option>
+                            <option value="Scheduling">Scheduling</option>
+                            <option value="Follow-up">Follow-up</option>
+                            <option value="Concern">Concern</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="note-field">
+                        <label for="dashNoteDateTime" class="note-field-label">Date & Time</label>
+                        <input type="datetime-local" id="dashNoteDateTime" class="note-input">
+                    </div>
+
+                    <div class="note-field">
+                        <label for="dashNoteDuration" class="note-field-label">Duration</label>
+                        <select id="dashNoteDuration" class="note-select">
+                            <option value="">Select...</option>
+                            <option value="< 5 min">&lt; 5 min</option>
+                            <option value="5-10 min">5-10 min</option>
+                            <option value="10-15 min">10-15 min</option>
+                            <option value="15-30 min">15-30 min</option>
+                            <option value="30-60 min">30-60 min</option>
+                            <option value="> 60 min">&gt; 60 min</option>
+                            <option value="N/A">N/A</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Note Content -->
+                <div class="note-content-section">
+                    <label for="dashNoteContent" class="note-field-label">Note Details</label>
+                    <textarea id="dashNoteContent" class="note-textarea" rows="4" placeholder="Enter note details..."></textarea>
+                </div>
+            </form>
+        </div>
+
+        <div class="note-modal-footer">
+            <button type="button" class="btn-modal btn-modal-secondary" onclick="closeDashboardNoteModal()">Cancel</button>
+            <button type="button" class="btn-modal btn-modal-success" id="dashSaveNoteBtn" onclick="saveDashboardNote()">
+                Save Note <span class="btn-arrow">&#10003;</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('sync-btn').addEventListener('click', function() {
+    const btn = this;
+    const statusMessage = document.getElementById('sync-status-message');
+
+    // Disable button and show loading state
+    btn.disabled = true;
+    btn.innerHTML = '<span class="sync-icon spinning">&#x21bb;</span> Syncing...';
+    statusMessage.style.display = 'block';
+    statusMessage.className = 'status-message info';
+    statusMessage.textContent = 'Syncing data from Firebase...';
+
+    // Make API call
+    fetch('/api/sync', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            statusMessage.className = 'status-message success';
+            statusMessage.textContent = data.message;
+
+            // Reload page after 2 seconds to show new data
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        } else {
+            statusMessage.className = 'status-message error';
+            statusMessage.textContent = 'Sync failed: ' + data.message;
+            btn.disabled = false;
+            btn.innerHTML = '<span class="sync-icon">&#x21bb;</span> Refresh Data';
+        }
+    })
+    .catch(error => {
+        statusMessage.className = 'status-message error';
+        statusMessage.textContent = 'Error: ' + error.message;
+        btn.disabled = false;
+        btn.innerHTML = '<span class="sync-icon">&#x21bb;</span> Refresh Data';
+    });
+});
+
+// Modal functions
+let currentFirebaseId = null;
+let currentDate = null;
+
+function showMessages(firebaseId, date) {
+    currentFirebaseId = firebaseId;
+    currentDate = date;
+
+    const modal = document.getElementById('message-modal');
+    const modalInfo = document.getElementById('message-modal-info');
+    const modalMessages = document.getElementById('message-modal-messages');
+
+    modalInfo.innerHTML = '<p>Loading...</p>';
+    modalMessages.innerHTML = '';
+    modal.style.display = 'block';
+
+    fetch(`/api/messages/${firebaseId}/${date}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const user = data.user;
+                const dateFormatted = new Date(date).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                modalInfo.innerHTML = `
+                    <div class="message-info">
+                        <p><strong>REDCap ID:</strong> ${user.redcap_id}</p>
+                        <p><strong>Identifier:</strong> ${user.identifier}</p>
+                        <p><strong>Research Assistant:</strong> ${user.research_assistant}</p>
+                        <p><strong>Viewing Messages From:</strong> ${dateFormatted}</p>
+                    </div>
+                `;
+
+                if (data.messages.length > 0) {
+                    // Collect unique conversations and assign colors
+                    const conversationColors = [
+                        '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
+                        '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'
+                    ];
+                    const conversationMap = {};
+                    let colorIndex = 0;
+                    data.messages.forEach(msg => {
+                        if (msg.conversation_id && !conversationMap[msg.conversation_id]) {
+                            conversationMap[msg.conversation_id] = {
+                                color: conversationColors[colorIndex % conversationColors.length],
+                                index: colorIndex + 1,
+                                prompt: msg.conversation_prompt || 'No topic'
+                            };
+                            colorIndex++;
+                        }
+                    });
+
+                    // Build conversation legend if multiple conversations
+                    let legendHtml = '';
+                    const numConversations = Object.keys(conversationMap).length;
+                    if (numConversations > 1) {
+                        legendHtml = '<div class="conversation-legend"><strong>Conversations:</strong> ';
+                        for (const [convId, convInfo] of Object.entries(conversationMap)) {
+                            const shortPrompt = convInfo.prompt.length > 30 ? convInfo.prompt.substring(0, 30) + '...' : convInfo.prompt;
+                            legendHtml += `<span class="convo-legend-item" style="background-color: ${convInfo.color};" title="${escapeHtml(convInfo.prompt)}">Conv ${convInfo.index}: ${escapeHtml(shortPrompt)}</span> `;
+                        }
+                        legendHtml += '</div>';
+                    }
+
+                    let messagesHtml = legendHtml + '<div class="messages-list">';
+                    data.messages.forEach(msg => {
+                        const riskClass = msg.is_risky ? 'high-risk' : '';
+                        const reviewedClass = msg.is_reviewed ? 'reviewed' : 'unreviewed';
+                        const riskBadge = msg.is_risky
+                            ? `<span class="risk-badge">!</span><span class="risk-score-text">Risky</span>`
+                            : '';
+                        const reviewedBadge = msg.is_reviewed ? '<span class="reviewed-badge">✓ Reviewed</span>' : '<span class="unreviewed-badge">⚠ Unreviewed</span>';
+
+                        // Conversation badge
+                        let convBadge = '';
+                        if (msg.conversation_id && conversationMap[msg.conversation_id]) {
+                            const convInfo = conversationMap[msg.conversation_id];
+                            const shortPrompt = convInfo.prompt.length > 20 ? convInfo.prompt.substring(0, 20) + '...' : convInfo.prompt;
+                            convBadge = `<span class="convo-badge" style="background-color: ${convInfo.color};" title="${escapeHtml(convInfo.prompt)}">Conv ${convInfo.index}</span>`;
+                        }
+
+                        messagesHtml += `
+                            <div class="message-item ${riskClass} ${reviewedClass}">
+                                <div class="message-header">
+                                    <span class="message-time">${msg.timestamp} <span class="message-date">${msg.timestamp_date}</span></span>
+                                    ${convBadge}
+                                    ${riskBadge}
+                                    ${reviewedBadge}
+                                </div>
+                                <div class="message-text">${escapeHtml(msg.text)}</div>
+                            </div>
+                        `;
+                    });
+                    messagesHtml += '</div>';
+                    modalMessages.innerHTML = messagesHtml;
+                } else {
+                    modalMessages.innerHTML = '<p>No messages found for this date.</p>';
+                }
+            } else {
+                modalInfo.innerHTML = `<p class="error">Error: ${data.message}</p>`;
+            }
+        })
+        .catch(error => {
+            modalInfo.innerHTML = `<p class="error">Error loading messages: ${error.message}</p>`;
+        });
+}
+
+function closeMessageModal() {
+    document.getElementById('message-modal').style.display = 'none';
+    currentFirebaseId = null;
+    currentDate = null;
+}
+
+function markDateReviewed() {
+    if (!currentFirebaseId || !currentDate) {
+        return;
+    }
+
+    const btn = document.getElementById('mark-reviewed-btn');
+    btn.disabled = true;
+    btn.textContent = 'Marking...';
+
+    fetch(`/api/messages/date/${currentFirebaseId}/${currentDate}/mark-reviewed`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            closeMessageModal();
+            // Reload the page to update the dashboard
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+            btn.disabled = false;
+            btn.textContent = 'Mark All as Reviewed';
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error.message);
+        btn.disabled = false;
+        btn.textContent = 'Mark All as Reviewed';
+    });
+}
+
+function escapeHtml(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+// Close modal when clicking outside of it
+window.onclick = function(event) {
+    const messageModal = document.getElementById('message-modal');
+    const emailModal = document.getElementById('dashboard-email-modal');
+    const noteModal = document.getElementById('dashboard-note-modal');
+    if (event.target === messageModal) {
+        closeMessageModal();
+    }
+    if (event.target === emailModal) {
+        closeDashboardEmailModal();
+    }
+    if (event.target === noteModal) {
+        closeDashboardNoteModal();
+    }
+}
+
+// Dashboard Email Modal Functions
+let dashEmailParticipantData = null;
+let dashEmailTemplates = [];
+let currentDashParticipantId = null;
+let currentSelectedTemplate = null;
+let currentParticipantDropped = false;
+let currentParticipantUtilization = null;
+
+function openDashboardEmailModal(participantId, identifier, utilization, dropped) {
+    currentDashParticipantId = participantId;
+    currentParticipantDropped = dropped === true || dropped === 'true' || dropped === 'True';
+    currentParticipantUtilization = utilization || 'unknown';
+    currentSelectedTemplate = null;
+
+    const modal = document.getElementById('dashboard-email-modal');
+
+    // Reset to step 1
+    document.getElementById('dashEmailStep1').style.display = 'block';
+    document.getElementById('dashEmailStep2').style.display = 'none';
+    document.getElementById('dashEmailStep3').style.display = 'none';
+
+    // Reset form
+    document.getElementById('dashEmailTemplateSelect').value = '';
+    document.getElementById('dashCustomMessageGroup').style.display = 'none';
+    document.getElementById('dashCustomMessage').value = '';
+    document.getElementById('dashPreviewEmailBtn').disabled = true;
+
+    // Reset template card selection
+    document.querySelectorAll('.template-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+
+    // Handle dropped warning
+    const droppedWarning = document.getElementById('droppedWarningBanner');
+    const droppedCheckbox = document.getElementById('droppedConfirmCheckbox');
+    if (currentParticipantDropped) {
+        droppedWarning.style.display = 'flex';
+        droppedCheckbox.checked = false;
+    } else {
+        droppedWarning.style.display = 'none';
+    }
+
+    // Set utilization badge
+    updateUtilizationBadge(currentParticipantUtilization);
+
+    // Set initial display
+    document.getElementById('dashEmailParticipantName').textContent = identifier ? `${identifier} (ID: ${participantId})` : `ID: ${participantId}`;
+
+    // Show modal
+    modal.style.display = 'block';
+
+    // Load data
+    loadDashboardEmailData(participantId);
+}
+
+function updateUtilizationBadge(status) {
+    const badge = document.getElementById('participantUtilizationBadge');
+    badge.className = 'status-badge-lg';
+
+    switch(status) {
+        case 'never_utilized':
+            badge.textContent = 'Never Used App';
+            badge.classList.add('badge-never');
+            break;
+        case 'inactive_3plus':
+            badge.textContent = '3+ Days Inactive';
+            badge.classList.add('badge-inactive');
+            break;
+        case 'consistent':
+            badge.textContent = 'Consistent User';
+            badge.classList.add('badge-consistent');
+            break;
+        case 'moderate':
+            badge.textContent = 'Moderate Use';
+            badge.classList.add('badge-moderate');
+            break;
+        default:
+            badge.textContent = 'Loading...';
+    }
+}
+
+function selectTemplateCard(element, templateId) {
+    // If dropped and not confirmed, don't allow selection
+    if (currentParticipantDropped && !document.getElementById('droppedConfirmCheckbox').checked) {
+        alert('Please confirm that you want to send an email to a dropped participant first.');
+        return;
+    }
+
+    // Remove selection from all cards
+    document.querySelectorAll('.template-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+
+    // Select this card
+    element.classList.add('selected');
+    currentSelectedTemplate = templateId;
+
+    // Update hidden select
+    document.getElementById('dashEmailTemplateSelect').value = templateId;
+
+    // Show/hide custom message input
+    const customGroup = document.getElementById('dashCustomMessageGroup');
+    customGroup.style.display = templateId === 'custom' ? 'block' : 'none';
+
+    // Enable preview button if email is available
+    updatePreviewButtonState();
+}
+
+function onDroppedConfirmChange() {
+    // If they uncheck after selecting a template, clear selection
+    if (!document.getElementById('droppedConfirmCheckbox').checked && currentSelectedTemplate) {
+        document.querySelectorAll('.template-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        currentSelectedTemplate = null;
+        document.getElementById('dashEmailTemplateSelect').value = '';
+        document.getElementById('dashCustomMessageGroup').style.display = 'none';
+        document.getElementById('dashPreviewEmailBtn').disabled = true;
+    }
+}
+
+function updatePreviewButtonState() {
+    const previewBtn = document.getElementById('dashPreviewEmailBtn');
+    const hasTemplate = currentSelectedTemplate !== null;
+    const hasEmail = dashEmailParticipantData && dashEmailParticipantData.email;
+    const droppedOk = !currentParticipantDropped || document.getElementById('droppedConfirmCheckbox').checked;
+
+    previewBtn.disabled = !(hasTemplate && hasEmail && droppedOk);
+}
+
+function closeDashboardEmailModal() {
+    document.getElementById('dashboard-email-modal').style.display = 'none';
+    dashEmailParticipantData = null;
+    currentDashParticipantId = null;
+}
+
+function loadDashboardEmailData(participantId) {
+    // Load participant info and templates in parallel
+    Promise.all([
+        fetch(`/api/email/participant/${participantId}`).then(r => r.json()),
+        fetch('/api/email/templates').then(r => r.json())
+    ]).then(([participantResponse, templatesResponse]) => {
+        if (participantResponse.success) {
+            dashEmailParticipantData = participantResponse.participant;
+
+            // Update UI
+            const firstName = dashEmailParticipantData.first_name || 'Unknown';
+            document.getElementById('dashEmailParticipantName').textContent =
+                `${firstName} (ID: ${participantId})`;
+            document.getElementById('dashEmailToAddress').textContent =
+                dashEmailParticipantData.email || 'No email available';
+
+            // Last email sent
+            if (dashEmailParticipantData.last_email_sent) {
+                const lastEmailDate = formatDashDateTime(dashEmailParticipantData.last_email_sent);
+                const lastEmailBy = dashEmailParticipantData.last_email_by || 'Unknown';
+                document.getElementById('dashLastEmailSent').textContent =
+                    `Last contact: ${lastEmailDate} by ${lastEmailBy}`;
+            } else {
+                document.getElementById('dashLastEmailSent').textContent = 'Last contact: Never';
+            }
+
+            // Update preview button state
+            updatePreviewButtonState();
+        } else {
+            document.getElementById('dashEmailParticipantName').textContent = 'Error loading participant';
+            document.getElementById('dashEmailToAddress').textContent = participantResponse.message || 'Error';
+        }
+
+        if (templatesResponse.success) {
+            dashEmailTemplates = templatesResponse.templates;
+            document.getElementById('dashEmailFromAddress').value = templatesResponse.from_address;
+
+            // Populate hidden template dropdown for compatibility
+            const select = document.getElementById('dashEmailTemplateSelect');
+            select.innerHTML = '<option value="">-- Select a template --</option>';
+            dashEmailTemplates.forEach(template => {
+                const option = document.createElement('option');
+                option.value = template.id;
+                option.textContent = template.name;
+                select.appendChild(option);
+            });
+        }
+    }).catch(error => {
+        console.error('Error loading email data:', error);
+        document.getElementById('dashEmailParticipantName').textContent = 'Error loading data';
+        document.getElementById('dashEmailToAddress').textContent = error.message;
+    });
+}
+
+function formatDashDateTime(dateStr) {
+    if (!dateStr) return '';
+    try {
+        const date = new Date(dateStr);
+        return date.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+    } catch (e) {
+        return dateStr;
+    }
+}
+
+function onDashTemplateChange() {
+    const templateId = document.getElementById('dashEmailTemplateSelect').value;
+    const descriptionEl = document.getElementById('dashTemplateDescription');
+    const customGroup = document.getElementById('dashCustomMessageGroup');
+    const previewBtn = document.getElementById('dashPreviewEmailBtn');
+
+    if (!templateId) {
+        descriptionEl.textContent = '';
+        customGroup.style.display = 'none';
+        previewBtn.disabled = true;
+        return;
+    }
+
+    // Find template and show description
+    const template = dashEmailTemplates.find(t => t.id === templateId);
+    if (template) {
+        descriptionEl.textContent = template.description;
+    }
+
+    // Show custom message field for custom template
+    customGroup.style.display = templateId === 'custom' ? 'block' : 'none';
+
+    // Enable preview button if email is available
+    previewBtn.disabled = !dashEmailParticipantData || !dashEmailParticipantData.email;
+}
+
+function dashPreviewEmail() {
+    const templateId = document.getElementById('dashEmailTemplateSelect').value;
+    const customMessage = document.getElementById('dashCustomMessage').value;
+
+    if (!templateId || !dashEmailParticipantData) return;
+
+    // Get RA name
+    let raName = dashEmailParticipantData.research_assistant || 'The Research Team';
+
+    const requestData = {
+        template_id: templateId,
+        first_name: dashEmailParticipantData.first_name,
+        ra_first_name: raName,
+        username: dashEmailParticipantData.username || '',
+        password: dashEmailParticipantData.password || '',
+        custom_message: customMessage
+    };
+
+    fetch('/api/email/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show step 2
+            document.getElementById('dashEmailStep1').style.display = 'none';
+            document.getElementById('dashEmailStep2').style.display = 'block';
+
+            // Populate editable preview
+            document.getElementById('dashPreviewToAddress').textContent = dashEmailParticipantData.email;
+            document.getElementById('dashPreviewFromAddress').textContent = data.from_address;
+            document.getElementById('dashPreviewSubject').value = data.subject;
+            document.getElementById('dashPreviewBodyVisual').innerHTML = data.body;
+            document.getElementById('dashPreviewBodyHtml').value = data.body;
+
+            // Reset to visual editor
+            toggleEditor('visual');
+        } else {
+            alert('Error generating preview: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error generating preview: ' + error.message);
+    });
+}
+
+function toggleEditor(mode) {
+    const visualEditor = document.getElementById('dashPreviewBodyVisual');
+    const htmlEditor = document.getElementById('dashPreviewBodyHtml');
+    const visualBtn = document.getElementById('visualEditorBtn');
+    const htmlBtn = document.getElementById('htmlEditorBtn');
+
+    if (mode === 'visual') {
+        // Switching to visual - update visual from HTML
+        visualEditor.innerHTML = htmlEditor.value;
+        visualEditor.style.display = 'block';
+        htmlEditor.style.display = 'none';
+        visualBtn.classList.add('active');
+        htmlBtn.classList.remove('active');
+    } else {
+        // Switching to HTML - update HTML from visual
+        htmlEditor.value = visualEditor.innerHTML;
+        visualEditor.style.display = 'none';
+        htmlEditor.style.display = 'block';
+        visualBtn.classList.remove('active');
+        htmlBtn.classList.add('active');
+    }
+}
+
+function dashBackToStep1() {
+    document.getElementById('dashEmailStep1').style.display = 'block';
+    document.getElementById('dashEmailStep2').style.display = 'none';
+}
+
+function dashSendEmail() {
+    const templateId = document.getElementById('dashEmailTemplateSelect').value;
+    const subject = document.getElementById('dashPreviewSubject').value;
+
+    // Get body from whichever editor is currently visible
+    const visualEditor = document.getElementById('dashPreviewBodyVisual');
+    const htmlEditor = document.getElementById('dashPreviewBodyHtml');
+    let body;
+
+    if (htmlEditor.style.display !== 'none') {
+        // HTML editor is active - use its value
+        body = htmlEditor.value;
+    } else {
+        // Visual editor is active - use its innerHTML
+        body = visualEditor.innerHTML;
+    }
+
+    // Show step 3 with sending indicator
+    document.getElementById('dashEmailStep2').style.display = 'none';
+    document.getElementById('dashEmailStep3').style.display = 'block';
+    document.getElementById('dashEmailSendingIndicator').style.display = 'flex';
+    document.getElementById('dashEmailSuccessIndicator').style.display = 'none';
+    document.getElementById('dashEmailErrorIndicator').style.display = 'none';
+    document.getElementById('dashEmailStep3Buttons').style.display = 'none';
+
+    const requestData = {
+        participant_id: currentDashParticipantId,
+        to_email: dashEmailParticipantData.email,
+        subject: subject,
+        body: body,
+        template_id: templateId,
+        password: dashEmailParticipantData.password || ''
+    };
+
+    fetch('/api/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('dashEmailSendingIndicator').style.display = 'none';
+        document.getElementById('dashEmailStep3Buttons').style.display = 'flex';
+
+        if (data.success) {
+            document.getElementById('dashEmailSuccessIndicator').style.display = 'flex';
+        } else {
+            document.getElementById('dashEmailErrorIndicator').style.display = 'flex';
+            document.getElementById('dashEmailErrorMessage').textContent = data.message || 'Error sending email';
+        }
+    })
+    .catch(error => {
+        document.getElementById('dashEmailSendingIndicator').style.display = 'none';
+        document.getElementById('dashEmailErrorIndicator').style.display = 'flex';
+        document.getElementById('dashEmailErrorMessage').textContent = error.message;
+        document.getElementById('dashEmailStep3Buttons').style.display = 'flex';
+    });
+}
+
+// Dashboard Note Modal Functions
+let currentSelectedNoteType = null;
+
+function openDashboardNoteModal(participantId, identifier) {
+    const modal = document.getElementById('dashboard-note-modal');
+    const form = document.getElementById('dashNoteForm');
+
+    // Reset form
+    form.reset();
+    currentSelectedNoteType = null;
+    document.getElementById('dashNoteParticipantId').value = participantId;
+    document.getElementById('dashNoteType').value = '';
+    document.getElementById('dashNoteParticipantName').textContent = identifier ? `${identifier} (ID: ${participantId})` : `ID: ${participantId}`;
+
+    // Reset note type card selection
+    document.querySelectorAll('.note-type-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+
+    // Set default datetime to now
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('dashNoteDateTime').value = now.toISOString().slice(0, 16);
+
+    modal.style.display = 'block';
+}
+
+function selectNoteType(element, noteType) {
+    // Remove selection from all cards
+    document.querySelectorAll('.note-type-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+
+    // Select this card
+    element.classList.add('selected');
+    currentSelectedNoteType = noteType;
+    document.getElementById('dashNoteType').value = noteType;
+}
+
+function closeDashboardNoteModal() {
+    document.getElementById('dashboard-note-modal').style.display = 'none';
+    currentSelectedNoteType = null;
+}
+
+function saveDashboardNote() {
+    const noteData = {
+        participant_id: document.getElementById('dashNoteParticipantId').value,
+        note_type: document.getElementById('dashNoteType').value,
+        note_reason: document.getElementById('dashNoteReason').value,
+        datetime: document.getElementById('dashNoteDateTime').value,
+        duration: document.getElementById('dashNoteDuration').value,
+        note: document.getElementById('dashNoteContent').value
+    };
+
+    fetch('/api/notes', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(noteData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeDashboardNoteModal();
+            alert('Note saved successfully!');
+        } else {
+            alert('Error saving note: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error saving note: ' + error.message);
+    });
+}
+</script>
+{% endblock %}
