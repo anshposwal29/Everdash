@@ -86,3 +86,6 @@ Temporary Items
 .apdisk
 
 token_cache.bin
+
+# Node modules from Mood Triggers Dashboard
+node_modules/
