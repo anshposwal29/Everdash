@@ -1,0 +1,498 @@
+/* MoodTriggers.css */
+
+/* Custom Scrollbar Styles */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px; /* For horizontal scrollbar if needed */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Overall Screen Container */
+.overall-screen {
+    padding: 1.5rem;
+    background-color: #f9fafb;
+    min-height: 100vh;
+}
+
+/* Main Title */
+.main-title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 1.5rem;
+}
+
+/* Week Navigation Wrapper */
+.week-nav-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+/* Week Navigation Button */
+.week-nav-button {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background-color: #2563eb;
+    color: white;
+    border-radius: 0.375rem;
+    transition-property: all;
+    transition-duration: 300ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+    cursor: pointer;
+    font-weight: 600; /* Added for consistency */
+}
+
+.week-nav-button:hover {
+    background-color: #1d4ed8;
+}
+
+.week-nav-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.week-nav-button svg { /* Lucide icon inside button */
+    margin-right: 0.5rem;
+}
+
+.week-nav-button.next-week-button svg { /* For the right arrow specifically */
+    margin-left: 0.5rem;
+    margin-right: 0;
+}
+
+/* Week Date Range Display */
+.date-range-display {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+/* Loading/Error Message Containers */
+.message-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 16rem;
+}
+
+.loading-text {
+    font-size: 1.25rem;
+    color: #4b5563;
+}
+
+.error-text {
+    font-size: 1.25rem;
+    color: #ef4444;
+}
+
+/* Table Wrapper */
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;    
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+}
+
+.table-inner-container {
+    display: inline-block;
+    min-width: 100%;
+}
+
+
+
+/* Header Row */
+
+/* Header Cell Base Styles */
+.header-cell {
+    height: 100%;
+    display: flex;
+    flex-direction: column; /* for day + date stacked */
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    border-right: 1px solid #e5e7eb;
+}
+
+/* Last header cell doesn't need right border */
+.header-cell:last-child {
+    border-right: none;
+}
+
+
+/* Specific Header Cell Widths & Responsiveness */
+.header-participant-id {
+    justify-content: flex-start; /* left-align participant name */
+    padding-left: 1rem;
+    flex-direction: column; /* for day + date stacked */
+    align-items: left;
+    justify-content: center;
+}
+
+.header-daily-status-container {
+    flex-grow: 1;
+    /* display: flex; */
+}
+
+.header-daily-date {
+ 
+    flex-basis: 0; 
+    flex-grow: 1; 
+    flex-shrink: 0; 
+    border-right: 1px solid #e5e7eb;
+}
+
+.header-daily-date:last-child {
+    border-right: none;
+}
+
+.header-compliance-weekly,
+.header-compliance-overall {
+    flex-shrink: 0;          /* optional */
+    border-left: 1px solid #e5e7eb;
+    display: flex;            /* to center text */
+    align-items: center;      /* vertical center */
+    justify-content: center;  /* horizontal center */
+    padding: 0;               /* avoid extra spacing */
+    box-sizing: border-box;   /* include border in width if any */
+}
+
+/* Participant Row */
+.header-row,
+.participant-row {
+    display: grid;
+    grid-template-columns:
+        150px              /* Participant */
+        110px              /* Days in study */
+        repeat(var(--num-days), minmax(50px, 1fr)) /* Daily columns */
+        90px               /* Weekly Passive */
+        90px               /* Weekly EMA */
+        90px              /* Overall EMA */
+        90px;              /* Overall EMA */
+    align-items: stretch;
+    min-width: max-content; /* ⬅️ critical */
+    white-space: nowrap;
+}
+
+
+.header-row {
+    position: sticky;
+    align-items: center;      /* vertical centering */
+    top: 0;
+    z-index: 10;   /* stay above the rest */
+    background-color: #e5e7eb; /* header grey */
+}
+.participant-row:hover {
+    background-color: #f9fafb;
+}
+
+/* Last participant row doesn't need bottom border */
+.participant-row:last-child {
+    border-bottom: none;
+}
+
+
+/* Participant ID Cell */
+.participant-id-cell {
+    width: 120px;
+    height: 55px;
+    display: flex;
+    align-items: center;      /* vertical alignment */
+    justify-content: flex-start; /* horizontal alignment */
+    padding-left: 1rem;       /* spacing from left */
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1f2937;
+    box-sizing: border-box;   /* include padding in height */
+}
+
+.participant-id-cell:hover {
+    background-color: #d1d5db;
+    cursor: default;
+}
+
+.participant-id-cell svg {
+    color: #3b82f6;
+    margin-right: 0.5rem;
+}
+
+/* Daily Status Container for a participant */
+.daily-status-row-container {
+    flex-grow: 1;
+    /* display: flex; */
+}
+
+/* Individual Daily Status Cell */
+.daily-status-cell {
+    display: flex;
+    flex-direction: column;      /* EMA icon on top, sensors below */
+    align-items: center;         /* horizontal centering */
+    justify-content: center;     /* vertical centering */
+    padding: 0.25rem;
+    min-width: 50px;
+    width: 100%;
+    height: 55px;
+    box-sizing: border-box;      /* include padding in height */
+    border-right: 1px solid #e5e7eb;
+}
+
+.daily-status-cell:last-child {
+    border-right: none;
+}
+
+.daily-status-cell .flex.items-center {
+    flex-direction: row;  /* horizontal for icons */
+    justify-content: center;
+    gap: 4px;             /* space between icons */
+}
+
+.daily-status-cell:hover {
+    background-color: #d1d5db;
+    cursor: default;
+}
+
+.daily-status-cell:last-child {
+    border-right: none;
+}
+
+
+/* EMA Status Icons */
+.ema-icon-green {
+    color: #22c55e;
+    height: 18px;
+    width: 18px;
+}
+
+.ema-icon-red {
+    color: #ef4444;
+    height: 18px;
+    width: 18px;
+}
+
+/* Illuminance Icon */
+.illuminance-icon-yellow {
+    color: #f97316;
+    height: 16px;
+    width: 16px;
+    margin-top: 0.125rem;
+}
+
+/* Compliance Cells Base */
+.compliance-cell {
+    display: flex;
+    height: 55px; 
+    padding: 0.25rem;
+    flex-shrink: 0;
+    color: white;
+    font-weight: 700;
+    text-align: center;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;            /* vertical center */
+    justify-content: center;        /* horizontal center */
+    border-left: 1px solid #e5e7eb;
+    box-sizing: border-box;         /* include border in width/height */
+}
+
+.weekly-compliance-cell {
+    margin-right: 0rem;
+}
+
+/* Compliance Colors */
+.compliance-green {
+    background-color: #16a34a;
+}
+
+.compliance-yellow {
+    background-color: #eab308;
+}
+
+.compliance-red {
+    background-color: #dc2626;
+}
+
+/* MoodTriggers.css */
+
+
+/* Passive Data Missing Icon (Warning Light) */
+.passive-data-missing-icon {
+    color: #f97316; /* orange-500 */
+    height: 16px;
+    width: 16px;
+    margin-top: 0.125rem;
+}
+
+
+
+/* Custom Scrollbar Styles */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+/* Centered Participant Table Cell */
+.centered-cell {
+    text-align: center;   /* horizontal centering */
+    vertical-align: middle; /* vertical centering */
+}
+
+/* Overlay for No Data on DayDetailScreen */
+.no-data-overlay {
+  position: absolute;
+  top: 50%;  /* Center vertically */
+  left: 50%; /* Center horizontally */
+  transform: translate(-50%, -50%); /* Ensure exact centering */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.7); /* Semi-transparent background */
+  z-index: 10;
+  /* Set a specific size for the overlay */
+  width: 20%;  /* Adjust width as needed */
+  height: 20%;  /* Adjust height as needed */
+  border-radius: 8px; /* Optional: Add rounded corners */
+  border: 1px solid #C21A09;  /* Red border */
+
+}
+
+.no-data-overlay span {
+  color: #C21A09; /* Red text color */
+  font-weight: bold; /* Bold font */
+  font-size: 1.125rem; /* Equivalent to text-lg in Tailwind */
+  text-align: center; /* Ensure the text is centered */
+  width: 100%; /* Take full width of the overlay */
+}
+
+.chart-container {
+  position: relative; /* Make this the positioning context for the overlay */
+}
+
+/* Daily and Participant Tables */
+/* Table Styles */
+.custom-table {
+  width: 100%;
+  border: 1px solid #D1D5DB; /* Gray-300 border */
+  border-collapse: collapse; /* Collapse table borders */
+}
+
+/* Table Header */
+.custom-thead {
+  background-color: #374151; 
+  position: sticky;
+  top: 0;
+  z-index: 20; /* Make header stay at top */
+}
+
+/* Table Row in Header */
+.custom-tr {
+  background-color: #B0B8C1; 
+}
+
+/* Table Header Cells */
+.custom-th {
+  padding: 0.5rem 0.75rem; /* Tailwind px-3 py-2 */
+  font-weight: 600; /* Tailwind font-semibold */
+  border-bottom: 1px solid #D1D5DB; /* Tailwind border-b border-gray-400 */
+  border-right: 1px solid #D1D5DB; /* Add vertical border between columns */
+}
+/* Remove right border on the last th element */
+.custom-th:last-child {
+  border-right: none;
+}
+
+/* Table Body Rows (Even rows have different background) */
+.custom-tr-even {
+  border-bottom: 1px solid #D1D5DB; /* Tailwind border-b border-gray-400 */
+  border-right: 1px solid #D1D5DB; 
+}
+
+/* Table Data Cells */
+.custom-td {
+  padding: 0.5rem 0.75rem; /* Tailwind px-3 py-2 */
+  border-bottom: 1px solid #D1D5DB; /* Tailwind border-b border-gray-200 */
+  border-right: 1px solid #D1D5DB; /* Add vertical border between columns */
+}
+
+/* Low data coverage cells */
+/* Very low (≤6 hours) */
+.activity-level-1 {
+  background-color: #fee2e2; 
+  color: #DC2626;            
+  font-weight: 600;
+}
+/* Low (≤12 hours) */
+.activity-level-2 {
+  background-color: #fcefe1; 
+  color: #de8202;            
+  font-weight: 600;
+}
+.legend-box {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  border: 1px solid #ccc;
+}
+.activity-level-legend-1 {
+    background-color: #DC2626;
+}
+.activity-level-legend-2 {
+    background-color: #de8202;
+}
+
+.container-email {
+  display: flex; /* Activates Flexbox layout */
+  justify-content: space-between; /* Distributes space between the panels */
+}
+
+.left-panel-email {
+  width: 30%; /* Sets the width of the left panel */
+  background-color: #f9fafb;
+  padding: 20px;
+  box-sizing: border-box; /* Includes padding in the width calculation */
+}
+
+.right-panel-email {
+  width: 70%; /* Sets the width of the right panel */
+  background-color: #ffffff;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+
+.clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.filter-row {
+  background: #e5e7eb;
+}
+
+.id-filter-input {
+  width: 100%;
+  padding: 4px 6px;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  font-size: 0.75rem;
+}
+
+
+

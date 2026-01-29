@@ -1,0 +1,730 @@
+---
+title: "Overview of Your Study Experiences"
+output:
+  word_document:
+    reference_docx: "template_comp.docx"
+  html_document: default
+  pdf_document: default
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	dpi = 600
+)
+# Load required libraries
+library(wordcloud)
+library(RColorBrewer)
+library(tm)
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+
+library(patchwork)
+library(stringr)
+library(lubridate)
+library(RPostgres)
+
+
+participant <- Sys.getenv("PARTICIPANT_NUMBER", NA)
+
+# Read environment variables (with defaults)
+DB_USER <- Sys.getenv("DB_USER", "hannah")
+DB_PASSWORD <- Sys.getenv("DB_PASSWORD", "moodtriggers2025")
+DB_HOST <- Sys.getenv("DB_HOST", "localhost")
+DB_PORT <- Sys.getenv("DB_PORT", "5432")
+DB_NAME <- Sys.getenv("DB_NAME", "moodtriggers")
+
+# Connect to PostgreSQL database
+con <- dbConnect(
+  RPostgres::Postgres(),
+  user = DB_USER,
+  password = DB_PASSWORD,
+  host = DB_HOST,
+  port = DB_PORT,
+  dbname = DB_NAME
+)
+
+# Load tables
+weekly <- dbReadTable(con, "weekly_data")
+
+#weekly <- read.csv("weekly_raw__data_plot.csv")
+weekly <- weekly[weekly$record_id == participant, ]
+
+weekly <- weekly[weekly$w_timestamp != "[not completed]", ]
+
+#daily <- read.csv(paste0("ema_response/",participant,"_ema_response.csv"))
+daily <- dbReadTable(con, "ema_responses_final3")
+daily <- daily[daily$participant_id == participant, ]
+
+daily <- daily[!is.na(daily$timestamp),]
+#daily_extra <- read.csv(paste0("ema_response/",participant_extra,"_ema_response.csv"))
+#daily_extra2 <- read.csv(paste0("ema_response/",participant_extra2,"_ema_response.csv"))
+
+#daily = rbind(daily,daily_extra)
+#daily = rbind(daily,daily_extra,daily_extra2)
+
+color1 = "#00331A" # ratings per time
+color2 = "#00331A" # ratings per time
+
+color3 = "#CBA135" #line
+
+df <- daily %>%
+  mutate(ema_category = case_when(
+    # Negative symptoms
+    grepl("I would rather have been doing something else\\.", questionText) ~ "Negative symptom",
+    grepl("I have felt unmotivated\\.", questionText) ~ "Negative symptom",
+    grepl("I have felt emotionally flat, numb, or blank\\.", questionText) ~ "Negative symptom",
+    grepl("I have experienced difficulty expressing my emotions or thoughts\\.", questionText) ~ "Negative symptom",
+    grepl("I have not wanted to socialize\\.", questionText) ~ "Negative symptom",
+
+    # Positive symptoms
+    grepl("to what degree have you had any unusual experiences\\?", questionText) ~ "Positive symptom",
+    grepl("I have felt detached from reality\\.", questionText) ~ "Positive symptom",
+    grepl("I have felt I possess special powers or abilities\\.", questionText) ~ "Positive symptom",
+    grepl("I have felt I am receiving special messages\\.", questionText) ~ "Positive symptom",
+    grepl("I have felt suspicious of others\\.", questionText) ~ "Positive symptom",
+
+    # Cognitive symptoms
+    grepl("I have found it easy to concentrate\\.", questionText) ~ "Cognitive symptom",
+    grepl("I have experienced racing thoughts\\.", questionText) ~ "Cognitive symptom",
+    grepl("I have found it easy to make decisions\\.", questionText) ~ "Cognitive symptom",
+    grepl("I have experienced difficulty thinking clearly\\.", questionText) ~ "Cognitive symptom",
+    grepl("I have had trouble remembering things\\.", questionText) ~ "Cognitive symptom",
+
+    # Functional outcomes
+    grepl("I have been able to complete my daily activities\\.", questionText) ~ "Functional outcome",
+    grepl("I have been able to interact with others\\.", questionText) ~ "Functional outcome",
+    grepl("I have been able to manage my physical and mental health\\.", questionText) ~ "Functional outcome",
+
+    # Suicide ideation and follow-up
+    grepl("I had had thoughts of hurting myself or that I would be better off dead\\.", questionText) ~ "Suicide ideation/self-harm",
+    grepl("Do you intend to end your life now or in the near future\\?", questionText) ~ "Suicide risk follow-up",
+
+    # Sleep quality
+    grepl("Last night I had trouble with sleep\\.", questionText) ~ "Sleep quality",
+
+    # Medication adherence
+    grepl("I took my medications for psychotic symptoms today\\.", questionText) ~ "Medication adherence",
+
+    # Default case
+    TRUE ~ NA_character_
+  ))
+
+# Filter out unwanted categories
+df_filtered <- df %>%
+  filter(
+    !ema_category %in% c("Medication adherence", "Suicide ideation/self-harm"),
+    !is.na(ema_category)
+  ) %>%
+  mutate(response = as.numeric(response))
+
+# Compute mean response for each individual item
+item_means <- df_filtered %>%
+  group_by(questionText, ema_category) %>%
+  summarise(mean_response = mean(response, na.rm = TRUE), .groups = "drop")
+
+```
+
+# What This Report Shows
+
+Thank you for participating in this study. This report summarizes what
+you shared with us about your experiences, feelings, symptoms, and daily
+life over the weeks. **There are no right or wrong answers**.
+
+## 📆 Daily Questionnaires
+
+Here, you will see a summary of the answers you provided in the **daily
+questionnaires**, which you completed **three times a day for 90 days**.
+
+```{r echo=FALSE, fig.height=6.5, fig.width=11.5, message=FALSE, warning=FALSE}
+
+create_time_plots <- function(outcome) {
+
+  df_symptom = df_filtered[df_filtered$ema_category == outcome, ]
+  
+  df_symptom <- df_symptom %>%
+    mutate(
+      date = as.POSIXct(date),
+      day_type = weekdays(date),
+      hour = hour(date),
+      time_of_day = case_when(
+        hour >= 5 & hour < 12 ~ "Morning (5:00 AM - 11:59 AM)",
+        hour >= 12 & hour < 17 ~ "Afternoon (12:00 PM - 4:59 PM)",
+        hour >= 17 & hour < 24 ~ "Evening (5:00 PM - 11:59 PM)",
+        hour >= 0 & hour < 5 ~ "Night (12:00 AM - 4:59 AM)"
+      )
+    )
+  
+  # Calculate means by day type and time of day
+  summary_data_time <- df_symptom %>%
+    group_by(time_of_day) %>%
+    summarise(mean_response = mean(as.numeric(response), na.rm = TRUE), .groups = "drop")
+  
+  summary_data_time$time_of_day <- factor(summary_data_time$time_of_day, ordered = TRUE,
+                                          levels = c("Morning (5:00 AM - 11:59 AM)", "Afternoon (12:00 PM - 4:59 PM)", "Evening (5:00 PM - 11:59 PM)","Night (12:00 AM - 4:59 AM)"))
+  
+  summary_data_day <- df_symptom %>%
+    group_by(day_type) %>%
+    summarise(mean_response = mean(as.numeric(response), na.rm = TRUE), .groups = "drop")
+  
+  summary_data_day$day_type <- factor(summary_data_day$day_type, ordered = TRUE,
+                                      levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+  
+  # Plot by time of day
+  a = ggplot(summary_data_time, aes(x = time_of_day, y = mean_response)) +
+    geom_bar(stat = "identity", position = "dodge", fill = color1) +
+    geom_text(aes(label = round(mean_response, 1)), vjust = -0.5, size = 5) +  # Add mean labels
+    scale_y_continuous(limits = c(0, 100)) +
+    labs(
+      title = "Average Ratings by Time of Day",
+      x = "",
+      y = ""
+    ) +
+    theme_minimal(base_size = 14) +
+    theme(
+      plot.title = element_text(face = "bold", size = 16),
+      axis.text = element_text(size = 14),
+      axis.title = element_text(size = 14),
+      legend.position = "right"
+    )
+  
+  # Plot by weekday
+  b = ggplot(summary_data_day, aes(x = day_type, y = mean_response)) +
+    geom_bar(stat = "identity", position = "dodge", fill = color1) +
+    geom_text(aes(label = round(mean_response, 1)), vjust = -0.5, size = 5) +  # Add mean labels
+    scale_y_continuous(limits = c(0, 100)) +
+    labs(
+      title = "Average Ratings by Weekday",
+      x = "",
+      y = ""
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(face = "bold", size = 16),
+      axis.text = element_text(size = 14),
+      axis.title = element_text(size = 14),
+      legend.position = "right"
+    )
+  
+  plot = a / b  # Weekday plot on top, time of day on bottom
+  return(plot)
+}
+
+
+
+category_means <- df_filtered %>%
+  filter(!is.na(ema_category)) %>%
+  mutate(
+    date  = as.Date(date)          
+  ) %>%
+  group_by(date, ema_category) %>%
+  summarise(
+    mean_response = mean(as.numeric(response), na.rm = TRUE),
+    .groups = "drop"
+  )
+
+category_means <- category_means %>%
+  mutate(date = as.POSIXct(date))
+
+
+a = ggplot(category_means[category_means$ema_category == "Positive symptom",], aes(x = date, y = mean_response, color = color2)) +
+  scale_color_manual(values = color2) +
+  geom_line() +
+  scale_y_continuous(
+    limits = c(0, 100)
+  ) +
+  labs(
+    title = "Variation Over Time (Average per Day)",
+    y = "",
+    x = ""
+  ) +
+  theme_minimal() +
+   theme(
+      plot.title = element_text(face = "bold", size = 16),
+      axis.text = element_text(size = 14),
+      axis.title = element_text(size = 14),
+      legend.position = "none"
+    )
+
+b = create_time_plots("Positive symptom")
+
+(b/a) +
+  plot_layout(heights = c(1, 1,1)) +
+  plot_annotation(
+    title = "Positive Symptoms",
+    subtitle = "Like suspicion of others, receiving special messages, special powers, or detachment from reality.",
+    caption = "0 = Not at all, 100 = Constantly",
+    theme = theme(
+      plot.title = element_text(size = 18, face = "bold"),
+      plot.subtitle = element_text(size = 14),
+      plot.caption = element_text(size = 14)
+    )
+  )
+
+```
+
+#### Average Ratings by Question (Over the Past 4 Hours)
+
+```{r echo=FALSE, fig.height=3, fig.width=11.5, message=FALSE, warning=FALSE}
+item_means$questionText <- stringr::str_to_sentence((gsub("^In the past 4 hours, ", "", item_means$questionText)))
+
+ggplot(item_means[item_means$ema_category == "Positive symptom",], 
+       aes(x = reorder(questionText, mean_response), y = mean_response)) +
+  geom_col(width = 0.6, fill = color3) +
+  coord_flip() +
+  labs(
+    x = NULL,
+    y = ""
+  ) +
+  ylim(c(0, 100)) +
+  theme_minimal() +
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 16),
+    legend.position = "none"
+  )
+
+
+```
+
+```{r echo=FALSE, fig.height=6.5, fig.width=11.5, message=FALSE, warning=FALSE}
+
+category_means <- df_filtered %>%
+  filter(!is.na(ema_category)) %>%
+  mutate(
+    date  = as.Date(date)          
+  ) %>%
+  group_by(date, ema_category) %>%
+  summarise(
+    mean_response = mean(as.numeric(response), na.rm = TRUE),
+    .groups = "drop"
+  )
+
+category_means <- category_means %>%
+  mutate(date = as.POSIXct(date))
+
+
+a = ggplot(category_means[category_means$ema_category == "Negative symptom",], aes(x = date, y = mean_response, color = color2)) +
+  geom_line() +
+  scale_color_manual(values = color2) +
+  scale_y_continuous(
+    limits = c(0, 100)
+  ) +
+  labs(
+    title = "Variation Over Time (Average per Day)",
+    y = "",
+    x = ""
+  ) +
+  theme_minimal() +
+   theme(
+      plot.title = element_text(face = "bold", size = 16),
+      axis.text = element_text(size = 14),
+      axis.title = element_text(size = 14),
+      legend.position = "none"
+    )
+
+b = create_time_plots("Negative symptom")
+(b/a) +
+  plot_layout(heights = c(1, 1,1)) +
+  plot_annotation(
+    title = "Negative Symptoms",
+    subtitle = "Like emotional flatness, low motivation, social withdrawal, distractibility, and difficulty expressing emotions.",
+    caption = "0 = Not at all, 100 = Constantly",
+    theme = theme(
+      plot.title = element_text(size = 18, face = "bold"),
+      plot.subtitle = element_text(size = 14),
+      plot.caption = element_text(size = 14)
+    )
+  )
+
+```
+
+#### Average Ratings by Question (Over the Past 4 Hours)
+
+```{r echo=FALSE, fig.height=3, fig.width=11.5, message=FALSE, warning=FALSE}
+ggplot(item_means[item_means$ema_category == "Negative symptom",], aes(x = reorder(questionText, mean_response), y = mean_response)) +
+  geom_col(width = 0.6, fill = color3) +
+  coord_flip() +
+ # scale_fill_manual(values = category_colors) +
+  labs(
+    x = NULL,
+    y = ""
+  ) +
+  ylim(c(0,100)) +
+  theme_minimal() +
+   theme(
+      axis.text = element_text(size = 16),
+      axis.title = element_text(size = 16),
+      legend.position = "none"
+    )
+
+
+```
+
+```{r echo=FALSE, fig.height=6.5, fig.width=11.5, message=FALSE, warning=FALSE}
+a = ggplot(category_means[category_means$ema_category == "Functional outcome",], aes(x = date, y = mean_response, color = color2)) +
+  scale_color_manual(values = color2) +
+  geom_line() +
+  scale_y_continuous(
+    limits = c(0, 100)
+  )  +
+  scale_color_manual(values = color2) +
+  labs(
+    title = "Variation Over Time (Average per Day)",
+    y = "",
+    x = ""
+  ) +
+  theme_minimal() +
+   theme(
+      plot.title = element_text(face = "bold", size = 16),
+      axis.text = element_text(size = 14),
+      axis.title = element_text(size = 14),
+      legend.position = "none"
+    )
+
+b = create_time_plots("Functional outcome")
+(b/a) +
+  plot_layout(heights = c(1, 1,1)) +
+  plot_annotation(
+    title = "Everyday Activities",
+    subtitle = "Like being able to manage health, interacting with others, and completing daily activities.",
+    caption = "0 = Not at all, 100 = Constantly",
+    theme = theme(
+      plot.title = element_text(size = 18, face = "bold"),
+      plot.subtitle = element_text(size = 14),
+      plot.caption = element_text(size = 14)
+    )
+  )
+
+```
+
+#### Average Ratings by Question (Over the Past 4 Hours)
+
+```{r echo=FALSE, fig.height=3, fig.width=11.5, message=FALSE, warning=FALSE}
+
+
+ggplot(item_means[item_means$ema_category == "Functional outcome",], aes(x = reorder(questionText, mean_response), y = mean_response)) +
+  geom_col(width = 0.6, fill = color3) +
+  coord_flip() +
+ # scale_fill_manual(values = category_colors) +
+  labs(
+    x = NULL,
+    y = ""
+  ) +
+  ylim(c(0,100)) +
+  theme_minimal() +
+ theme(
+      axis.text = element_text(size = 16),
+      axis.title = element_text(size = 16),
+      legend.position = "none"
+    )
+
+sleep = df_filtered[df_filtered$ema_category == "Sleep quality",]
+
+```
+
+### 🌙 Sleep
+
+`r glue::glue("You told us about your sleep quality by rating how much trouble you had sleeping last night. On average, you rated your trouble sleeping as **{round(mean(as.numeric(sleep$response), na.rm = TRUE))} out of 100**.")`
+
+```{r echo=FALSE, fig.height=2.5, fig.width=11.5, message=FALSE, warning=FALSE}
+
+ggplot(sleep, aes(x = as.Date(date), y = as.numeric(response))) +
+  geom_line(color = color1) +  # point color
+ # geom_smooth(method = "loess", se = FALSE, size = 1.2, color = "#1B3B5F") +  # line color
+  scale_y_continuous(
+    limits = c(0, 100)
+  ) +
+  scale_x_date(name = "Date") +
+  labs(
+    title = "Sleep Quality",
+    subtitle = "Last night I had trouble with sleep (0 = Not at all, 100 = Constantly)",
+    y = ""
+  ) +
+  theme_minimal() +
+   theme(
+      plot.title = element_text(face = "bold", size = 16),
+      axis.text = element_text(size = 14),
+      axis.title = element_text(size = 14),
+      legend.position = "none"
+    )
+
+
+```
+
+## 📅 How You Felt Each Week
+
+Throughout the study, you filled out **weekly questionnaires**. This section summarizes which answers you gave. 
+
+```{r echo=FALSE,comment=""}
+# Define PANAS labels and type
+panas_labels <- c(
+  "Interested", "Distressed", "Excited", "Upset", "Strong",
+  "Guilty", "Scared", "Hostile", "Enthusiastic", "Proud",
+  "Irritable", "Alert", "Ashamed", "Inspired", "Nervous",
+  "Determined", "Attentive", "Jittery", "Active", "Afraid"
+)
+
+mood_type <- ifelse(panas_labels %in% c(
+  "Interested", "Excited", "Strong", "Enthusiastic", "Proud",
+  "Alert", "Inspired", "Determined", "Attentive", "Active"),
+  "Positive", "Negative"
+)
+
+if (exists("weekly") && nrow(weekly) > 0) {
+  # Add week labels
+  weekly <- weekly %>%
+    mutate(week = factor(redcap_event_name,
+                         levels = unique(redcap_event_name[order(redcap_event_name)]),
+                         labels = paste("Week", seq_along(unique(redcap_event_name)))))
+  
+  # Long format + mood type
+  long_data <- weekly %>%
+    pivot_longer(cols = starts_with("panas_"),
+                 names_to = "item", values_to = "value") %>%
+    mutate(value = as.numeric(value),
+           item_num = as.numeric(gsub("panas_", "", item)),
+           label = panas_labels[item_num],
+           mood = mood_type[item_num])
+  library(dplyr)
+  
+  # Calculate mean ratings per emotion across all weeks
+  summary_stats <- long_data[long_data$mood == "Positive",] %>%
+    group_by(label) %>%
+    summarise(mean_rating = mean(value, na.rm = TRUE)) %>%
+    arrange(desc(mean_rating))
+  
+  # Get strongest and weakest emotions
+  strongest_emotion <- summary_stats$label[1]
+  strongest_value <- round(summary_stats$mean_rating[1], 2)
+  
+  weakest_emotion <- summary_stats$label[nrow(summary_stats)]
+  weakest_value <- round(summary_stats$mean_rating[nrow(summary_stats)], 2)
+  } else {
+      # No weekly data
+      long_data <- NULL
+      pos_stats <- NULL
+      neg_stats <- NULL
+  }
+```
+
+#### Positive Emotions
+
+First, we will look at your positive emotions throughout the past few
+weeks.
+`r glue::glue("Across all weeks, the strongest positive emotion reported was **{strongest_emotion}**. The weakest average emotion was **{weakest_emotion}**.")`
+
+```{r echo=FALSE, fig.height=8.5, fig.width=11.5, message=FALSE, warning=FALSE}
+
+plot_mood <- function(data,mood_type_title) {
+# Prepare average values and frequency for ordering
+avg_values <- data %>%
+  group_by(label) %>%
+  summarize(
+    avg_value = mean(value, na.rm = TRUE),
+  ) %>%
+  arrange(desc(avg_value)) %>%
+  mutate(label = factor(label, levels = unique(label)))  # Order by frequency
+
+# Then apply the same ordering to the main data for the line plot:
+data <- data %>%
+  mutate(label = factor(label, levels = levels(avg_values$label)))
+ 
+p_line <- ggplot(data, aes(x = as.Date(w_timestamp), y = value, group = 1)) +
+    geom_line(color = color1, size = 1) +
+    geom_point(color = color1, size = 2) +
+    facet_wrap(~ label, scales = "fixed", ncol = 1) +
+    scale_y_continuous(
+      limits = c(1, 5),
+      breaks = c(1, 5),
+      labels = c("Very slightly/ Not at all", "Extremely")
+    ) +
+    labs(title = "", y = NULL, x = NULL) +
+    theme_minimal(base_size = 14) +
+    theme(
+      plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+      panel.grid.minor = element_blank(),
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      axis.title.x = element_text(size = 12),
+      strip.text = element_text(face = "bold", size = 12),
+      axis.ticks.x = element_line(),
+      strip.placement = "inside",
+    )
+
+#avg_values$label <- factor(avg_values$label, levels = rev(levels(avg_values$label)))
+
+round_to_custom <- function(x, vec = c(1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)) {
+  sapply(x, function(xi) vec[which.min(abs(vec - xi))])
+}
+
+avg_values <- avg_values %>%
+  mutate(
+    rounded_val = round_to_custom(avg_value),
+    desc = case_when(
+      rounded_val == 1 ~ "very slightly or not at all",
+      rounded_val == 1.5 ~ "very slightly to a little",
+      rounded_val == 2 ~ "a little",
+      rounded_val == 2.5 ~ "a little to moderately",
+      rounded_val == 3 ~ "moderately",
+      rounded_val == 3.5 ~ "moderately to quite a bit",
+      rounded_val == 4 ~ "quite a bit",
+      rounded_val == 4.5 ~ "quite a bit to extremely",
+      rounded_val == 5 ~ "extremely",
+      TRUE ~ "unknown"
+    ),
+    label_text = str_c("...on average ", desc, "\n", tolower(label))
+  )
+
+
+plot_mood_bar <- ggplot(avg_values, aes(x = avg_value, y = "test")) +
+ # geom_bar(fill = "#1B4332", width = 0.7, stat = "identity") +
+  geom_text(aes(label = label_text, x = 0.01),
+            hjust = 0, size = 4, color = "black") +
+  facet_wrap(~ label, scales = "fixed", ncol = 1) +
+  xlim(0, 5) +  # extend limit to make space for text
+  labs(title = "", x = NULL, y = NULL) +
+  theme_void() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    strip.text = element_text(color = "white", face = "bold", size = 12)
+  )
+
+  combined_plot <- p_line + plot_mood_bar + plot_layout(widths = c(2, 1.5)) + plot_annotation(
+    title = paste(mood_type_title),
+    theme = theme(
+      plot.title = element_text(size = 18, face = "bold", hjust = 0.5)
+    ))
+  
+  return(combined_plot)
+
+}
+
+
+# Now generate the plots
+if (!is.null(long_data)) {
+positive_plot <- plot_mood(filter(long_data, mood == "Positive"), "Positive Emotions")
+negative_plot <- plot_mood(filter(long_data, mood == "Negative"), "Negative Emotions")
+positive_plot
+
+} else {
+  cat("No weekly data available for  emotions.\n")
+}
+
+```
+
+```{r echo=FALSE, comment=""}
+# Define PANAS labels and type
+panas_labels <- c(
+  "Interested", "Distressed", "Excited", "Upset", "Strong",
+  "Guilty", "Scared", "Hostile", "Enthusiastic", "Proud",
+  "Irritable", "Alert", "Ashamed", "Inspired", "Nervous",
+  "Determined", "Attentive", "Jittery", "Active", "Afraid"
+)
+
+mood_type <- ifelse(panas_labels %in% c(
+  "Interested", "Excited", "Strong", "Enthusiastic", "Proud",
+  "Alert", "Inspired", "Determined", "Attentive", "Active"),
+  "Positive", "Negative"
+)
+
+long_data <- NULL
+neg_stats <- NULL
+strongest_emotion <- NA
+weakest_emotion <- NA
+
+if (exists("weekly") && nrow(weekly) > 0) {
+# Add week labels
+weekly <- weekly %>%
+  mutate(week = factor(redcap_event_name,
+                       levels = unique(redcap_event_name[order(redcap_event_name)]),
+                       labels = paste("Week", seq_along(unique(redcap_event_name)))))
+
+# Long format + mood type
+long_data <- weekly %>%
+  pivot_longer(cols = starts_with("panas_"),
+               names_to = "item", values_to = "value") %>%
+  mutate(item_num = as.numeric(gsub("panas_", "", item)),
+         label = panas_labels[item_num],
+         mood = mood_type[item_num])
+library(dplyr)
+
+# Calculate mean ratings per emotion across all weeks
+summary_stats <- long_data[long_data$mood == "Negative",] %>%
+  group_by(label) %>%
+  summarise(mean_rating = mean(value, na.rm = TRUE)) %>%
+  arrange(desc(mean_rating))
+
+# Get strongest and weakest emotions
+strongest_emotion <- summary_stats$label[1]
+strongest_value <- round(summary_stats$mean_rating[1], 2)
+
+weakest_emotion <- summary_stats$label[nrow(summary_stats)]
+weakest_value <- round(summary_stats$mean_rating[nrow(summary_stats)], 2)
+}
+
+```
+
+\newpage
+
+#### Negative Emotions
+
+Now we will look at your negative emotions during the past few weeks.
+`r glue::glue("Across all weeks, the strongest negative emotion reported was **{strongest_emotion}**. The weakest average emotion was **{weakest_emotion}**.")`
+
+```{r echo=FALSE, fig.height=8.5, fig.width=10, message=FALSE, warning=FALSE}
+
+if (!is.null(long_data)) {
+negative_plot
+
+} else {
+  cat("No weekly data available for emotions.\n")
+}
+
+```
+
+\newpage
+
+### Your Weekly Life Events
+
+Each week, we asked you to share both positive and challenging
+experiences. Below is a summary of the types of events you reported
+**over all study weeks** and how frequently they came up. Words that
+appear larger were mentioned more often.
+
+```{r echo=FALSE, fig.height=5, fig.width=10, message=FALSE, warning=FALSE}
+# Create a corpus and clean it
+if (exists("weekly") && nrow(weekly) > 0) {
+corpus <- Corpus(VectorSource(weekly$life))
+corpus <- tm_map(corpus, content_transformer(tolower))
+corpus <- tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, removeWords, stopwords("en"))
+
+# Create term-document matrix
+tdm <- TermDocumentMatrix(corpus)
+matrix <- as.matrix(tdm)
+word_freqs <- sort(rowSums(matrix), decreasing=TRUE)
+df <- data.frame(word = names(word_freqs), freq = word_freqs)
+
+# Custom color palette
+my_colors <- c("#00331A","#00693E", "#228B22", "#CBA135")
+
+# Generate word cloud
+set.seed(123) # for reproducibility
+wordcloud(words = df$word,
+          freq = df$freq,
+          scale = c(4, 0.8),
+          min.freq = 1,
+          max.words = 100,
+          random.order = FALSE,
+          rot.per = 0.1,
+          colors = my_colors)
+}
+```
