@@ -89,3 +89,10 @@ token_cache.bin
 
 # Node modules from Mood Triggers Dashboard
 node_modules/
+
+# local dev scripts
+approve_admin.py
+cleanup_seed.py
+inspect_db.py
+seed_theradash.py
+seed_theradash.txt

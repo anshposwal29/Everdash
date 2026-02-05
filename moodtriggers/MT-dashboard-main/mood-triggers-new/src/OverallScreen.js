@@ -4,6 +4,54 @@ import { User, CheckCircle, Circle, XCircle, ChevronLeft, ChevronRight, Loader2,
 import DayDetailScreen from './DayDetailScreen';
 import ParticipantDetailScreen from './ParticipantDetailScreen';
 
+const USE_MOCK_DATA = true; 
+
+const MOCK_PARTICIPANTS = [
+  {
+    id: "P001",
+    excluded: false,
+    study_start_date: "2025-11-01",
+    overallCompliance: 72,
+    overallPassive: 65,
+    weeklyCompliance: [
+      {
+        start_date: "2026-01-27",
+        end_date: "2026-02-02",
+        weekly_compliance: 80,
+        avg_passive_pct: 70,
+      },
+    ],
+    dailyStatus: [
+      {
+        date: "2026-01-27",
+        ema_done: 3,
+        location: 14,
+        battery: 12,
+        accelerometer: 13,
+        angular_velocity: 10,
+      },
+      {
+        date: "2026-01-28",
+        ema_done: 1,
+        location: 5,
+        battery: 0,
+        accelerometer: 12,
+        angular_velocity: 12,
+      },
+    ],
+  },
+  {
+    id: "P002",
+    excluded: false,
+    study_start_date: "2025-12-10",
+    overallCompliance: 40,
+    overallPassive: 30,
+    weeklyCompliance: [],
+    dailyStatus: [],
+  },
+];
+
+
 const isLocal = process.env.REACT_APP_LOCAL === 'true';
 const API_BASE_URL = isLocal ? "http://localhost:8000" : "http://34.44.141.225/api";
 
@@ -149,6 +197,44 @@ const OverallScreen = () => {
     };
   };
 
+  const fetchData = useCallback(async () => {
+  setLoading(true);
+  setError(null);
+
+  if (USE_MOCK_DATA) {
+    // Pretend we fetched data
+    const cleaned = MOCK_PARTICIPANTS.map(p => ({
+      ...p,
+      study_start_date: new Date(p.study_start_date),
+    }));
+    setParticipants(cleaned);
+    setLoading(false);
+    return;
+  }
+
+  const { startDate, endDate } = getWeekDateRange(weekOffset);
+
+  try {
+    const res = await fetch(
+      `${API_BASE_URL}/overall_status?start_date=${startDate}&end_date=${endDate}`
+    );
+    if (!res.ok) throw new Error(`Server responded with ${res.status}`);
+
+    const data = await res.json();
+    const cleaned = data
+      .filter(p => !p.excluded)
+      .map(p => ({ ...p, study_start_date: new Date(p.study_start_date) }))
+      .sort((a, b) => b.study_start_date - a.study_start_date);
+
+    setParticipants(cleaned);
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+}, [weekOffset]);
+
+  /*
   // Fetch participants
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -172,6 +258,7 @@ const OverallScreen = () => {
       setLoading(false);
     }
   }, [weekOffset]);
+ */
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
