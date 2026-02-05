@@ -3082,15 +3082,16 @@ body {
     margin-top: 0;
 }
 
+/* The standard date "bubble" text */
 .date-marker-text {
-    font-size: 0.75rem;
+    background-color: #e9ecef; /* Light grey pill */
+    color: #495057;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.85rem;
     font-weight: 600;
-    color: var(--color-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    background: var(--color-bg);
-    padding: var(--space-xs) var(--space-sm);
-    border-radius: var(--radius-full);
+    display: inline-flex;
+    align-items: center;
 }
 
 .message-card {
@@ -3339,4 +3340,97 @@ body {
         margin-top: var(--space-sm);
         border-top: 1px solid var(--color-border-light);
     }
+}
+
+/* user_detail.html */
+/* Ensure the messages start visible, but are collapsible */
+.date-message-group {
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    margin-bottom: 20px;
+}
+
+.date-message-group.is-collapsed {
+    display: none;
+}
+
+.collapsible-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s;
+}
+
+.collapsible-header:hover {
+    background-color: #f0f2f5;
+}
+
+.toggle-icon {
+    display: inline-block;
+    font-size: 0.8em;
+    transition: transform 0.3s;
+    margin-right: 15px;
+}
+
+.toggle-icon.collapsed {
+    transform: rotate(-90deg) !important;
+}
+
+/* Risky marker style */
+.date-marker-risky {
+    background-color: #fff5f5 !important; 
+    border: 1px solid #ffc9c9 !important; 
+    color: #c92a2a !important;            
+}
+
+/* The RED version of the date text bubble */
+.date-marker-text.date-text-risky {
+    background-color: #ff7171; 
+    color: white !important;  
+}
+
+/* Optional: Pulse effect to draw attention */
+.date-marker-risky .risk-icon-mini {
+    margin-right: 8px;
+    color: #fa5252;
+}
+
+/* Container for the header to align items */
+.messages-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 20px;
+}
+
+/* Expand/Collapse All Button */
+.btn-toggle-all {
+    background-color: #ffffff;
+    color: #444;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-toggle-all:hover {
+    background-color: #f9fafb;
+    border-color: #3b82f6; 
+    color: #3b82f6;
+}
+
+.btn-toggle-all:active {
+    background-color: #f3f4f6;
+    transform: translateY(1px);
+}
+
+.messages-count {
+    color: #6b7280;
+    font-size: 0.9rem;
 }

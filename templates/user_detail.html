@@ -63,6 +63,10 @@
             <span class="detail-stat-value">{{ user_stats.days_with_activity }}</span>
             <span class="detail-stat-label">Active Days</span>
         </div>
+        <div class="detail-stat">
+            <span class="detail-stat-value">{{ user_stats.engagement_rate }}</span>
+            <span class="detail-stat-label">Engagement Rate</span>
+        </div>
         {% if user_stats.last_message_date %}
         <div class="detail-stat">
             <span class="detail-stat-value">{{ user_stats.last_message_date.strftime('%b %d') }}</span>
@@ -81,56 +85,64 @@
     {% endif %}
 </div>
 
-<!-- Messages Container V2 -->
+<!-- Messages Container V2 --> 
 <div class="messages-container-v2">
     <div class="messages-header">
-        <h2>All Messages</h2>
-        <span class="messages-count">{{ messages|length }} message{% if messages|length != 1 %}s{% endif %}</span>
+        <div>
+            <h2 style="margin: 0;">All Messages</h2>
+            <span class="messages-count">{{ messages|length }} message{% if messages|length != 1 %}s{% endif %}</span>
+        </div>
+        
+        <button id="global-toggle-btn" class="btn-toggle-all" onclick="toggleAllGroups()">
+            Collapse All
+        </button>
     </div>
 
     {% if messages %}
     <div class="messages-timeline">
         {% set current_date = namespace(value=None) %}
         {% for message in messages %}
-        {% set msg_date = message.timestamp_et.strftime('%Y-%m-%d') %}
+            {% set msg_date = message.timestamp_et.strftime('%Y-%m-%d') %}
 
-        {% if current_date.value != msg_date %}
-        {% set current_date.value = msg_date %}
-        <div class="timeline-date-marker">
-            <span class="date-marker-text">{{ message.timestamp_et.strftime('%A, %B %d, %Y') }}</span>
-        </div>
-        {% endif %}
+            {% if current_date.value != msg_date %}
+                {% if current_date.value != None %}</div>{% endif %}
+                {% set current_date.value = msg_date %}
 
-        <div class="message-card {% if message.is_risky %}message-risky{% endif %}">
-            <div class="message-card-header">
-                <div class="message-time">{{ message.timestamp_et.strftime('%I:%M %p') }} <span class="message-date">{{ message.timestamp_et.strftime('%b %d') }}</span></div>
-                {% if message.conversation_info %}
-                <div class="conversation-tag" title="Conversation: {{ message.conversation_info.prompt[:50] if message.conversation_info.prompt else 'No prompt' }}...">
-                    <span class="conv-icon">&#128172;</span>
-                    <span class="conv-id">Conv #{{ message.conversation_info.id }}</span>
+                {# --- RISK DETECTION LOGIC --- #}
+                {% set day_has_risk = namespace(found=false) %}
+                {% for m in messages %}
+                    {% if m.timestamp_et.strftime('%Y-%m-%d') == msg_date and m.is_risky %}
+                        {% set day_has_risk.found = true %}
+                    {% endif %}
+                {% endfor %}
+
+                {% set marker_class = "date-text-risky" if day_has_risk.found else "" %}
+
+                <div class="timeline-date-marker collapsible-header" onclick="toggleDateGroup('group-{{ msg_date }}')">
+                    <span class="date-marker-text {{ marker_class }}">
+                        {% if day_has_risk.found %}
+                            <span class="risk-icon-mini">&#9888;</span> &nbsp;
+                        {% endif %}
+                        {{ message.timestamp_et.strftime('%A, %B %d, %Y') }}
+                    </span>
+                    <span class="group-icon" id="icon-group-{{ msg_date }}">▼</span>
                 </div>
-                {% endif %}
-                {% if message.is_risky %}
-                <div class="risk-tag">
-                    <span class="risk-icon">&#9888;</span> Risky
-                </div>
-                {% endif %}
-                {% if message.is_reviewed %}
-                <div class="reviewed-tag">&#10003; Reviewed</div>
-                {% endif %}
-            </div>
-            <div class="message-card-body">
-                {{ message.text }}
-            </div>
-            {% if message.conversation_info and message.conversation_info.prompt %}
-            <div class="message-card-footer">
-                <span class="prompt-label">Prompt:</span>
-                <span class="prompt-text">{{ message.conversation_info.prompt[:100] }}{% if message.conversation_info.prompt|length > 100 %}...{% endif %}</span>
-            </div>
+
+                <div id="group-{{ msg_date }}" class="date-message-group collapsible-content">
             {% endif %}
-        </div>
+
+            <div class="message-card {% if message.is_risky %}message-risky{% endif %}">
+                <div class="message-card-header">
+                    <div class="message-time">{{ message.timestamp_et.strftime('%I:%M %p') }}</div>
+                    {% if message.is_risky %}<div class="risk-tag">Risky</div>{% endif %}
+                </div>
+                <div class="message-card-body">{{ message.text }}</div>
+            </div>
         {% endfor %}
+
+        {% if current_date.value != None %}</div>{% endif %}
     </div>
+
     {% else %}
     <div class="no-messages-v2">
         <div class="no-messages-icon">&#128172;</div>

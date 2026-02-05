@@ -72,3 +72,56 @@ function showNotification(message, type = 'info') {
     // Remove toast element after it's hidden
     toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
 }
+
+function toggleAllGroups() {
+    const groups = document.querySelectorAll('.collapsible-content');
+    const icons = document.querySelectorAll('.group-icon');
+    const btn = document.getElementById('global-toggle-btn');
+    
+    // Determine if we should expand or collapse based on the button text
+    const isExpanding = btn.innerText === "Expand All";
+
+    groups.forEach(group => {
+        group.style.display = isExpanding ? "block" : "none";
+    });
+
+    icons.forEach(icon => {
+        icon.innerText = isExpanding ? "▼" : "▶";
+    });
+
+    // Update the master button text
+    btn.innerText = isExpanding ? "Collapse All" : "Expand All";
+}
+
+// Ensure your existing single toggle function updates the master button if needed
+function toggleDateGroup(id) {
+    const group = document.getElementById(id);
+    const icon = document.getElementById('icon-' + id);
+    if (group.style.display === "none") {
+        group.style.display = "block";
+        icon.innerText = "▼";
+    } else {
+        group.style.display = "none";
+        icon.innerText = "▶";
+    }
+}
+
+/**
+function toggleDateGroup(groupId) {
+    const group = document.getElementById(groupId);
+    const icon = document.getElementById('icon-' + groupId);
+    
+    if (group && icon) {
+        // Toggle the 'is-collapsed' class on the messages container
+        group.classList.toggle('is-collapsed');
+        
+        // Synchronize the icon: 
+        // If the group has 'is-collapsed', the icon MUST have 'collapsed'
+        if (group.classList.contains('is-collapsed')) {
+            icon.classList.add('collapsed');
+        } else {
+            icon.classList.remove('collapsed');
+        }
+    }
+}
+*/
