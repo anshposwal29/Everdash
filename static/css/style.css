@@ -3075,6 +3075,7 @@ body {
 .timeline-date-marker {
     display: flex;
     align-items: center;
+    width: 100%;
     margin: var(--space-lg) 0 var(--space-md) 0;
 }
 
@@ -3433,4 +3434,58 @@ body {
 .messages-count {
     color: #6b7280;
     font-size: 0.9rem;
+}
+
+/* Container for the badges */
+.prompt-subtitle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+
+    padding-top: 6px;
+    padding-left: 22px;
+    padding-bottom: 6px;
+}
+
+/* The Badge Style */
+.prompt-badge {
+    background-color: #eef2ff; /* Light indigo tint */
+    color: #4f46e5;            /* Deep indigo text */
+    border: 1px solid #c7d2fe;
+    padding: 2px 10px;
+    border-radius: 9999px;     /* Pill shape */
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: capitalize;
+}
+
+/* Subtle variation if the badge is "General" */
+.prompt-badge:empty, .prompt-badge:contains("General") {
+    background-color: #f3f4f6;
+    color: #6b7280;
+    border-color: #d1d5db;
+}
+
+.marker-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%; /* Important: takes up all space to push arrow right */
+}
+
+/* Row for the date and the toggle arrow */
+.date-row {
+    display: flex;
+    justify-content: space-between; /* Pushes content to opposite ends */
+    align-items: center;
+    width: 100%;
+}
+
+.group-icon {
+    font-size: 0.8rem;
+    color: #9ca3af;
+    transition: transform 0.2s ease;
+    margin-left: 10px; /* Buffer space */
 }

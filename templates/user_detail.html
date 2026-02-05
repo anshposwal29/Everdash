@@ -64,8 +64,8 @@
             <span class="detail-stat-label">Active Days</span>
         </div>
         <div class="detail-stat">
-            <span class="detail-stat-value">{{ user_stats.engagement_rate }}</span>
-            <span class="detail-stat-label">Engagement Rate</span>
+            <span class="detail-stat-value">{{ user.recent_weekly_average }}</span>
+            <span class="detail-stat-label">Avg Convos/Week</span>
         </div>
         {% if user_stats.last_message_date %}
         <div class="detail-stat">
@@ -119,13 +119,28 @@
                 {% set marker_class = "date-text-risky" if day_has_risk.found else "" %}
 
                 <div class="timeline-date-marker collapsible-header" onclick="toggleDateGroup('group-{{ msg_date }}')">
-                    <span class="date-marker-text {{ marker_class }}">
-                        {% if day_has_risk.found %}
-                            <span class="risk-icon-mini">&#9888;</span> &nbsp;
-                        {% endif %}
-                        {{ message.timestamp_et.strftime('%A, %B %d, %Y') }}
-                    </span>
-                    <span class="group-icon" id="icon-group-{{ msg_date }}">▼</span>
+                    <div class="marker-content-wrapper">
+                        <div class="date-row">
+                            <span class="date-marker-text {{ marker_class }}">
+                                {% if day_has_risk.found %}
+                                    <span class="risk-icon-mini">&#9888;</span> &nbsp;
+                                {% endif %}
+                                {{ message.timestamp_et.strftime('%A, %B %d, %Y') }}
+                            </span>
+                            <span class="group-icon" id="icon-group-{{ msg_date }}">▼</span>
+                        </div>
+                        
+                        <div class="prompt-subtitle">
+                            <strong>Prompts:</strong>
+                            {% set day_prompts = namespace(items=[]) %}
+                            {% for m in messages %}
+                                {% if m.timestamp_et.strftime('%Y-%m-%d') == msg_date and m.conversation.prompt not in day_prompts.items %}
+                                    <span class="prompt-badge">{{ m.conversation.prompt or "General" }}</span>
+                                    {% set day_prompts.items = day_prompts.items + [m.conversation.prompt] %}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
                 </div>
 
                 <div id="group-{{ msg_date }}" class="date-message-group collapsible-content">

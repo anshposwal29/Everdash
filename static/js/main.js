@@ -73,6 +73,8 @@ function showNotification(message, type = 'info') {
     toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
 }
 
+// User Detail JS Functions
+// Expand/collapse all conversations
 function toggleAllGroups() {
     const groups = document.querySelectorAll('.collapsible-content');
     const icons = document.querySelectorAll('.group-icon');
@@ -105,23 +107,3 @@ function toggleDateGroup(id) {
         icon.innerText = "▶";
     }
 }
-
-/**
-function toggleDateGroup(groupId) {
-    const group = document.getElementById(groupId);
-    const icon = document.getElementById('icon-' + groupId);
-    
-    if (group && icon) {
-        // Toggle the 'is-collapsed' class on the messages container
-        group.classList.toggle('is-collapsed');
-        
-        // Synchronize the icon: 
-        // If the group has 'is-collapsed', the icon MUST have 'collapsed'
-        if (group.classList.contains('is-collapsed')) {
-            icon.classList.add('collapsed');
-        } else {
-            icon.classList.remove('collapsed');
-        }
-    }
-}
-*/

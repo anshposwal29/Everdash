@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, timedelta, date
 
 db = SQLAlchemy()
 
@@ -80,6 +80,35 @@ class User(db.Model):
     conversations = db.relationship('Conversation', backref='user', lazy='dynamic', cascade='all, delete-orphan')
     messages = db.relationship('Message', backref='user', lazy='dynamic', cascade='all, delete-orphan')
     custom_fields = db.relationship('UserCustomField', backref='user', lazy='dynamic', cascade='all, delete-orphan')
+    
+
+    @property
+    def recent_weekly_average(self):
+        """Calculates avg convos/week over the last 30 days or since start date"""
+        if not self.study_start_date:
+            return 0
+            
+        today = date.today()
+        # Find whichever is more recent: 30 days ago OR the actual start date
+        thirty_days_ago = today - timedelta(days=30)
+        calculation_start = max(thirty_days_ago, self.study_start_date)
+        
+        # Convert calculation_start to datetime for the DB query comparison
+        calc_start_dt = datetime.combine(calculation_start, datetime.min.time())
+        
+        # Filter conversations within our adaptive window
+        recent_convo_count = self.conversations.filter(
+            Conversation.timestamp >= calc_start_dt
+        ).count()
+        
+        # Calculate days elapsed in our window
+        days_in_window = (today - calculation_start).days
+        
+        # Prevent division by zero; if they started today, use 1 day as minimum
+        weeks_in_window = max(days_in_window, 1) / 7.0
+        
+        return round(recent_convo_count / weeks_in_window, 2)
+
 
     def __repr__(self):
         return f'<User {self.firebase_id}>'
