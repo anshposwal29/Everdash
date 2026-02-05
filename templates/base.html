@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Theradash{% endblock %}</title>
+    <title>{% block title %}Everdash{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
     {% if current_user.is_authenticated %}
     <nav class="navbar">
         <div class="nav-container">
-            <a href="{{ url_for('dashboard') }}" class="nav-brand">Theradash</a>
+            <a href="{{ url_for('dashboard') }}" class="nav-brand">Everdash</a>
             <ul class="nav-menu">
                 <li><a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a></li>
                 <li><a href="{{ url_for('all_notes') }}" class="nav-link">All Notes</a></li>
