@@ -7,7 +7,7 @@ import RawDataScreen from './RawDataScreen';
 import OverallScreen from './OverallScreen';
 import SendEmail from './SendEmail';
 import Reports from './Reports';
-
+import OverallListScreen from "./OverallListScreen";
 
 // // NEEDS TO BE CHANGED //
 // let local = "no";
@@ -149,7 +149,7 @@ const MoodTriggers = () => {
             </header>
 
             <main className="container mx-auto px-4 py-8">
-                {activeTab === 'overall' && <OverallScreen />}
+                {activeTab === 'overall' && <OverallListScreen />}
                 {activeTab === 'rawData' && <RawDataScreen />}
                 {activeTab === 'SendEmail' && <SendEmail />}
                 {activeTab === 'Reports' && <Reports />}
