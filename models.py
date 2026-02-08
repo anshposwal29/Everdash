@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, date
 
 db = SQLAlchemy()
 
@@ -64,6 +64,8 @@ class User(db.Model):
     is_dark_mode = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True)
     last_synced = db.Column(db.DateTime, default=datetime.utcnow)
+    #symptom radar: to be calculated
+    symptom_radar = db.Column(db.Integer, nullable=False, default=5)  # 1..10
 
     # Multi-project support
     project_id = db.Column(db.String(50), db.ForeignKey('redcap_projects.project_id'), index=True)
@@ -178,3 +180,32 @@ class Notes(db.Model):
 
     def __repr__(self):
         return f'<Notes {self.note_id} for Participant {self.participant_id}>'
+    
+class PassiveDailySummary(db.Model):
+        """
+        One row per participant per day storing hours of passive data collected.
+        This supports MoodTriggers-style compliance windows (>=12h, <12h, missing).
+        """
+        __tablename__ = "passive_daily_summary"
+
+        id = db.Column(db.Integer, primary_key=True)
+
+        user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+        day = db.Column(db.Date, nullable=False, index=True)
+
+        # hours collected in that day per sensor
+        loc_hours = db.Column(db.Float, nullable=False, default=0.0)
+        bat_hours = db.Column(db.Float, nullable=False, default=0.0)
+        acc_hours = db.Column(db.Float, nullable=False, default=0.0)
+        gyr_hours = db.Column(db.Float, nullable=False, default=0.0)
+
+        created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+        __table_args__ = (
+            db.UniqueConstraint("user_id", "day", name="uq_passive_user_day"),
+            db.Index("ix_passive_user_day", "user_id", "day"),
+        )
+
+        def __repr__(self):
+            return f"<PassiveDailySummary user_id={self.user_id} day={self.day}>"
+

@@ -14,98 +14,126 @@
   <a href="{{ url_for('overall', view='calendar', window=window_days) }}">Calendar</a>
 </div>
 
+<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+  <strong>Window:</strong>
 
-  <div style="margin-bottom: 16px;">
-  <strong>Risk window:</strong>
-   {% set windows = [(3, "Last 3 days"), (7, "Last week"), (14, "Past 2 weeks"), (30, "Past month")] %}
-  {% for days, label in windows %}
-    <a
-      href="{{ url_for('overall', view='list', window=days) }}"
-      style="margin-left: 10px; font-weight: {{ '700' if window_days == days else '400' }};"
-    >
-      {{ label }}
-    </a>
-  {% endfor %}
-  </div>
- 
+  <select id="window-select" style="padding: 6px 10px; border-radius: 8px; border: 1px solid #ccc;">
+    <option value="3">Last 3 days</option>
+    <option value="7">Last week</option>
+    <option value="14">Past 2 weeks</option>
+    <option value="30">Past month</option>
+  </select>
+</div>
 
   <!-- Table container -->
   <div style="border: 1px solid #ddd; border-radius: 12px; overflow: hidden;">
 
     <!-- Header row -->
-    <div style="
-      display: grid;
-      grid-template-columns: 140px 90px 320px 180px 110px 140px;
-      padding: 12px;
-      font-weight: 600;
-      background: #f6f6f6;
-    ">
-      <div>ID</div>
-      <div>Days</div>
-      <div>Recent Compliance (7d)</div>
-      <div>Last dialogue</div>
-      <div>Risky dialogues ({{ window_days }}d)</div>
-      <div>Status</div>
-    </div>
+<!-- Header row -->
+<div style="
+  display: grid;
+  grid-template-columns: 140px 120px 160px 360px 220px 240px;
+  padding: 12px;
+  font-weight: 600;
+  background: #f6f6f6;
+">
+  <div>ID</div>
+  <div>Days in study</div>
+  <div>Last Dialogue</div>
+  <div>Recent Compliance (<span id="window-label">—</span>d)</div>
+  <div>Risky Dialogues (<span id="window-label-2">—</span>d)</div>
+  <div>Symptom radar (<span id="window-label-3">—</span>d)</div>
+</div>
 
-<!-- Data rows -->
-{% for u in users %}
-  <div style="
-    display: grid;
-    grid-template-columns: 140px 90px 320px 180px 110px 140px;
-    padding: 12px;
-    border-top: 1px solid #eee;
-    align-items: center;
-  ">
-    <!-- ID -->
-    <div style="font-weight: 600;">{{ u.id }}</div>
-
-    <!-- Days -->
-    <div>{{ u.days_in_study if u.days_in_study is not none else "—" }}</div>
-
-    <!-- Compliance summary -->
-    <div style="font-family: monospace; font-size: 12px;">
-      EMA: {{ u["compliance_7d"]["ema"] }}
-      | LOC: {{ u["compliance_7d"]["location"] }}
-      | BAT: {{ u["compliance_7d"]["battery"] }}
-      | ACC: {{ u["compliance_7d"]["accel"] }}
-      | GYR: {{ u["compliance_7d"]["gyro"] }}
-    </div>
-
-    <!-- Last dialogue -->
-    <div>
-      {{ u.last_dialogue_relative }}
-      <span style="
-        margin-left: 8px;
-        font-size: 12px;
-        padding: 2px 8px;
-        border-radius: 999px;
-        border: 1px solid #ccc;
-      ">
-        {{ u.last_dialogue_status }}
-      </span>
-    </div>
-
-    <!-- # Risky messages (colored) -->
-    {% set c = u.risky_count %}
-    {% set color = '#333' %}
-    {% if c >= 2 %}
-      {% set color = '#5a0b0b' %}
-    {% elif c == 1 %}
-      {% set color = '#b00020' %}
-    {% endif %}
-
-    <div style="font-weight: 700; color: {{ color }};">
-      {{ c }}
-    </div>
-
-    <!-- Status -->
-    <div>
-      {{ u.status }}
-    </div>
-  </div>
-{% endfor %}
+<!-- Data rows injected by JS -->
+<div id="overall-rows"></div>
 
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function loadOverall() {
+  const params = new URLSearchParams(window.location.search);
+
+  // Use your existing query param name: window
+  const windowDays = parseInt(params.get("window") || "14", 10);
+
+  // Keep your sort/order defaults
+  const sort = params.get("sort") || "silence";
+  const order = params.get("order") || "desc";
+
+  // Update dropdown selection
+  const select = document.getElementById("window-select");
+  if (select) select.value = String(windowDays);
+
+  // Update column header labels
+  const setText = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(val);
+  };
+  setText("window-label", windowDays);
+  setText("window-label-2", windowDays);
+  setText("window-label-3", windowDays);
+
+  const res = await fetch(`/api/overall?window_days=${windowDays}&sort=${sort}&order=${order}`, {
+    credentials: "same-origin"
+  });
+  const data = await res.json();
+
+  const container = document.getElementById("overall-rows");
+  container.innerHTML = "";
+
+  for (const u of data.rows) {
+    const row = document.createElement("div");
+    row.style.display = "grid";
+    row.style.gridTemplateColumns = "140px 120px 160px 360px 220px 240px";
+    row.style.padding = "12px";
+    row.style.borderTop = "1px solid #eee";
+    row.style.alignItems = "center";
+
+    row.innerHTML = `
+  <div style="font-weight: 600;">${u.redcap_id ?? u.identifier ?? u.user_id}</div>
+  <div>${u.days_in_study ?? "—"}</div>
+  <div>${formatSilence(u.silence_days)}</div>
+
+  <div style="font-family: monospace; font-size: 12px;">
+    LOC: ${u.passive_compliance?.loc?.good_days ?? 0}/${windowDays}
+    | BAT: ${u.passive_compliance?.bat?.good_days ?? 0}/${windowDays}
+    | ACC: ${u.passive_compliance?.acc?.good_days ?? 0}/${windowDays}
+    | GYR: ${u.passive_compliance?.gyr?.good_days ?? 0}/${windowDays}
+  </div>
+
+  <div>${u.risky_count ?? 0}</div>
+  <div>${u.symptom_radar ?? "—"}</div>
+`;
+    container.appendChild(row);
+  }
+}
+
+function formatSilence(days) {
+  if (days === null || days === undefined) return "—";
+  if (days === 0) return "today";
+  if (days === 1) return "1 day ago";
+  return `${days}d ago`;
+}
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const select = document.getElementById("window-select");
+  if (select) {
+    select.addEventListener("change", () => {
+      const params = new URLSearchParams(window.location.search);
+      params.set("view", params.get("view") || "list");
+      params.set("window", select.value);
+      // Optional: preserve sort/order if present
+      window.location.search = params.toString();
+    });
+  }
+
+  loadOverall();
+});
+
+</script>
 {% endblock %}

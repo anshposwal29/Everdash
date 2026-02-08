@@ -1,92 +1,130 @@
-from datetime import datetime, timedelta
-from models import db, User, Message, Conversation
+from datetime import datetime, timedelta, date
+from sqlalchemy import func, case, desc, asc
+from models import db, User, Message, PassiveDailySummary
 
+GOOD_HOURS = 12.0
 
-def _utc_now():
-    # Your DB timestamps are effectively naive UTC in this project
-    return datetime.utcnow()
+def _passive_bucket(col):
+    good = func.sum(case((col >= GOOD_HOURS, 1), else_=0))
+    partial = func.sum(case(((col > 0) & (col < GOOD_HOURS), 1), else_=0))
+    missing = func.sum(case((col == 0, 1), else_=0))
+    return good, partial, missing
 
+def get_overall_users(window_days=7, sort="silence", order="desc", limit=50, offset=0):
+    now = datetime.utcnow()
+    today = date.today()
+    window_start_date = today - timedelta(days=window_days - 1)
+    window_start_dt = now - timedelta(days=window_days)
 
-def compute_user_risk(user_id):
-    since = datetime.utcnow() - timedelta(days=14)
+    # Base users page
+    users_q = User.query
 
-    risky_count = (
-        db.session.query(Message)
-        .filter(
-            Message.user_id == user_id,
-            Message.is_risky == True,
-            Message.timestamp >= since
+    # --- Last dialogue per user (max Message.timestamp)
+    last_dialogue_subq = (
+        db.session.query(
+            Message.user_id.label("user_id"),
+            func.max(Message.timestamp).label("last_dialogue_at"),
         )
-        .count()
+        .group_by(Message.user_id)
+        .subquery()
     )
 
-    if risky_count >= 2:
-        return "high"
-    elif risky_count == 1:
-        return "medium"
+    # --- Risky count in window
+    risky_subq = (
+        db.session.query(
+            Message.user_id.label("user_id"),
+            func.sum(case((Message.is_risky == True, 1), else_=0)).label("risky_count"),
+        )
+        .filter(Message.timestamp >= window_start_dt)
+        .group_by(Message.user_id)
+        .subquery()
+    )
+
+    # --- Passive compliance buckets (counts of days good/partial/missing) in window
+    loc_g, loc_p, loc_m = _passive_bucket(PassiveDailySummary.loc_hours)
+    bat_g, bat_p, bat_m = _passive_bucket(PassiveDailySummary.bat_hours)
+    acc_g, acc_p, acc_m = _passive_bucket(PassiveDailySummary.acc_hours)
+    gyr_g, gyr_p, gyr_m = _passive_bucket(PassiveDailySummary.gyr_hours)
+
+    passive_subq = (
+        db.session.query(
+            PassiveDailySummary.user_id.label("user_id"),
+            func.count(PassiveDailySummary.day).label("days_observed"),
+            loc_g.label("loc_good"), loc_p.label("loc_partial"), loc_m.label("loc_missing"),
+            bat_g.label("bat_good"), bat_p.label("bat_partial"), bat_m.label("bat_missing"),
+            acc_g.label("acc_good"), acc_p.label("acc_partial"), acc_m.label("acc_missing"),
+            gyr_g.label("gyr_good"), gyr_p.label("gyr_partial"), gyr_m.label("gyr_missing"),
+        )
+        .filter(PassiveDailySummary.day >= window_start_date, PassiveDailySummary.day <= today)
+        .group_by(PassiveDailySummary.user_id)
+        .subquery()
+    )
+
+    # Join everything onto users
+    q = (
+        users_q
+        .outerjoin(last_dialogue_subq, last_dialogue_subq.c.user_id == User.id)
+        .outerjoin(risky_subq, risky_subq.c.user_id == User.id)
+        .outerjoin(passive_subq, passive_subq.c.user_id == User.id)
+        .with_entities(
+            User,
+            last_dialogue_subq.c.last_dialogue_at,
+            risky_subq.c.risky_count,
+            passive_subq.c.days_observed,
+            passive_subq.c.loc_good, passive_subq.c.loc_partial, passive_subq.c.loc_missing,
+            passive_subq.c.bat_good, passive_subq.c.bat_partial, passive_subq.c.bat_missing,
+            passive_subq.c.acc_good, passive_subq.c.acc_partial, passive_subq.c.acc_missing,
+            passive_subq.c.gyr_good, passive_subq.c.gyr_partial, passive_subq.c.gyr_missing,
+        )
+    )
+
+    # Sorting in SQL (performance-safe)
+    direction = desc if order == "desc" else asc
+
+    if sort == "silence":
+        # bigger silence => older last_dialogue_at
+        # ordering: nulls last (users with no messages)
+        q = q.order_by(direction(last_dialogue_subq.c.last_dialogue_at).nullslast())
+    elif sort == "risky":
+        q = q.order_by(direction(func.coalesce(risky_subq.c.risky_count, 0)))
+    elif sort == "days_in_study":
+        # older study_start_date => more days in study
+        q = q.order_by(direction(User.study_start_date).nullslast())
     else:
-        return "normal"
+        q = q.order_by(User.id.asc())
 
-def compute_risky_count(user_id, window_days):
-    cutoff = _utc_now() - timedelta(days=window_days)
+    q = q.limit(limit).offset(offset)
 
-    # If your Message.timestamp is stored naive in DB, compare with naive cutoff
-    cutoff_naive = cutoff.replace(tzinfo=None)
-
-    return (
-        Message.query
-        .filter(Message.user_id == user_id)
-        .filter(Message.timestamp >= cutoff_naive)
-        .filter(Message.is_risky.is_(True))
-        .count()
-    )
-
-def get_overall_users(window_days=14):
-    users = User.query.all()
     rows = []
+    for (user,
+         last_dialogue_at,
+         risky_count,
+         days_observed,
+         loc_good, loc_partial, loc_missing,
+         bat_good, bat_partial, bat_missing,
+         acc_good, acc_partial, acc_missing,
+         gyr_good, gyr_partial, gyr_missing) in q.all():
 
-    for u in users:
-        # Study duration
-        days_in_study = None
-        if u.study_start_date:
-            days_in_study = (datetime.utcnow().date() - u.study_start_date).days
-
-        # Last conversation
-        last_convo = (
-            u.conversations
-            .order_by(Conversation.timestamp.desc())
-            .first()
-        )
-
-        last_dialogue_relative = "—"
-        last_dialogue_status = "closed"
-
-        if last_convo:
-            delta = datetime.utcnow() - last_convo.timestamp
-            hours = int(delta.total_seconds() / 3600)
-            last_dialogue_relative = f"{hours}h ago" if hours < 24 else f"{hours//24}d ago"
-            last_dialogue_status = "active" if hours < 24 else "closed"
-
-        # Risk
-        risky_count = compute_risky_count(u.id, window_days)
+        days_in_study = (today - user.study_start_date).days if user.study_start_date else None
+        silence_days = (now - last_dialogue_at).days if last_dialogue_at else None
 
         rows.append({
-            "id": u.identifier or u.redcap_id or u.firebase_id[:6],
+            "user_id": user.id,
+            "redcap_id": user.redcap_id,
+            "identifier": user.identifier,
             "days_in_study": days_in_study,
-            "last_dialogue_relative": last_dialogue_relative,
-            "last_dialogue_status": last_dialogue_status,
-            "risky_count": risky_count,
-            "status": "needs review", #FIX THIS
-
-            # placeholder for now — we’ll wire real compliance later
-            "compliance_7d": {
-                "ema": "good",
-                "location": "partial",
-                "battery": "good",
-                "accel": "good",
-                "gyro": "good",
+            "last_dialogue_at": last_dialogue_at.isoformat() + "Z" if last_dialogue_at else None,
+            "silence_days": silence_days,
+            "risky_count": int(risky_count or 0),
+            "passive_compliance": {
+                "window_days": window_days,
+                "days_observed": int(days_observed or 0),
+                "loc": {"good_days": int(loc_good or 0), "partial_days": int(loc_partial or 0), "missing_days": int(loc_missing or 0)},
+                "bat": {"good_days": int(bat_good or 0), "partial_days": int(bat_partial or 0), "missing_days": int(bat_missing or 0)},
+                "acc": {"good_days": int(acc_good or 0), "partial_days": int(acc_partial or 0), "missing_days": int(acc_missing or 0)},
+                "gyr": {"good_days": int(gyr_good or 0), "partial_days": int(gyr_partial or 0), "missing_days": int(gyr_missing or 0)},
             },
+            "symptom_radar": int(user.symptom_radar or 5),
         })
 
     return rows
-

@@ -1,8 +1,6 @@
 {% extends "base.html" %}
+
 {% block content %}
-<div style="padding: 24px">
-  <h1>Overall — Calendar View</h1>
-  <p>Coming soon.</p>
-  <p><a href="{{ url_for('overall') }}?view=list">Back to List</a></p>
-</div>
+  {# Reuse existing calendar dashboard UI #}
+  {% include "dashboard.html" %}
 {% endblock %}

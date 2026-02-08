@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from models import db, Admin, User, Message, Conversation, SyncLog, Notes
+from models import db, Admin, User, Message, Conversation, SyncLog, Notes, PassiveDailySummary
 from config import Config
 from middleware import require_ip_whitelist, ip_and_admin_required
 from services.sync_service import sync_service
@@ -11,9 +11,12 @@ import pytz
 import requests
 from sqlalchemy import func, and_
 from services.overall import get_overall_users
+from services.dashboard_context import build_dashboard_context
 
 app = Flask(__name__)
 app.config.from_object(Config)
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///theradash_dev.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Initialize extensions
 db.init_app(app)
@@ -72,23 +75,57 @@ def index():
 def overall():
     view = request.args.get("view", "list")
 
-    # Window selector: 3 / 7 / 14 / 30 days
+    # ---- Risk window (used by Risky Dialogues column + API window_days)
     window = request.args.get("window", "14")
     try:
         window_days = int(window)
     except ValueError:
         window_days = 14
-
     if window_days not in (3, 7, 14, 30):
         window_days = 14
 
-    users = get_overall_users(window_days=window_days)
+    # ---- Compliance window (used by "Recent Compliance (Xd)" label + link highlight)
+    compliance = request.args.get("compliance", str(window_days))
+    try:
+        compliance_days = int(compliance)
+    except ValueError:
+        compliance_days = window_days
+    if compliance_days not in (3, 7, 14, 30):
+        compliance_days = window_days
 
+    # ---- Calendar view keeps its own context builder
+    if view == "calendar":
+        ctx = build_dashboard_context(request, et_tz, date_to_utc_range)
+
+        # keep these so your nav + labels still work on calendar page if needed
+        ctx.update({
+            "window_days": window_days,
+            "compliance_days": compliance_days,
+            "view": view,
+        })
+        return render_template("overall_calendar.html", **ctx)
+
+    # ---- Week view (if you have a separate template)
+    if view == "week":
+        # If your week view is still server-rendered and expects users, keep it:
+        users = get_overall_users(window_days=window_days, sort="silence")
+        return render_template(
+            "overall_week.html",
+            users=users,
+            window_days=window_days,
+            compliance_days=compliance_days,
+            view=view,
+        )
+
+    # ---- List view (API-driven: don't pass users)
+    # still pass window_days/compliance_days because your header + links use them
     return render_template(
-        f"overall_{view}.html",
-        users=users,
+        "overall_list.html",
         window_days=window_days,
+        compliance_days=compliance_days,
+        view=view,
     )
+
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -178,255 +215,8 @@ def register():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    """Main dashboard showing user conversations in a grid - multi-project support"""
-    # Get date range from query parameters (default to last 7 days)
-    end_date_str = request.args.get('end_date')
-    start_date_str = request.args.get('start_date')
-    project_filter = request.args.get('project', 'all')
-    ra_filter = request.args.get('ra', 'all')
-    risk_filter = request.args.get('risk', 'all')  # 'all', 'risky', 'not_risky'
-    attention_filter = request.args.get('attention', 'all')  # 'all', 'needs_attention'
-
-    # Default to last 7 days if not specified
-    if not end_date_str:
-        end_date = datetime.now(et_tz).date()
-    else:
-        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-
-    if not start_date_str:
-        start_date = end_date - timedelta(days=6)  # 7 days total
-    else:
-        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-
-    # Generate list of dates for columns
-    date_range = []
-    current_date = start_date
-    while current_date <= end_date:
-        date_range.append(current_date)
-        current_date += timedelta(days=1)
-
-    # Get all configured projects for filter dropdown
-    projects = Config.get_all_projects()
-
-    # Get active users with optional project filter
-    users_query = User.query.filter_by(is_active=True)
-    if project_filter != 'all':
-        users_query = users_query.filter_by(project_id=project_filter)
-    if ra_filter != 'all':
-        users_query = users_query.filter_by(research_assistant=ra_filter)
-    users = users_query.order_by(User.firebase_id).all()
-
-    # Get all unique research assistants for filter dropdown
-    all_ras = db.session.query(User.research_assistant).filter(
-        User.is_active == True,
-        User.research_assistant.isnot(None),
-        User.research_assistant != ''
-    ).distinct().order_by(User.research_assistant).all()
-    research_assistants = [ra[0] for ra in all_ras if ra[0]]
-
-    # Collect all unique custom field labels across all projects
-    all_custom_field_labels = []
-    for project in projects:
-        for cf in project.custom_display_fields:
-            label = cf.get('label', cf.get('field'))
-            if label and label not in all_custom_field_labels:
-                all_custom_field_labels.append(label)
-
-    # Pre-fetch all notes for participants in the date range to avoid N+1 queries
-    # Get all redcap_ids for current users
-    user_redcap_ids = [u.redcap_id for u in users if u.redcap_id]
-
-    # Convert date range to string format for comparison with notes datetime
-    start_date_str = start_date.strftime('%Y-%m-%d')
-    end_date_str = (end_date + timedelta(days=1)).strftime('%Y-%m-%d')  # Include end date
-
-    # Fetch all notes in date range for these participants
-    notes_in_range = []
-    if user_redcap_ids:
-        notes_in_range = Notes.query.filter(
-            Notes.participant_id.in_(user_redcap_ids),
-            Notes.datetime >= start_date_str,
-            Notes.datetime < end_date_str
-        ).all()
-
-    # Organize notes by participant_id and date
-    notes_by_participant_date = {}
-    for note in notes_in_range:
-        if not note.datetime:
-            continue
-        # Extract date from datetime string (format: YYYY-MM-DDTHH:MM or YYYY-MM-DD HH:MM)
-        note_date = note.datetime[:10]  # Get YYYY-MM-DD part
-        key = (note.participant_id, note_date)
-        if key not in notes_by_participant_date:
-            notes_by_participant_date[key] = {'phone': 0, 'email': 0, 'text': 0}
-
-        # Check note type and increment count
-        note_type = (note.note_type or '').lower()
-        if 'phone' in note_type or 'call' in note_type:
-            notes_by_participant_date[key]['phone'] += 1
-        elif 'email' in note_type:
-            notes_by_participant_date[key]['email'] += 1
-        elif 'text' in note_type or 'sms' in note_type:
-            notes_by_participant_date[key]['text'] += 1
-
-    # Build dashboard data structure
-    dashboard_data = []
-
-    for user in users:
-        # Get project name for display
-        project_name = '-'
-        if user.project_id:
-            project_config = Config.get_project_by_id(user.project_id)
-            if project_config:
-                project_name = project_config.name
-
-        # Get custom field values for this user
-        custom_field_values = {}
-        for cf in user.custom_fields:
-            custom_field_values[cf.field_label or cf.field_name] = cf.field_value or '-'
-
-        # Use redcap_firebase_id for display if available, otherwise fall back to firebase_id
-        display_firebase_id = user.redcap_firebase_id if user.redcap_firebase_id else user.firebase_id
-
-        user_row = {
-            'firebase_id': user.firebase_id,  # Internal ID for links/lookups
-            'display_firebase_id': display_firebase_id,  # Firebase ID from REDCap for display
-            'redcap_id': user.redcap_id or '-',
-            'identifier': user.identifier or '-',
-            'research_assistant': user.research_assistant or '-',
-            'project_name': project_name,
-            'project_id': user.project_id or '-',
-            'study_start_date': user.study_start_date.strftime('%Y-%m-%d') if user.study_start_date else '-',
-            'study_end_date': user.study_end_date.strftime('%Y-%m-%d') if user.study_end_date else '-',
-            'dropped': user.dropped or False,
-            'dropped_surveys': user.dropped_surveys or False,
-            'custom_fields': custom_field_values,
-            'dates': {}
-        }
-
-        # For each date, get message count and check for high risk scores
-        for date in date_range:
-            date_start_utc, date_end_utc = date_to_utc_range(date)
-
-            # Query messages for this user and date
-            messages = Message.query.filter(
-                and_(
-                    Message.user_id == user.id,
-                    Message.timestamp >= date_start_utc,
-                    Message.timestamp <= date_end_utc
-                )
-            ).all()
-
-            message_count = len(messages)
-            has_risky = any(msg.is_risky for msg in messages)
-            has_unreviewed = any(not msg.is_reviewed for msg in messages)
-
-            # Get communication data for this date
-            date_key = date.isoformat()
-            comm_key = (user.redcap_id, date_key) if user.redcap_id else None
-            comm_data = notes_by_participant_date.get(comm_key, {'phone': 0, 'email': 0, 'text': 0})
-
-            user_row['dates'][date_key] = {
-                'count': message_count,
-                'has_risky': has_risky,
-                'has_unreviewed': has_unreviewed,
-                'phone_count': comm_data['phone'],
-                'email_count': comm_data['email'],
-                'text_count': comm_data['text']
-            }
-
-        # Check if user has any risky messages in the date range
-        user_has_risky = any(
-            user_row['dates'][d.isoformat()]['has_risky']
-            for d in date_range
-            if d.isoformat() in user_row['dates']
-        )
-        user_row['has_any_risky'] = user_has_risky
-
-        # Check if user needs attention (no messages for 2+ consecutive days from most recent, and not dropped)
-        needs_attention = False
-        if not user.dropped:
-            # Check last 2 days (most recent dates in the range)
-            recent_dates = sorted(date_range, reverse=True)[:2]
-            consecutive_zero_days = 0
-            for d in recent_dates:
-                date_key = d.isoformat()
-                if date_key in user_row['dates'] and user_row['dates'][date_key]['count'] == 0:
-                    consecutive_zero_days += 1
-                else:
-                    break
-            needs_attention = consecutive_zero_days >= 2
-        user_row['needs_attention'] = needs_attention
-
-        # Calculate utilization category
-        # Check total messages ever sent by this user
-        total_messages = Message.query.filter_by(user_id=user.id).count()
-
-        # Count days with activity in the date range
-        days_with_activity = sum(1 for d in date_range if user_row['dates'].get(d.isoformat(), {}).get('count', 0) > 0)
-        total_days = len(date_range)
-
-        # Count consecutive days without activity from most recent
-        recent_dates_sorted = sorted(date_range, reverse=True)
-        consecutive_inactive_days = 0
-        for d in recent_dates_sorted:
-            date_key = d.isoformat()
-            if user_row['dates'].get(date_key, {}).get('count', 0) == 0:
-                consecutive_inactive_days += 1
-            else:
-                break
-
-        # Determine utilization category
-        if total_messages == 0:
-            utilization_status = 'never_utilized'
-        elif consecutive_inactive_days >= 3:
-            utilization_status = 'inactive_3plus'
-        elif days_with_activity >= (total_days * 0.5):  # Active at least 50% of days
-            utilization_status = 'consistent'
-        else:
-            utilization_status = 'moderate'  # Some activity but not consistent
-
-        user_row['utilization_status'] = utilization_status
-        user_row['total_messages'] = total_messages
-        user_row['days_with_activity'] = days_with_activity
-        user_row['consecutive_inactive_days'] = consecutive_inactive_days
-
-        dashboard_data.append(user_row)
-
-    # Apply risk filter
-    if risk_filter == 'risky':
-        dashboard_data = [u for u in dashboard_data if u['has_any_risky']]
-    elif risk_filter == 'not_risky':
-        dashboard_data = [u for u in dashboard_data if not u['has_any_risky']]
-
-    # Apply attention filter
-    if attention_filter == 'needs_attention':
-        dashboard_data = [u for u in dashboard_data if u['needs_attention']]
-
-    # Count users needing attention (for display)
-    attention_count = sum(1 for u in dashboard_data if u['needs_attention'])
-
-    # Sort: needs attention first, then risky users, then by redcap_id
-    dashboard_data.sort(key=lambda x: (not x['needs_attention'], not x['has_any_risky'], x['redcap_id']))
-
-    # Get last sync info
-    last_sync = SyncLog.query.order_by(SyncLog.created_at.desc()).first()
-
-    return render_template('dashboard.html',
-                         dashboard_data=dashboard_data,
-                         date_range=date_range,
-                         start_date=start_date,
-                         end_date=end_date,
-                         last_sync=last_sync,
-                         projects=projects,
-                         project_filter=project_filter,
-                         ra_filter=ra_filter,
-                         risk_filter=risk_filter,
-                         attention_filter=attention_filter,
-                         attention_count=attention_count,
-                         research_assistants=research_assistants,
-                         custom_field_labels=all_custom_field_labels)
-
+    ctx = build_dashboard_context(request, et_tz, date_to_utc_range)
+    return render_template('dashboard.html', **ctx)
 
 @app.route('/api/sync', methods=['POST'])
 @login_required
@@ -1238,6 +1028,24 @@ def get_last_communication(participant_id):
             'success': False,
             'message': f"Error fetching communication history: {str(e)}"
         }), 500
+    
+@app.route("/api/overall")
+@login_required
+def api_overall():
+    window_days = int(request.args.get("window_days", 7))
+    sort = request.args.get("sort", "silence")          # silence | risky | days_in_study
+    order = request.args.get("order", "desc")           # asc | desc
+    limit = int(request.args.get("limit", 50))
+    offset = int(request.args.get("offset", 0))
+
+    rows = get_overall_users(
+        window_days=window_days,
+        sort=sort,
+        order=order,
+        limit=limit,
+        offset=offset,
+    )
+    return jsonify({"window_days": window_days, "rows": rows})
 
 
 @app.errorhandler(403)
