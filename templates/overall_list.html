@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="padding: 24px">
+
+  <h1 style="margin-bottom: 12px;">Overall — List View</h1>
+  <p style="margin-top: 0; margin-bottom: 24px; opacity: 0.8;">
+    Sorted by most recent dialogue
+  </p>
+
+<div style="display: flex; gap: 12px; margin-bottom: 24px;">
+  <a href="{{ url_for('overall', view='list', window=window_days) }}">List</a>
+  <a href="{{ url_for('overall', view='week', window=window_days) }}">Week</a>
+  <a href="{{ url_for('overall', view='calendar', window=window_days) }}">Calendar</a>
+</div>
+
+
+  <div style="margin-bottom: 16px;">
+  <strong>Risk window:</strong>
+   {% set windows = [(3, "Last 3 days"), (7, "Last week"), (14, "Past 2 weeks"), (30, "Past month")] %}
+  {% for days, label in windows %}
+    <a
+      href="{{ url_for('overall', view='list', window=days) }}"
+      style="margin-left: 10px; font-weight: {{ '700' if window_days == days else '400' }};"
+    >
+      {{ label }}
+    </a>
+  {% endfor %}
+  </div>
+ 
+
+  <!-- Table container -->
+  <div style="border: 1px solid #ddd; border-radius: 12px; overflow: hidden;">
+
+    <!-- Header row -->
+    <div style="
+      display: grid;
+      grid-template-columns: 140px 90px 320px 180px 110px 140px;
+      padding: 12px;
+      font-weight: 600;
+      background: #f6f6f6;
+    ">
+      <div>ID</div>
+      <div>Days</div>
+      <div>Recent Compliance (7d)</div>
+      <div>Last dialogue</div>
+      <div>Risky dialogues ({{ window_days }}d)</div>
+      <div>Status</div>
+    </div>
+
+<!-- Data rows -->
+{% for u in users %}
+  <div style="
+    display: grid;
+    grid-template-columns: 140px 90px 320px 180px 110px 140px;
+    padding: 12px;
+    border-top: 1px solid #eee;
+    align-items: center;
+  ">
+    <!-- ID -->
+    <div style="font-weight: 600;">{{ u.id }}</div>
+
+    <!-- Days -->
+    <div>{{ u.days_in_study if u.days_in_study is not none else "—" }}</div>
+
+    <!-- Compliance summary -->
+    <div style="font-family: monospace; font-size: 12px;">
+      EMA: {{ u["compliance_7d"]["ema"] }}
+      | LOC: {{ u["compliance_7d"]["location"] }}
+      | BAT: {{ u["compliance_7d"]["battery"] }}
+      | ACC: {{ u["compliance_7d"]["accel"] }}
+      | GYR: {{ u["compliance_7d"]["gyro"] }}
+    </div>
+
+    <!-- Last dialogue -->
+    <div>
+      {{ u.last_dialogue_relative }}
+      <span style="
+        margin-left: 8px;
+        font-size: 12px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        border: 1px solid #ccc;
+      ">
+        {{ u.last_dialogue_status }}
+      </span>
+    </div>
+
+    <!-- # Risky messages (colored) -->
+    {% set c = u.risky_count %}
+    {% set color = '#333' %}
+    {% if c >= 2 %}
+      {% set color = '#5a0b0b' %}
+    {% elif c == 1 %}
+      {% set color = '#b00020' %}
+    {% endif %}
+
+    <div style="font-weight: 700; color: {{ color }};">
+      {{ c }}
+    </div>
+
+    <!-- Status -->
+    <div>
+      {{ u.status }}
+    </div>
+  </div>
+{% endfor %}
+
+  </div>
+</div>
+{% endblock %}

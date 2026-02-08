@@ -17,6 +17,7 @@
             <a href="{{ url_for('dashboard') }}" class="nav-brand">Theradash</a>
             <ul class="nav-menu">
                 <li><a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a></li>
+		<li><a class="nav-link" href="{{ url_for('overall') }}?view=list">Overall</a></li>
                 <li><a href="{{ url_for('all_notes') }}" class="nav-link">All Notes</a></li>
                 <li><a href="{{ url_for('admin_users') }}" class="nav-link">Admin Users</a></li>
                 <li><a href="{{ url_for('settings') }}" class="nav-link">Settings</a></li>

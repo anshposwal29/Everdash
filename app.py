@@ -6,10 +6,11 @@ from middleware import require_ip_whitelist, ip_and_admin_required
 from services.sync_service import sync_service
 from services.twilio_service import twilio_service
 import services.email_service as email_service
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone, date
 import pytz
 import requests
 from sqlalchemy import func, and_
+from services.overall import get_overall_users
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -34,7 +35,6 @@ def date_to_utc_range(date_obj, tz=et_tz):
     start_utc = date_start.astimezone(pytz.utc).replace(tzinfo=None)
     end_utc = date_end.astimezone(pytz.utc).replace(tzinfo=None)
     return start_utc, end_utc
-
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -66,6 +66,29 @@ def enforce_ip_whitelist():
 def index():
     """Redirect to dashboard"""
     return redirect(url_for('dashboard'))
+
+@app.route("/overall")
+@login_required
+def overall():
+    view = request.args.get("view", "list")
+
+    # Window selector: 3 / 7 / 14 / 30 days
+    window = request.args.get("window", "14")
+    try:
+        window_days = int(window)
+    except ValueError:
+        window_days = 14
+
+    if window_days not in (3, 7, 14, 30):
+        window_days = 14
+
+    users = get_overall_users(window_days=window_days)
+
+    return render_template(
+        f"overall_{view}.html",
+        users=users,
+        window_days=window_days,
+    )
 
 
 @app.route('/login', methods=['GET', 'POST'])
