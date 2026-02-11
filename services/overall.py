@@ -10,7 +10,7 @@ def _passive_bucket(col):
     missing = func.sum(case((col == 0, 1), else_=0))
     return good, partial, missing
 
-def get_overall_users(window_days=7, sort="silence", order="desc", limit=50, offset=0):
+def get_overall_users(window_days=14, sort="silence", order="desc", limit=50, offset=0):
     now = datetime.utcnow()
     today = date.today()
     window_start_date = today - timedelta(days=window_days - 1)
@@ -81,17 +81,25 @@ def get_overall_users(window_days=7, sort="silence", order="desc", limit=50, off
     # Sorting in SQL (performance-safe)
     direction = desc if order == "desc" else asc
 
+    # Sorting in SQL (performance-safe)
     if sort == "silence":
-        # bigger silence => older last_dialogue_at
-        # ordering: nulls last (users with no messages)
-        q = q.order_by(direction(last_dialogue_subq.c.last_dialogue_at).nullslast())
-    elif sort == "risky":
-        q = q.order_by(direction(func.coalesce(risky_subq.c.risky_count, 0)))
-    elif sort == "days_in_study":
-        # older study_start_date => more days in study
-        q = q.order_by(direction(User.study_start_date).nullslast())
+        # longest silence first => oldest last_dialogue_at first
+        q = q.order_by(asc(last_dialogue_subq.c.last_dialogue_at).nullslast())
+
+    elif sort == "recent":
+        # most recent dialogue first => newest last_dialogue_at first
+        q = q.order_by(desc(last_dialogue_subq.c.last_dialogue_at).nullslast())
+
+    elif sort in ("risk", "risky"):
+        q = q.order_by(desc(func.coalesce(risky_subq.c.risky_count, 0)))
+
+    elif sort == "days":
+        # most days in study last --> most recent study_start_date first
+        q = q.order_by(desc(User.study_start_date).nullslast())
+
     else:
         q = q.order_by(User.id.asc())
+
 
     q = q.limit(limit).offset(offset)
 
@@ -125,6 +133,8 @@ def get_overall_users(window_days=7, sort="silence", order="desc", limit=50, off
                 "gyr": {"good_days": int(gyr_good or 0), "partial_days": int(gyr_partial or 0), "missing_days": int(gyr_missing or 0)},
             },
             "symptom_radar": int(user.symptom_radar or 5),
+            "utilization_status": getattr(user, "utilization_status", None),
+            "dropped": bool(getattr(user, "dropped", False)),
         })
 
     return rows

@@ -74,6 +74,8 @@ def index():
 @login_required
 def overall():
     view = request.args.get("view", "list")
+    sort = request.args.get("sort", "silence")
+    order = request.args.get("order", "desc")
 
     # ---- Risk window (used by Risky Dialogues column + API window_days)
     window = request.args.get("window", "14")
@@ -99,33 +101,38 @@ def overall():
 
         # keep these so your nav + labels still work on calendar page if needed
         ctx.update({
-            "window_days": window_days,
-            "compliance_days": compliance_days,
-            "view": view,
-        })
+        "window_days": window_days,
+        "compliance_days": compliance_days,
+        "view": view,
+        "sort": sort,
+        "order": order,
+    })
         return render_template("overall_calendar.html", **ctx)
+
 
     # ---- Week view (if you have a separate template)
     if view == "week":
         # If your week view is still server-rendered and expects users, keep it:
-        users = get_overall_users(window_days=window_days, sort="silence")
+    
         return render_template(
-            "overall_week.html",
-            users=users,
+            f"overall_{view}.html",
             window_days=window_days,
-            compliance_days=compliance_days,
+            compliance_days=compliance_days,  # optional, if you still show it anywhere
             view=view,
+            sort=sort,
+            order=order,
         )
 
     # ---- List view (API-driven: don't pass users)
     # still pass window_days/compliance_days because your header + links use them
     return render_template(
-        "overall_list.html",
+        f"overall_{view}.html",
         window_days=window_days,
-        compliance_days=compliance_days,
+        compliance_days=compliance_days,  # optional, if you still show it anywhere
         view=view,
+        sort=sort,
+        order=order,
     )
-
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -1033,7 +1040,7 @@ def get_last_communication(participant_id):
 @login_required
 def api_overall():
     window_days = int(request.args.get("window_days", 7))
-    sort = request.args.get("sort", "silence")          # silence | risky | days_in_study
+    sort = request.args.get("sort", "silence")          # silence | recent | risk | days_in_study
     order = request.args.get("order", "desc")           # asc | desc
     limit = int(request.args.get("limit", 50))
     offset = int(request.args.get("offset", 0))

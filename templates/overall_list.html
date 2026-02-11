@@ -1,59 +1,137 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div style="padding: 24px">
+<div style="padding: 24px; max-width: 1200px; margin: 0 auto;">
 
-  <h1 style="margin-bottom: 12px;">Overall — List View</h1>
-  <p style="margin-top: 0; margin-bottom: 24px; opacity: 0.8;">
-    Sorted by most recent dialogue
-  </p>
+  <!-- Card -->
+  <div style="
+    background: #fff;
+    border: 1px solid #e6e6e6;
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    overflow: hidden;
+  ">
 
-<div style="display: flex; gap: 12px; margin-bottom: 24px;">
-  <a href="{{ url_for('overall', view='list', window=window_days) }}">List</a>
-  <a href="{{ url_for('overall', view='week', window=window_days) }}">Week</a>
-  <a href="{{ url_for('overall', view='calendar', window=window_days) }}">Calendar</a>
-</div>
+    <!-- Card header / controls row -->
+    <div style="
+      padding: 18px 20px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: #fafafa;
+    ">
+      <div>
+        <h1 style="margin: 0; font-size: 26px;">Overall — List View</h1>
+      </div>
 
-<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
-  <strong>Window:</strong>
+      <!-- Window dropdown on the right -->
+      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="font-weight:600;">Window:</div>
+          <select id="window-select" style="padding:8px 10px; border-radius:10px; border:1px solid #d0d0d0; background:white; min-width:150px;">
+            <option value="3">Last 3 days</option>
+            <option value="7">Last week</option>
+            <option value="14">Past 2 weeks</option>
+            <option value="30">Past month</option>
+          </select>
+        </div>
 
-  <select id="window-select" style="padding: 6px 10px; border-radius: 8px; border: 1px solid #ccc;">
-    <option value="3">Last 3 days</option>
-    <option value="7">Last week</option>
-    <option value="14">Past 2 weeks</option>
-    <option value="30">Past month</option>
-  </select>
-</div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="font-weight:600;">Sort:</div>
+          <select id="sort-select" style="padding:8px 10px; border-radius:10px; border:1px solid #d0d0d0; background:white; min-width:220px;">
+            <option value="recent">Most recent dialogue</option>
+            <option value="silence">Silence (longest first)</option>
+            <option value="risk">Risky messages (high → low)</option>
+            <option value="days">Days in study (less days to more days)</option>
+          </select>
+        </div>
+      </div>
+    </div>
 
-  <!-- Table container -->
-  <div style="border: 1px solid #ddd; border-radius: 12px; overflow: hidden;">
 
-    <!-- Header row -->
-<!-- Header row -->
-<div style="
-  display: grid;
-  grid-template-columns: 140px 120px 160px 360px 220px 240px;
-  padding: 12px;
-  font-weight: 600;
-  background: #f6f6f6;
-">
-  <div>ID</div>
-  <div>Days in study</div>
-  <div>Last Dialogue</div>
-  <div>Recent Compliance (<span id="window-label">—</span>d)</div>
-  <div>Risky Dialogues (<span id="window-label-2">—</span>d)</div>
-  <div>Symptom radar (<span id="window-label-3">—</span>d)</div>
-</div>
+    <!-- Tabs row (List / Week / Calendar) -->
+    <div style="padding: 10px 20px; border-bottom: 1px solid #eee; display:flex; gap:10px; align-items:center;">
+    {% set active_view = view or 'list' %}
 
-<!-- Data rows injected by JS -->
-<div id="overall-rows"></div>
+    {% for v, label in [('list','List'), ('week','Week'), ('calendar','Calendar')] %}
+      <a href="{{ url_for('overall', view=v, window=window_days, sort=sort, order=order) }}"
+        style="
+          text-decoration:none;
+          padding: 8px 12px;
+          border-radius: 999px;
+          border: 1px solid {{ '#cfd8e3' if active_view != v else '#2b6cb0' }};
+          background: {{ '#f8fafc' if active_view != v else '#ebf8ff' }};
+          color: {{ '#334155' if active_view != v else '#1e40af' }};
+          font-weight: 600;
+          font-size: 14px;
+        ">
+        {{ label }}
+      </a>
+    {% endfor %}
+    </div>
 
-  </div>
-</div>
+
+      <!-- Table area -->
+    <div style="padding: 14px 20px;">
+      <!-- Header row -->
+      <!-- Header row -->
+      <div style="
+        display: grid;
+        grid-template-columns: 140px 140px 320px 220px 200px 120px;
+        padding: 12px;
+        font-weight: 600;
+        background: #f6f6f6;
+      ">
+        <div>ID</div>
+        <div>Last Dialogue</div>
+        <div>Recent Compliance (<span id="window-label">—</span>d)</div>
+        <div>Risky Dialogues (<span id="window-label-2">—</span>d)</div>
+        <div>Symptom radar (<span id="window-label-3">—</span>d)</div>
+        <div>Actions</div>
+      </div>
+
+      <!-- Data rows injected by JS -->
+      <div id="overall-rows"></div>
+    </div> <!-- /Table area -->
+
+  </div>   <!-- /Card -->
+</div>     <!-- /page container -->
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
+//helpers
+function escapeJs(s) {
+  // minimal escaping for putting strings into onclick handlers
+  return String(s ?? "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+}
+
+function renderActions(u) {
+  // Match your dashboard behavior: only show if redcap_id exists and not '-'
+  if (!u.redcap_id || u.redcap_id === "-") return "";
+
+  const redcapId = escapeJs(u.redcap_id);
+  const identifier = escapeJs(u.identifier);
+  const utilization = escapeJs(u.utilization_status || "UNKNOWN");
+  const dropped = u.dropped ? "true" : "false";
+
+  return `
+    <button class="btn btn-action btn-email"
+      onclick="openDashboardEmailModal('${redcapId}', '${identifier}', '${utilization}', ${dropped})"
+      title="Send Email">
+      &#9993;
+    </button>
+    <button class="btn btn-action btn-note"
+      onclick="openDashboardNoteModal('${redcapId}', '${identifier}')"
+      title="Add Note">
+      &#9998;
+    </button>
+  `;
+}
+
 async function loadOverall() {
   const params = new URLSearchParams(window.location.search);
 
@@ -67,6 +145,9 @@ async function loadOverall() {
   // Update dropdown selection
   const select = document.getElementById("window-select");
   if (select) select.value = String(windowDays);
+
+  const sortSelect2 = document.getElementById("sort-select");
+  if (sortSelect2) sortSelect2.value = sort;
 
   // Update column header labels
   const setText = (id, val) => {
@@ -88,14 +169,19 @@ async function loadOverall() {
   for (const u of data.rows) {
     const row = document.createElement("div");
     row.style.display = "grid";
-    row.style.gridTemplateColumns = "140px 120px 160px 360px 220px 240px";
+    row.style.gridTemplateColumns = "140px 140px 320px 220px 200px 120px";
     row.style.padding = "12px";
     row.style.borderTop = "1px solid #eee";
     row.style.alignItems = "center";
 
-    row.innerHTML = `
-  <div style="font-weight: 600;">${u.redcap_id ?? u.identifier ?? u.user_id}</div>
-  <div>${u.days_in_study ?? "—"}</div>
+    row.innerHTML =`
+  <div>
+    <div style="font-weight: 600;">${u.redcap_id ?? u.identifier ?? u.user_id}</div>
+    <div style="font-size: 12px; opacity: 0.65; margin-top: 2px;">
+      ${u.days_in_study ?? "—"} days in study
+    </div>
+  </div>
+
   <div>${formatSilence(u.silence_days)}</div>
 
   <div style="font-family: monospace; font-size: 12px;">
@@ -107,7 +193,11 @@ async function loadOverall() {
 
   <div>${u.risky_count ?? 0}</div>
   <div>${u.symptom_radar ?? "—"}</div>
+    <div style="display:flex; gap:8px; justify-content:flex-start;">
+    ${renderActions(u)}
+  </div>
 `;
+
     container.appendChild(row);
   }
 }
@@ -121,19 +211,59 @@ function formatSilence(days) {
 
 
 document.addEventListener("DOMContentLoaded", () => {
-  const select = document.getElementById("window-select");
-  if (select) {
-    select.addEventListener("change", () => {
-      const params = new URLSearchParams(window.location.search);
-      params.set("view", params.get("view") || "list");
-      params.set("window", select.value);
-      // Optional: preserve sort/order if present
-      window.location.search = params.toString();
+  const params = new URLSearchParams(window.location.search);
+
+  // -------------------------
+  // Window dropdown wiring
+  // -------------------------
+  const windowSelect = document.getElementById("window-select");
+  if (windowSelect) {
+    windowSelect.value = params.get("window") || "14";
+
+    windowSelect.addEventListener("change", () => {
+      const p = new URLSearchParams(window.location.search);
+      p.set("view", p.get("view") || "list");
+      p.set("window", windowSelect.value);
+      window.location.search = p.toString();
     });
   }
 
+  // -------------------------
+  // Sort dropdown wiring
+  // -------------------------
+  const sortSelect = document.getElementById("sort-select");
+  if (sortSelect) {
+    sortSelect.value = params.get("sort") || "silence";
+
+    sortSelect.addEventListener("change", () => {
+      const p = new URLSearchParams(window.location.search);
+      p.set("view", p.get("view") || "list");
+
+      const chosen = sortSelect.value;
+
+      if (chosen === "recent") {
+        p.set("sort", "recent");
+        p.set("order", "desc");
+      } else if (chosen === "silence") {
+        p.set("sort", "silence");
+        p.set("order", "desc");
+      } else if (chosen === "risk") {
+        p.set("sort", "risk");
+        p.set("order", "desc");
+      }
+      else if(chosen == "days"){
+        p.set("sort", "days");
+        p.set("order", "desc");
+      }
+
+      window.location.search = p.toString();
+    });
+  }
+
+  // Load rows
   loadOverall();
 });
+
 
 </script>
 {% endblock %}

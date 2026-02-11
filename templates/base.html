@@ -41,6 +41,301 @@
         {% block content %}{% endblock %}
     </div>
 
+    <!-- Dashboard modals available globally -->
+    
+<!-- Dashboard Email Modal - Redesigned -->
+<div id="dashboard-email-modal" class="modal" style="display: none;">
+    <div class="modal-content email-modal-v2">
+        <div class="modal-header-v2">
+            <div class="modal-title-section">
+                <h2>Send Email</h2>
+                <p class="modal-subtitle" id="dashEmailParticipantName">Loading participant...</p>
+            </div>
+            <span class="close" onclick="closeDashboardEmailModal()">&times;</span>
+        </div>
+
+        <div class="modal-body">
+            <!-- Step 1: Template Selection -->
+            <div id="dashEmailStep1" class="email-step">
+                <!-- Dropped Warning Banner -->
+                <div class="dropped-warning-banner" id="droppedWarningBanner" style="display: none;">
+                    <div class="warning-icon">&#9888;</div>
+                    <div class="warning-content">
+                        <strong>Warning: Participant Has Dropped</strong>
+                        <p>This participant has dropped from the study. Are you sure you want to send them an email?</p>
+                    </div>
+                    <label class="warning-confirm">
+                        <input type="checkbox" id="droppedConfirmCheckbox" onchange="onDroppedConfirmChange()">
+                        <span>I understand and want to proceed anyway</span>
+                    </label>
+                </div>
+
+                <!-- Participant Status Card -->
+                <div class="participant-status-card" id="participantStatusCard">
+                    <div class="status-card-header">
+                        <span class="status-card-label">Participant Status</span>
+                        <span class="status-badge-lg" id="participantUtilizationBadge">Loading...</span>
+                    </div>
+                    <div class="status-card-details">
+                        <div class="status-detail">
+                            <span class="detail-icon">&#9993;</span>
+                            <span class="detail-text" id="dashEmailToAddress">Loading email...</span>
+                        </div>
+                        <div class="status-detail">
+                            <span class="detail-icon">&#128337;</span>
+                            <span class="detail-text" id="dashLastEmailSent">Last contact: Loading...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Template Selection Cards -->
+                <div class="template-section">
+                    <h3 class="template-section-title">Choose a Message Type</h3>
+                    <p class="template-section-subtitle">Select the template that best fits the participant's situation</p>
+
+                    <div class="template-cards">
+                        <!-- Great Job Card -->
+                        <div class="template-card" data-template="great_job" onclick="selectTemplateCard(this, 'great_job')">
+                            <div class="template-card-icon template-icon-success">&#9733;</div>
+                            <div class="template-card-content">
+                                <h4 class="template-card-title">Great Job!</h4>
+                                <p class="template-card-description">Positive reinforcement for consistent daily engagement</p>
+                                <div class="template-card-when">
+                                    <span class="when-label">Best for:</span>
+                                    <span class="when-value">Consistent users who are engaging regularly</span>
+                                </div>
+                            </div>
+                            <div class="template-card-check">&#10003;</div>
+                        </div>
+
+                        <!-- Needs Improvement Card -->
+                        <div class="template-card" data-template="needs_improvement" onclick="selectTemplateCard(this, 'needs_improvement')">
+                            <div class="template-card-icon template-icon-warning">&#9888;</div>
+                            <div class="template-card-content">
+                                <h4 class="template-card-title">Needs Improvement</h4>
+                                <p class="template-card-description">Gentle reminder for participants who've missed 2-3 days</p>
+                                <div class="template-card-when">
+                                    <span class="when-label">Best for:</span>
+                                    <span class="when-value">Users showing decreased engagement (2-3 days inactive)</span>
+                                </div>
+                            </div>
+                            <div class="template-card-check">&#10003;</div>
+                        </div>
+
+                        <!-- Never Logged In Card -->
+                        <div class="template-card" data-template="never_logged_in" onclick="selectTemplateCard(this, 'never_logged_in')">
+                            <div class="template-card-icon template-icon-danger">&#128274;</div>
+                            <div class="template-card-content">
+                                <h4 class="template-card-title">Getting Started</h4>
+                                <p class="template-card-description">Welcome email with login credentials and setup instructions</p>
+                                <div class="template-card-when">
+                                    <span class="when-label">Best for:</span>
+                                    <span class="when-value">Participants who haven't logged into the app yet</span>
+                                </div>
+                            </div>
+                            <div class="template-card-check">&#10003;</div>
+                        </div>
+
+                        <!-- Custom Email Card -->
+                        <div class="template-card template-card-custom" data-template="custom" onclick="selectTemplateCard(this, 'custom')">
+                            <div class="template-card-icon template-icon-neutral">&#9998;</div>
+                            <div class="template-card-content">
+                                <h4 class="template-card-title">Custom Message</h4>
+                                <p class="template-card-description">Write a personalized message for specific situations</p>
+                                <div class="template-card-when">
+                                    <span class="when-label">Best for:</span>
+                                    <span class="when-value">Unique circumstances not covered by templates</span>
+                                </div>
+                            </div>
+                            <div class="template-card-check">&#10003;</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Message Input (hidden by default) -->
+                <div id="dashCustomMessageGroup" class="custom-message-section" style="display: none;">
+                    <label for="dashCustomMessage" class="custom-message-label">Your Message</label>
+                    <textarea id="dashCustomMessage" class="custom-message-input" rows="4" placeholder="Enter your personalized message here..."></textarea>
+                    <p class="custom-message-hint">Your message will be wrapped with a greeting and signature automatically.</p>
+                </div>
+
+                <!-- Hidden select for compatibility -->
+                <select id="dashEmailTemplateSelect" style="display: none;">
+                    <option value="">-- Select a template --</option>
+                </select>
+                <input type="hidden" id="dashEmailFromAddress" value="">
+
+                <div class="email-step-buttons">
+                    <button type="button" class="btn-modal btn-modal-secondary" onclick="closeDashboardEmailModal()">Cancel</button>
+                    <button type="button" class="btn-modal btn-modal-primary" id="dashPreviewEmailBtn" onclick="dashPreviewEmail()" disabled>
+                        Preview Email <span class="btn-arrow">→</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: Email Preview & Edit -->
+            <div id="dashEmailStep2" class="email-step" style="display: none;">
+                <div class="preview-edit-notice">
+                    <span class="edit-icon">&#9998;</span>
+                    <span>You can edit the subject and message below before sending</span>
+                </div>
+
+                <div class="preview-header-card">
+                    <div class="preview-row">
+                        <span class="preview-label">To:</span>
+                        <span class="preview-value" id="dashPreviewToAddress"></span>
+                    </div>
+                    <div class="preview-row">
+                        <span class="preview-label">From:</span>
+                        <span class="preview-value" id="dashPreviewFromAddress"></span>
+                    </div>
+                    <div class="preview-row preview-subject-row">
+                        <span class="preview-label">Subject:</span>
+                        <input type="text" id="dashPreviewSubject" class="preview-subject-input" placeholder="Email subject...">
+                    </div>
+                </div>
+
+                <div class="preview-body-card">
+                    <div class="preview-body-label">
+                        <span>Message Content</span>
+                        <div class="editor-toggle">
+                            <button type="button" class="toggle-btn active" id="visualEditorBtn" onclick="toggleEditor('visual')">Visual</button>
+                            <button type="button" class="toggle-btn" id="htmlEditorBtn" onclick="toggleEditor('html')">HTML</button>
+                        </div>
+                    </div>
+                    <div id="dashPreviewBodyVisual" class="preview-body-editable" contenteditable="true"></div>
+                    <textarea id="dashPreviewBodyHtml" class="preview-body-html" style="display: none;"></textarea>
+                </div>
+
+                <div class="email-step-buttons">
+                    <button type="button" class="btn-modal btn-modal-secondary" onclick="dashBackToStep1()">
+                        <span class="btn-arrow">←</span> Back
+                    </button>
+                    <button type="button" class="btn-modal btn-modal-success" id="dashSendEmailBtn" onclick="dashSendEmail()">
+                        Send Email <span class="btn-arrow">&#10003;</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Sending/Success -->
+            <div id="dashEmailStep3" class="email-step" style="display: none;">
+                <div id="dashEmailSendingIndicator" class="email-status-v2">
+                    <div class="status-spinner"></div>
+                    <p class="status-text">Sending email...</p>
+                </div>
+                <div id="dashEmailSuccessIndicator" class="email-status-v2" style="display: none;">
+                    <div class="status-icon-success">&#10003;</div>
+                    <p class="status-text">Email sent successfully!</p>
+                    <p class="status-subtext">This email has been logged to the participant's notes.</p>
+                </div>
+                <div id="dashEmailErrorIndicator" class="email-status-v2" style="display: none;">
+                    <div class="status-icon-error">&#10007;</div>
+                    <p class="status-text" id="dashEmailErrorMessage">Error sending email</p>
+                </div>
+                <div class="email-step-buttons" id="dashEmailStep3Buttons" style="display: none;">
+                    <button type="button" class="btn-modal btn-modal-primary" onclick="closeDashboardEmailModal()">Done</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dashboard Note Modal - Redesigned -->
+<div id="dashboard-note-modal" class="modal" style="display: none;">
+    <div class="modal-content note-modal-v2">
+        <div class="modal-header-v2">
+            <div class="modal-title-section">
+                <h2>Add Note</h2>
+                <p class="modal-subtitle" id="dashNoteParticipantName">Loading participant...</p>
+            </div>
+            <span class="close" onclick="closeDashboardNoteModal()">&times;</span>
+        </div>
+
+        <div class="modal-body">
+            <form id="dashNoteForm" class="note-form-v2">
+                <input type="hidden" id="dashNoteParticipantId" value="">
+
+                <!-- Contact Type Selection -->
+                <div class="note-section">
+                    <h3 class="note-section-title">Contact Type</h3>
+                    <div class="note-type-cards">
+                        <div class="note-type-card" data-type="Phone Call" onclick="selectNoteType(this, 'Phone Call')">
+                            <span class="note-type-icon">&#128222;</span>
+                            <span class="note-type-label">Phone Call</span>
+                        </div>
+                        <div class="note-type-card" data-type="Email" onclick="selectNoteType(this, 'Email')">
+                            <span class="note-type-icon">&#9993;</span>
+                            <span class="note-type-label">Email</span>
+                        </div>
+                        <div class="note-type-card" data-type="Text Message" onclick="selectNoteType(this, 'Text Message')">
+                            <span class="note-type-icon">&#128172;</span>
+                            <span class="note-type-label">Text</span>
+                        </div>
+                        <div class="note-type-card" data-type="In-Person" onclick="selectNoteType(this, 'In-Person')">
+                            <span class="note-type-icon">&#128100;</span>
+                            <span class="note-type-label">In-Person</span>
+                        </div>
+                        <div class="note-type-card" data-type="General" onclick="selectNoteType(this, 'General')">
+                            <span class="note-type-icon">&#128203;</span>
+                            <span class="note-type-label">General</span>
+                        </div>
+                    </div>
+                    <input type="hidden" id="dashNoteType" value="">
+                </div>
+
+                <!-- Details Row -->
+                <div class="note-details-row">
+                    <div class="note-field">
+                        <label for="dashNoteReason" class="note-field-label">Reason</label>
+                        <select id="dashNoteReason" class="note-select">
+                            <option value="">Select reason...</option>
+                            <option value="Check-in">Check-in</option>
+                            <option value="Technical Issue">Technical Issue</option>
+                            <option value="Study Question">Study Question</option>
+                            <option value="Scheduling">Scheduling</option>
+                            <option value="Follow-up">Follow-up</option>
+                            <option value="Concern">Concern</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="note-field">
+                        <label for="dashNoteDateTime" class="note-field-label">Date & Time</label>
+                        <input type="datetime-local" id="dashNoteDateTime" class="note-input">
+                    </div>
+
+                    <div class="note-field">
+                        <label for="dashNoteDuration" class="note-field-label">Duration</label>
+                        <select id="dashNoteDuration" class="note-select">
+                            <option value="">Select...</option>
+                            <option value="< 5 min">&lt; 5 min</option>
+                            <option value="5-10 min">5-10 min</option>
+                            <option value="10-15 min">10-15 min</option>
+                            <option value="15-30 min">15-30 min</option>
+                            <option value="30-60 min">30-60 min</option>
+                            <option value="> 60 min">&gt; 60 min</option>
+                            <option value="N/A">N/A</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Note Content -->
+                <div class="note-content-section">
+                    <label for="dashNoteContent" class="note-field-label">Note Details</label>
+                    <textarea id="dashNoteContent" class="note-textarea" rows="4" placeholder="Enter note details..."></textarea>
+                </div>
+            </form>
+        </div>
+
+        <div class="note-modal-footer">
+            <button type="button" class="btn-modal btn-modal-secondary" onclick="closeDashboardNoteModal()">Cancel</button>
+            <button type="button" class="btn-modal btn-modal-success" id="dashSaveNoteBtn" onclick="saveDashboardNote()">
+                Save Note <span class="btn-arrow">&#10003;</span>
+            </button>
+        </div>
+    </div>
+</div>
+
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>
