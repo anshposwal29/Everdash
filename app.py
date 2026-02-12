@@ -465,7 +465,7 @@ def get_messages_for_date(firebase_id, date_str):
                 conversations[conv.id] = {
                     'id': conv.id,
                     'firebase_convo_id': conv.firebase_convo_id,
-                    'prompt': conv.prompt
+                    'topic': conv.topic
                 }
 
         # Format messages for response
@@ -482,7 +482,7 @@ def get_messages_for_date(firebase_id, date_str):
                 'is_risky': msg.is_risky,
                 'is_reviewed': msg.is_reviewed,
                 'conversation_id': msg.conversation_id,
-                'conversation_prompt': conv_info.get('prompt', ''),
+                'conversation_topic': conv_info.get('topic', ''),
                 'firebase_convo_id': conv_info.get('firebase_convo_id', '')
             })
 
@@ -614,7 +614,7 @@ def user_detail(firebase_id):
                     conversations_dict[message.conversation_id] = {
                         'id': conv.id,
                         'firebase_convo_id': conv.firebase_convo_id,
-                        'prompt': conv.prompt,
+                        'topic': conv.topic,
                         'timestamp': conv.timestamp.replace(tzinfo=pytz.utc).astimezone(et_tz) if conv.timestamp else None
                     }
             message.conversation_info = conversations_dict.get(message.conversation_id)
@@ -635,6 +635,10 @@ def user_detail(firebase_id):
     first_message_date = messages[-1].timestamp_et if messages else None
     last_message_date = messages[0].timestamp_et if messages else None
 
+    # Fetch conversations for this user and sort them by 'last_activity' property
+    conversations = Conversation.query.filter_by(user_id=user.id).all()
+    conversations.sort(key=lambda x: x.last_activity_et, reverse=True)
+
     user_stats = {
         'total_messages': total_messages,
         'total_conversations': total_conversations,
@@ -645,6 +649,7 @@ def user_detail(firebase_id):
 
     return render_template('user_detail.html',
                          user=user,
+                         conversations=conversations,
                          messages=messages,
                          start_date=start_date,
                          end_date=end_date,

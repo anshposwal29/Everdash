@@ -80,7 +80,6 @@ function toggleAllGroups() {
     const icons = document.querySelectorAll('.group-icon');
     const btn = document.getElementById('global-toggle-btn');
     
-    // Determine if we should expand or collapse based on the button text
     const isExpanding = btn.innerText === "Expand All";
 
     groups.forEach(group => {
@@ -95,7 +94,7 @@ function toggleAllGroups() {
     btn.innerText = isExpanding ? "Collapse All" : "Expand All";
 }
 
-// Ensure your existing single toggle function updates the master button if needed
+// Ensure existing single toggle function updates the master button if needed
 function toggleDateGroup(id) {
     const group = document.getElementById(id);
     const icon = document.getElementById('icon-' + id);
@@ -106,4 +105,49 @@ function toggleDateGroup(id) {
         group.style.display = "none";
         icon.innerText = "▶";
     }
+}
+
+// Determines which group of conversations to display
+function applyRiskFilter(filterValue) {
+    const conversations = document.querySelectorAll('.prompt-conversation-group');
+    
+    conversations.forEach(conv => {
+        const hasRisk = conv.getAttribute('data-has-risk') === 'true';
+        const isPassive = conv.getAttribute('data-is-passive') === 'true';
+
+        if (filterValue === 'risky') {
+            conv.style.display = hasRisk ? 'block' : 'none';
+        } 
+        else if (filterValue === 'passive-sensing') {
+            conv.style.display = isPassive ? 'block' : 'none';
+        }
+        else if (filterValue === 'user-initiated') {
+            conv.style.display = !isPassive ? 'block' : 'none';
+        }
+        else {
+            conv.style.display = 'block';
+        }
+    });
+
+    updateDateMarkers();
+}
+
+// Hides date headers if all corresponding conversations are hidden by the filter
+function updateDateMarkers() {
+    const markers = document.querySelectorAll('.timeline-date-marker');
+    markers.forEach(marker => {
+        // Look at all siblings until the next marker
+        let nextEl = marker.nextElementSibling;
+        let hasVisibleConvo = false;
+
+        while (nextEl && !nextEl.classList.contains('timeline-date-marker')) {
+            if (nextEl.classList.contains('prompt-conversation-group') && nextEl.style.display !== 'none') {
+                hasVisibleConvo = true;
+                break;
+            }
+            nextEl = nextEl.nextElementSibling;
+        }
+
+        marker.style.display = hasVisibleConvo ? 'block' : 'none';
+    });
 }

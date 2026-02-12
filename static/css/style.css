@@ -3077,6 +3077,7 @@ body {
     align-items: center;
     width: 100%;
     margin: var(--space-lg) 0 var(--space-md) 0;
+    padding-left: 20px;
 }
 
 .timeline-date-marker:first-child {
@@ -3344,56 +3345,11 @@ body {
 }
 
 /* user_detail.html */
-/* Ensure the messages start visible, but are collapsible */
-.date-message-group {
-    overflow: hidden;
-    transition: max-height 0.3s ease-out;
-    margin-bottom: 20px;
-}
-
-.date-message-group.is-collapsed {
-    display: none;
-}
-
-.collapsible-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: background-color 0.2s;
-}
-
-.collapsible-header:hover {
-    background-color: #f0f2f5;
-}
-
-.toggle-icon {
-    display: inline-block;
-    font-size: 0.8em;
-    transition: transform 0.3s;
-    margin-right: 15px;
-}
-
-.toggle-icon.collapsed {
-    transform: rotate(-90deg) !important;
-}
-
-/* Risky marker style */
-.date-marker-risky {
-    background-color: #fff5f5 !important; 
-    border: 1px solid #ffc9c9 !important; 
-    color: #c92a2a !important;            
-}
 
 /* The RED version of the date text bubble */
 .date-marker-text.date-text-risky {
     background-color: #ff7171; 
     color: white !important;  
-}
-
-/* Optional: Pulse effect to draw attention */
-.date-marker-risky .risk-icon-mini {
-    margin-right: 8px;
-    color: #fa5252;
 }
 
 /* Container for the header to align items */
@@ -3436,33 +3392,19 @@ body {
     font-size: 0.9rem;
 }
 
-/* Container for the badges */
-.prompt-subtitle {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 6px;
-    flex-wrap: wrap;
-
-    padding-top: 6px;
-    padding-left: 22px;
-    padding-bottom: 6px;
-}
-
 /* The Badge Style */
 .prompt-badge {
-    background-color: #eef2ff; /* Light indigo tint */
-    color: #4f46e5;            /* Deep indigo text */
+    background-color: #eef2ff; 
+    color: #4f46e5;            
     border: 1px solid #c7d2fe;
     padding: 2px 10px;
-    border-radius: 9999px;     /* Pill shape */
+    border-radius: 9999px;    
     font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.02em;
     text-transform: capitalize;
 }
 
-/* Subtle variation if the badge is "General" */
 .prompt-badge:empty, .prompt-badge:contains("General") {
     background-color: #f3f4f6;
     color: #6b7280;
@@ -3472,13 +3414,13 @@ body {
 .marker-content-wrapper {
     display: flex;
     flex-direction: column;
-    width: 100%; /* Important: takes up all space to push arrow right */
+    width: 100%; 
 }
 
 /* Row for the date and the toggle arrow */
 .date-row {
     display: flex;
-    justify-content: space-between; /* Pushes content to opposite ends */
+    justify-content: space-between; 
     align-items: center;
     width: 100%;
 }
@@ -3487,5 +3429,177 @@ body {
     font-size: 0.8rem;
     color: #9ca3af;
     transition: transform 0.2s ease;
-    margin-left: 10px; /* Buffer space */
+    margin-left: 10px; 
+}
+
+/* Container and Timeline */
+.messages-timeline {
+    padding: 10px 0;
+}
+
+.prompt-conversation-group {
+    margin-bottom: 12px;
+    margin-left: 20px;
+    margin-right: 20px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+    overflow: hidden;
+}
+
+/* Header Styling */
+.collapsible-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background-color: #fcfcfc;
+    transition: background 0.2s;
+}
+
+.collapsible-header:hover {
+    background-color: #f3f4f6;
+}
+
+.header-content-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.convo-time-meta {
+    font-size: 0.8rem;
+    color: #9ca3af;
+}
+
+/* Chat Window & Bubbles */
+.chat-window {
+    padding: 20px;
+    background-color: #fafafa;
+    border-top: 1px solid #f0f0f0;
+}
+
+.message-wrapper {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+    width: 100%;
+}
+
+.evie-align { align-items: flex-start; }
+.participant-align { align-items: flex-end; }
+
+.chat-bubble {
+    max-width: 75%;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    position: relative;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.bubble-evie {
+    background-color: #ffffff;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px 18px 18px 2px; 
+}
+
+.bubble-participant {
+    background-color: #e3f2fd;
+    color: #1e3a8a;
+    border: 1px solid #bbdefb;
+    border-radius: 18px 18px 2px 18px; 
+}
+
+.bubble-risky {
+    border: 2px solid #fa5252 !important;
+    background-color: #fff5f5 !important;
+}
+
+/* Metadata inside bubble */
+.bubble-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    margin-bottom: 6px;
+    opacity: 0.7;
+    gap: 15px;
+}
+
+/* Risk Tags */
+.risk-tag-header {
+    background: #fa5252;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.trigger-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+/* Style for Passive Sensing */
+.trigger-passive {
+    background-color: #f5f3ff;
+    color: #7c3aed;
+    border: 1px solid #beaefd;
+}
+
+/* Style for User Initiated */
+.trigger-user {
+    background-color: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #50b174;
+}
+
+/* Filter Dropdown - Matching Toggle All Button Style */
+.filter-dropdown {
+    background-color: #ffffff;
+    color: #444;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 6px 32px 6px 14px; /* Extra padding on right for arrow */
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    
+    /* Custom Arrow Styling */
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 14px;
+}
+
+.filter-dropdown:hover {
+    background-color: #f9fafb;
+    border-color: #c1c5cb;
+}
+
+.filter-dropdown:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.timestamp-wrapper {
+    display: inline-flex;
+    gap: 10px; 
+    color: #6b7280; 
+}
+
+.date-part {
+    font-weight: 500;
 }

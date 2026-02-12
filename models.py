@@ -2,6 +2,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta, date
+import pytz
 
 db = SQLAlchemy()
 
@@ -89,22 +90,17 @@ class User(db.Model):
             return 0
             
         today = date.today()
-        # Find whichever is more recent: 30 days ago OR the actual start date
         thirty_days_ago = today - timedelta(days=30)
         calculation_start = max(thirty_days_ago, self.study_start_date)
         
         # Convert calculation_start to datetime for the DB query comparison
         calc_start_dt = datetime.combine(calculation_start, datetime.min.time())
         
-        # Filter conversations within our adaptive window
         recent_convo_count = self.conversations.filter(
             Conversation.timestamp >= calc_start_dt
         ).count()
         
-        # Calculate days elapsed in our window
         days_in_window = (today - calculation_start).days
-        
-        # Prevent division by zero; if they started today, use 1 day as minimum
         weeks_in_window = max(days_in_window, 1) / 7.0
         
         return round(recent_convo_count / weeks_in_window, 2)
@@ -141,13 +137,46 @@ class Conversation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     firebase_convo_id = db.Column(db.String(100), unique=True, nullable=False, index=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
-    prompt = db.Column(db.Text)
+    topic = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, nullable=False, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    trigger_type = db.Column(db.String(50), default='user_initiated')
 
-    # Relationships
-    messages = db.relationship('Message', backref='conversation', lazy='dynamic', cascade='all, delete-orphan')
+    # Automatically groups messages by conv.id
+    messages = db.relationship('Message', backref='conversation', lazy='selectin', order_by="Message.timestamp.asc()")
 
+    @property
+    def has_risk(self):
+        """Returns True if any message in this conversation is risky."""
+        return any(m.is_risky for m in self.messages)
+    
+    @property
+    def trigger_passive_sensing(self):
+        """Returns True if convesation was triggered by passive sensing, False if user initiated"""
+        return self.trigger_type == 'passive_sensing'
+
+    @property
+    def timestamp_et(self):
+        """Helper to get Eastern Time directly from the model."""
+        if not self.timestamp:
+            return None
+        et_tz = pytz.timezone("US/Eastern")
+        return self.timestamp.replace(tzinfo=pytz.utc).astimezone(et_tz)
+
+    @property
+    def trigger_display(self):
+        """Returns a formatted version of the trigger for the UI"""
+        if not self.trigger_type:
+            return "Unknown"
+        return self.trigger_type.replace('_', ' ').title()
+    
+    @property
+    def last_activity_et(self):
+        """Returns the Eastern Time of the last message, or conversation start if empty."""
+        if self.messages:
+            return self.messages[-1].timestamp_et
+        return self.timestamp_et
+    
     def __repr__(self):
         return f'<Conversation {self.firebase_convo_id}>'
 
