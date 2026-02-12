@@ -1,8 +1,129 @@
 {% extends "base.html" %}
 {% block content %}
-<div style="padding: 24px">
-  <h1>Overall — Week View</h1>
-  <p>Coming soon.</p>
-  <p><a href="{{ url_for('overall') }}?view=list">Back to List</a></p>
+
+<div style="padding: 24px; max-width: 1200px; margin: 0 auto;">
+
+  <!-- Card -->
+  <div style="
+    background: #fff;
+    border: 1px solid #e6e6e6;
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    overflow: hidden;
+  ">
+
+    <!-- Card header / controls row -->
+    <div style="
+      padding: 18px 20px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: #fafafa;
+    ">
+      <div>
+        <h1 style="margin: 0; font-size: 26px;">Overall — Week View</h1>
+      </div>
+
+      <!-- Window dropdown on the right -->
+      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="font-weight:600;">Window:</div>
+          <select id="window-select" style="padding:8px 10px; border-radius:10px; border:1px solid #d0d0d0; background:white; min-width:150px;">
+            <option value="3">Last 3 days</option>
+            <option value="7">Last week</option>
+            <option value="14">Past 2 weeks</option>
+            <option value="30">Past month</option>
+          </select>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="font-weight:600;">Sort:</div>
+          <select id="sort-select" style="padding:8px 10px; border-radius:10px; border:1px solid #d0d0d0; background:white; min-width:220px;">
+            <option value="recent">Most recent dialogue</option>
+            <option value="silence">Silence (longest first)</option>
+            <option value="risk">Risky messages (high → low)</option>
+            <option value="days">Days in study (less days to more days)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Tabs row (List / Week / Calendar) -->
+    <div style="
+        padding: 10px 20px;
+        border-bottom: 1px solid #eee;
+        display:flex;
+        justify-content: space-between;
+        align-items:center;
+        gap:20px;
+        flex-wrap: wrap;
+      ">
+      {% set active_view = view or 'list' %}
+
+      <div style="display:flex; gap:10px; align-items:center;">
+        {% for v, label in [('list','List'), ('week','Week'), ('calendar','Calendar')] %}
+          <a href="{{ url_for('overall', view=v, window=window_days, sort=sort, order=order) }}"
+            style="
+              text-decoration:none;
+              padding: 8px 12px;
+              border-radius: 999px;
+              border: 1px solid {{ '#cfd8e3' if active_view != v else '#2b6cb0' }};
+              background: {{ '#f8fafc' if active_view != v else '#ebf8ff' }};
+              color: {{ '#334155' if active_view != v else '#1e40af' }};
+              font-weight: 600;
+              font-size: 14px;
+            ">
+            {{ label }}
+          </a>
+        {% endfor %}
+      </div>
+
+      <div style="display:flex; align-items:center; gap:18px; font-size:14px; flex-wrap:wrap;">
+
+  <!-- Symbol legend -->
+        <div style="display:flex; align-items:center; gap:6px;">
+          <i data-lucide="map-pin"></i> Location
+        </div>
+
+        <div style="display:flex; align-items:center; gap:6px;">
+          <i data-lucide="battery"></i> Battery
+        </div>
+
+        <div style="display:flex; align-items:center; gap:6px;">
+          <i data-lucide="activity"></i> Accelerometer
+        </div>
+
+        <div style="display:flex; align-items:center; gap:6px;">
+          <i data-lucide="rotate-cw"></i> Gyroscope
+        </div>
+
+        <!-- Color legend -->
+        <div style="display:flex; align-items:center; gap:6px; margin-left:10px;">
+          <span style="width:12px; height:12px; background:#16a34a; border-radius:50%; display:inline-block;"></span>
+          ≥ 50%
+        </div>
+
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="width:12px; height:12px; background:#f59e0b; border-radius:50%; display:inline-block;"></span>
+          &lt; 50%
+        </div>
+
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="width:12px; height:12px; background:#dc2626; border-radius:50%; display:inline-block;"></span>
+          Missing
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="week-container" style="margin-top: 30px;">
+      <p>Coming soon.</p>
+    </div>
+  </div>   <!-- /Card -->
 </div>
+
 {% endblock %}
