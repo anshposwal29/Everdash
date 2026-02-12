@@ -161,6 +161,24 @@ class SyncLog(db.Model):
 
     def __repr__(self):
         return f'<SyncLog {self.created_at} - {self.messages_synced} messages>'
+    
+class PassiveData(db.Model):
+    """
+    Flexible storage for passive sensing metrics.
+    """
+    __tablename__ = 'passive_data'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    timestamp = db.Column(db.DateTime, nullable=False, index=True)
+    metric_type = db.Column(db.String(50), nullable=False, index=True) # e.g. 'steps', 'sleep_minutes'
+    value = db.Column(db.Float, nullable=False)
+    source = db.Column(db.String(50)) 
+
+    def __repr__(self):
+        return f'<PassiveData {self.metric_type}: {self.value}>'
+    
+    
 
 
 class Notes(db.Model):

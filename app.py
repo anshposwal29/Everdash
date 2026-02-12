@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from models import db, Admin, User, Message, Conversation, SyncLog, Notes
+from models import db, Admin, User, Message, Conversation, SyncLog, Notes, PassiveData
 from config import Config
 from middleware import require_ip_whitelist, ip_and_admin_required
 from services.sync_service import sync_service
@@ -10,6 +10,8 @@ from datetime import datetime, timedelta
 import pytz
 import requests
 from sqlalchemy import func, and_
+from database import get_db
+from services.sensor_service import fetch_sensor_data_external, fetch_intervention_history_external
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -54,12 +56,22 @@ def enforce_ip_whitelist():
     else:
         ip_address = request.remote_addr
 
+    # --- NEW: Allow localhost explicitly so you can see the graph ---
+    if ip_address == '127.0.0.1':
+        return
+    # ----------------------------------------------------------------
+
     allowed_prefix = Config.IP_PREFIX_ALLOWED
 
     # Check if IP starts with allowed prefix
     if not ip_address.startswith(allowed_prefix):
         return render_template('403.html', ip_address=ip_address), 403
 
+    allowed_prefix = Config.IP_PREFIX_ALLOWED
+
+    # Check if IP starts with allowed prefix
+    if not ip_address.startswith(allowed_prefix):
+        return render_template('403.html', ip_address=ip_address), 403
 
 @app.route('/')
 @login_required
@@ -1239,7 +1251,66 @@ def init_db():
         db.create_all()
         print("Database initialized successfully")
 
+@app.route('/api/participant/<int:user_id>/passive-data')
+@login_required
+def get_participant_passive_data(user_id):
+    # 1. SETUP & PARAMS
+    metric = request.args.get('metric', 'steps')
+    time_range = request.args.get('range', '30d') # Default to 30 days
+    SENSOR_API_KEY = "sk_sensor_test_key_v1" 
+    
+    # 2. DETERMINE DATE RANGE
+    end_date = datetime.now()
+    
+    if time_range == '3d':
+        delta = 3
+    elif time_range == '7d':
+        delta = 7
+    else:
+        delta = 30 # Default
+        
+    start_date = end_date - timedelta(days=delta)
+
+    # 3. FETCH SENSOR DATA (The Line Graph)
+    values = fetch_sensor_data_external(user_id, metric, start_date, end_date, SENSOR_API_KEY)
+    
+    # 4. FETCH INTERVENTIONS (The Dots)
+    raw_events = fetch_intervention_history_external(user_id, start_date, end_date, SENSOR_API_KEY)
+
+    # 5. MERGE DATA
+    labels = []
+    date_to_value = {}
+    
+    current = start_date
+    idx = 0
+    # We use a loop to ensure we have a label for every day in the range
+    while current <= end_date:
+        d_str = current.strftime('%Y-%m-%d')
+        labels.append(d_str)
+        if idx < len(values):
+            date_to_value[d_str] = values[idx]
+        current += timedelta(days=1)
+        idx += 1
+
+    processed_events = []
+    for event in raw_events:
+        evt_date = event['date']
+        if evt_date in date_to_value:
+            processed_events.append({
+                'date': evt_date,
+                'type': event['type'],
+                'value': date_to_value[evt_date],
+                'details': event['details']
+            })
+
+    return jsonify({
+        'metric': metric,
+        'labels': labels,
+        'values': values,
+        'events': processed_events
+    })
 
 if __name__ == '__main__':
     init_db()
     app.run(debug=True, host='0.0.0.0', port=5001)
+
