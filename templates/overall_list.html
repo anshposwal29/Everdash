@@ -52,24 +52,72 @@
 
 
     <!-- Tabs row (List / Week / Calendar) -->
-    <div style="padding: 10px 20px; border-bottom: 1px solid #eee; display:flex; gap:10px; align-items:center;">
-    {% set active_view = view or 'list' %}
+    <div style="
+        padding: 10px 20px;
+        border-bottom: 1px solid #eee;
+        display:flex;
+        justify-content: space-between;
+        align-items:center;
+        gap:20px;
+        flex-wrap: wrap;
+      ">
+      {% set active_view = view or 'list' %}
 
-    {% for v, label in [('list','List'), ('week','Week'), ('calendar','Calendar')] %}
-      <a href="{{ url_for('overall', view=v, window=window_days, sort=sort, order=order) }}"
-        style="
-          text-decoration:none;
-          padding: 8px 12px;
-          border-radius: 999px;
-          border: 1px solid {{ '#cfd8e3' if active_view != v else '#2b6cb0' }};
-          background: {{ '#f8fafc' if active_view != v else '#ebf8ff' }};
-          color: {{ '#334155' if active_view != v else '#1e40af' }};
-          font-weight: 600;
-          font-size: 14px;
-        ">
-        {{ label }}
-      </a>
-    {% endfor %}
+      <div style="display:flex; gap:10px; align-items:center;">
+        {% for v, label in [('list','List'), ('week','Week'), ('calendar','Calendar')] %}
+          <a href="{{ url_for('overall', view=v, window=window_days, sort=sort, order=order) }}"
+            style="
+              text-decoration:none;
+              padding: 8px 12px;
+              border-radius: 999px;
+              border: 1px solid {{ '#cfd8e3' if active_view != v else '#2b6cb0' }};
+              background: {{ '#f8fafc' if active_view != v else '#ebf8ff' }};
+              color: {{ '#334155' if active_view != v else '#1e40af' }};
+              font-weight: 600;
+              font-size: 14px;
+            ">
+            {{ label }}
+          </a>
+        {% endfor %}
+      </div>
+
+      <div style="display:flex; align-items:center; gap:18px; font-size:14px; flex-wrap:wrap;">
+
+  <!-- Symbol legend -->
+        <div style="display:flex; align-items:center; gap:6px;">
+          <i data-lucide="map-pin"></i> Location
+        </div>
+
+        <div style="display:flex; align-items:center; gap:6px;">
+          <i data-lucide="battery"></i> Battery
+        </div>
+
+        <div style="display:flex; align-items:center; gap:6px;">
+          <i data-lucide="activity"></i> Accelerometer
+        </div>
+
+        <div style="display:flex; align-items:center; gap:6px;">
+          <i data-lucide="rotate-cw"></i> Gyroscope
+        </div>
+
+        <!-- Color legend -->
+        <div style="display:flex; align-items:center; gap:6px; margin-left:10px;">
+          <span style="width:12px; height:12px; background:#16a34a; border-radius:50%; display:inline-block;"></span>
+          ≥ 50%
+        </div>
+
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="width:12px; height:12px; background:#f59e0b; border-radius:50%; display:inline-block;"></span>
+          &lt; 50%
+        </div>
+
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="width:12px; height:12px; background:#dc2626; border-radius:50%; display:inline-block;"></span>
+          Missing
+        </div>
+
+      </div>
+
     </div>
 
 
@@ -79,17 +127,17 @@
       <!-- Header row -->
       <div style="
         display: grid;
-        grid-template-columns: 140px 140px 320px 220px 200px 120px;
+        grid-template-columns: 100px 140px 320px 220px 200px 120px;
         padding: 12px;
         font-weight: 600;
         background: #f6f6f6;
       ">
         <div>ID</div>
-        <div>Last Dialogue</div>
-        <div>Recent Compliance (<span id="window-label">—</span>d)</div>
-        <div>Risky Dialogues (<span id="window-label-2">—</span>d)</div>
-        <div>Symptom radar (<span id="window-label-3">—</span>d)</div>
-        <div>Actions</div>
+        <div style="display:flex; align-items:center; justify-content:center;">Last Dialogue</div>
+        <div style="display:flex; align-items:center; justify-content:center;">Recent Compliance (<span id="window-label">—</span>d)</div>
+        <div style="display:flex; align-items:center; justify-content:center;">Risky Dialogues (<span id="window-label-2">—</span>d)</div>
+        <div style="display:flex; align-items:center; justify-content:center;">Symptom radar (<span id="window-label-3">—</span>d)</div>
+        <div style="display:flex; align-items:center; justify-content:center;">Actions</div>
       </div>
 
       <!-- Data rows injected by JS -->
@@ -98,6 +146,20 @@
 
   </div>   <!-- /Card -->
 </div>     <!-- /page container -->
+
+<!-- /Tooltip HTML -->
+ <div id="tooltip" style="
+  position: fixed;
+  background: #111;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 9999;
+"></div>
 
 {% endblock %}
 
@@ -130,6 +192,70 @@ function renderActions(u) {
       &#9998;
     </button>
   `;
+}
+
+// Helpers for Color coding compliance/hovering
+function getComplianceColor(goodDays, windowDays) {
+  if (goodDays === null || goodDays === undefined) {
+    return "#dc2626"; // red
+  }
+
+  const ratio = goodDays / windowDays;
+
+  if (ratio >= 0.5) return "#16a34a";   // green
+  if (ratio > 0) return "#f59e0b";      // orange
+  return "#dc2626";                     // red
+}
+
+function renderComplianceIcon(goodDays, windowDays, iconName) {
+  const color = getComplianceColor(goodDays, windowDays);
+
+  let percentage = null;
+
+  if (goodDays !== null && goodDays !== undefined) {
+    percentage = Math.round((goodDays / windowDays) * 100);
+  }
+
+  const tooltip = percentage !== null
+    ? `${percentage}% (${goodDays}/${windowDays} days)`
+    : "No data";
+
+  return `
+    <span class="compliance-icon-wrapper" data-tooltip="${tooltip}">
+      <i 
+        data-lucide="${iconName}" 
+        style="color:${color}; width:24px; height:24px;"
+      ></i>
+    </span>
+  `;
+}
+
+function setupComplianceHover() {
+  const tooltip = document.getElementById("tooltip");
+
+  document.querySelectorAll(".compliance-icon-wrapper").forEach(wrapper => {
+
+    wrapper.addEventListener("mouseenter", (e) => {
+      const text = wrapper.dataset.tooltip;
+      tooltip.textContent = text;
+      tooltip.style.opacity = 1;
+
+      // Enlarge icon
+      wrapper.style.transform = "scale(1.25)";
+      wrapper.style.transition = "transform 0.15s ease";
+    });
+
+    wrapper.addEventListener("mouseleave", () => {
+      tooltip.style.opacity = 0;
+      wrapper.style.transform = "scale(1)";
+    });
+
+    wrapper.addEventListener("mousemove", (e) => {
+      tooltip.style.left = e.clientX + 12 + "px";
+      tooltip.style.top = e.clientY + 12 + "px";
+    });
+
+  });
 }
 
 async function loadOverall() {
@@ -169,7 +295,7 @@ async function loadOverall() {
   for (const u of data.rows) {
     const row = document.createElement("div");
     row.style.display = "grid";
-    row.style.gridTemplateColumns = "140px 140px 320px 220px 200px 120px";
+    row.style.gridTemplateColumns = "100px 140px 320px 220px 200px 120px";
     row.style.padding = "12px";
     row.style.borderTop = "1px solid #eee";
     row.style.alignItems = "center";
@@ -182,23 +308,33 @@ async function loadOverall() {
     </div>
   </div>
 
-  <div>${formatSilence(u.silence_days)}</div>
-
-  <div style="font-family: monospace; font-size: 12px;">
-    LOC: ${u.passive_compliance?.loc?.good_days ?? 0}/${windowDays}
-    | BAT: ${u.passive_compliance?.bat?.good_days ?? 0}/${windowDays}
-    | ACC: ${u.passive_compliance?.acc?.good_days ?? 0}/${windowDays}
-    | GYR: ${u.passive_compliance?.gyr?.good_days ?? 0}/${windowDays}
+  <div style="display:flex; align-items:center; justify-content:center;">
+    ${formatSilence(u.silence_days)}
   </div>
 
-  <div>${u.risky_count ?? 0}</div>
-  <div>${u.symptom_radar ?? "—"}</div>
-    <div style="display:flex; gap:8px; justify-content:flex-start;">
+  <div style="display:flex; gap:12px; align-items:center; justify-content:center;">
+    ${renderComplianceIcon(u.passive_compliance?.loc?.good_days, windowDays, "map-pin")}
+    ${renderComplianceIcon(u.passive_compliance?.bat?.good_days, windowDays, "battery")}
+    ${renderComplianceIcon(u.passive_compliance?.acc?.good_days, windowDays, "activity")}
+    ${renderComplianceIcon(u.passive_compliance?.gyr?.good_days, windowDays, "rotate-cw")}
+  </div>
+
+
+  <div style="display:flex; align-items:center; justify-content:center;">
+    ${u.risky_count ?? 0}
+  </div>
+  <div style="display:flex; align-items:center; justify-content:center;">
+    ${u.symptom_radar ?? "—"}
+  </div>
+
+  <div style="display:flex; align-items:center; justify-content:center;">
     ${renderActions(u)}
   </div>
 `;
 
     container.appendChild(row);
+    lucide.createIcons();
+    setupComplianceHover();
   }
 }
 
@@ -262,6 +398,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Load rows
   loadOverall();
+  lucide.createIcons();
+  setupComplianceHover();
 });
 
 
