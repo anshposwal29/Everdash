@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div style="padding: 24px; max-width: 1200px; margin: 0 auto;">
+
+  <div style="
+    background: #fff;
+    border: 1px solid #e6e6e6;
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    overflow: hidden;
+  ">
+
+    <div style="
+      padding: 18px 20px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: #fafafa;
+    ">
+      <div>
+        <h1 style="margin: 0; font-size: 26px;">Overall — Priority View</h1>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="font-weight:600;">Window:</div>
+          <select id="window-select" style="padding:8px 10px; border-radius:10px; border:1px solid #d0d0d0; background:white; min-width:150px;" onchange="updateFilters()">
+            <option value="3" {% if window_days == 3 %}selected{% endif %}>Last 3 days</option>
+            <option value="7" {% if window_days == 7 %}selected{% endif %}>Last week</option>
+            <option value="14" {% if window_days == 14 %}selected{% endif %}>Past 2 weeks</option>
+            <option value="30" {% if window_days == 30 %}selected{% endif %}>Past month</option>
+          </select>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="font-weight:600;">Sort:</div>
+          <select id="sort-select" style="padding:8px 10px; border-radius:10px; border:1px solid #d0d0d0; background:white; min-width:220px;" onchange="updateFilters()">
+            <option value="recent" {% if sort == 'recent' %}selected{% endif %}>Most recent dialogue</option>
+            <option value="silence" {% if sort == 'silence' %}selected{% endif %}>Silence (longest first)</option>
+            <option value="risk" {% if sort == 'risk' %}selected{% endif %}>Risky messages (high → low)</option>
+            <option value="days" {% if sort == 'days' %}selected{% endif %}>Days in study (less → more)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div style="
+        padding: 10px 20px;
+        border-bottom: 1px solid #eee;
+        display:flex;
+        justify-content: space-between;
+        align-items:center;
+        gap:20px;
+        flex-wrap: wrap;
+      ">
+      
+      <div style="display:flex; gap:10px; align-items:center;">
+        <a href="{{ url_for('dashboard', view='list', window=window_days, sort=sort) }}"
+           style="text-decoration:none; padding: 8px 12px; border-radius: 999px; border: 1px solid #2b6cb0; background: #ebf8ff; color: #1e40af; font-weight: 600; font-size: 14px;">
+           List
+        </a>
+        <a href="{{ url_for('dashboard', view='week', window=window_days, sort=sort) }}"
+           style="text-decoration:none; padding: 8px 12px; border-radius: 999px; border: 1px solid #cfd8e3; background: #f8fafc; color: #334155; font-weight: 600; font-size: 14px;">
+           Week
+        </a>
+        <a href="{{ url_for('dashboard', view='calendar', window=window_days, sort=sort) }}"
+           style="text-decoration:none; padding: 8px 12px; border-radius: 999px; border: 1px solid #cfd8e3; background: #f8fafc; color: #334155; font-weight: 600; font-size: 14px;">
+           Calendar
+        </a>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:18px; font-size:14px; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:6px;"><i data-lucide="map-pin" style="width:14px;"></i> Location</div>
+        <div style="display:flex; align-items:center; gap:6px;"><i data-lucide="battery" style="width:14px;"></i> Battery</div>
+        <div style="display:flex; align-items:center; gap:6px;"><i data-lucide="activity" style="width:14px;"></i> Accel</div>
+        <div style="display:flex; align-items:center; gap:6px;"><i data-lucide="rotate-cw" style="width:14px;"></i> Gyro</div>
+
+        <div style="display:flex; align-items:center; gap:6px; margin-left:10px;">
+          <span style="width:10px; height:10px; background:#16a34a; border-radius:50%; display:inline-block;"></span> ≥ 50%
+        </div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="width:10px; height:10px; background:#f59e0b; border-radius:50%; display:inline-block;"></span> < 50%
+        </div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="width:10px; height:10px; background:#dc2626; border-radius:50%; display:inline-block;"></span> Missing
+        </div>
+      </div>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; min-width: 900px;">
+        <thead>
+          <tr style="background: #f9fafb; border-bottom: 1px solid #eee; text-align: left; font-size: 13px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">
+            <th style="padding: 12px 16px; font-weight: 600;">Participant</th>
+            <th style="padding: 12px 16px; font-weight: 600;">Silence</th>
+            <th style="padding: 12px 16px; font-weight: 600;">Risky Dialogues</th>
+            <th style="padding: 12px 16px; font-weight: 600;">Symptom Radar</th>
+            <th style="padding: 12px 16px; font-weight: 600;">Passive Sensing (Compliance)</th>
+            <th style="padding: 12px 16px; font-weight: 600; text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        
+        <tbody id="user-table-body">
+            {% if participants %}
+                {% for u in participants %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 12px 16px;">
+                        <div style="font-weight: 600; color: #111;">{{ u.identifier }}</div>
+                        <div style="font-size: 13px; color: #666;">
+                            ID: {{ u.redcap_id }} &bull; 
+                            {% if u.dropped %}
+                                <span style="color:red;">●</span> Dropped
+                            {% else %}
+                                <span style="color:green;">●</span> Active
+                            {% endif %}
+                            &bull; {{ u.days_in_study }} days
+                        </div>
+                    </td>
+
+                    <td style="padding: 12px 16px; font-weight: 500; 
+                        {% if u.decision_engine_results.silence_days > 7 %}color: #dc2626;{% elif u.decision_engine_results.silence_days > 3 %}color: #d97706;{% else %}color: #111;{% endif %}">
+                        {{ u.decision_engine_results.silence_days }} days
+                    </td>
+
+                    <td style="padding: 12px 16px;">
+                        {% if u.decision_engine_results.risky_count > 0 %}
+                            <span style="background:#fee2e2; color:#dc2626; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600;">
+                                {{ u.decision_engine_results.risky_count }}
+                            </span>
+                        {% else %}
+                            <span style="background:#f3f4f6; color:#374151; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600;">
+                                0
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <td style="padding: 12px 16px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-weight:600;">{{ u.decision_engine_results.symptom_radar }}/10</span>
+                            <div style="width:60px; height:6px; background:#eee; border-radius:3px; overflow:hidden;">
+                                <div style="width:{{ u.decision_engine_results.symptom_radar * 10 }}%; height:100%; background:#2563eb;"></div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <td style="padding: 12px 16px;">
+                        <div style="display:flex; gap:12px;">
+                            {% for sensor, key in [('map-pin', 'loc'), ('battery', 'bat'), ('activity', 'acc'), ('rotate-cw', 'gyr')] %}
+                                {% set pct = u.passive_sensing_compliance[key] %}
+                                {% set dot_color = '#dc2626' %}
+                                {% if pct >= 50 %}
+                                    {% set dot_color = '#16a34a' %}
+                                {% elif pct > 0 %}
+                                    {% set dot_color = '#f59e0b' %}
+                                {% endif %}
+                                
+                                <div style="text-align:center;">
+                                    <div style="width:10px; height:10px; border-radius:50%; background:{{ dot_color }}; margin:0 auto 4px;"></div>
+                                    <i data-lucide="{{ sensor }}" style="width:14px; height:14px; color:#666;"></i>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </td>
+
+                    <td style="padding: 12px 16px; text-align: right;">
+                        <div style="display:flex; justify-content:flex-end; gap:8px;">
+                            <a href="{{ url_for('user_detail', firebase_id=u.user_id) }}" 
+                               style="padding:6px 12px; background:#2563eb; color:white; border-radius:6px; text-decoration:none; font-size:13px; font-weight:500;">
+                               View
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr><td colspan="6" style="padding:40px; text-align:center; color:#666;">
+                    No participants found. Please ensure <b>mock_server.py</b> is running in your other terminal!
+                </td></tr>
+            {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="padding: 12px 20px; border-top: 1px solid #eee; background: #fafafa;">
+      <div style="font-size: 14px; color: #666;">
+        Displaying participants from the Mock Data Server.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function updateFilters() {
+      const windowVal = document.getElementById('window-select').value;
+      const sortVal = document.getElementById('sort-select').value;
+      window.location.href = `{{ url_for('dashboard') }}?view=list&window=${windowVal}&sort=${sortVal}`;
+  }
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    if(window.lucide) lucide.createIcons();
+  });
+</script>
+
+{% endblock %}
+

@@ -1,0 +1,4962 @@
+{
+  "participants": [
+    {
+      "user_id": "user_001",
+      "redcap_id": "REDCAP-101",
+      "identifier": "Active Alex",
+      "is_active": true,
+      "research_assistant": "Dr. Smith",
+      "days_in_study": 30,
+      "decision_engine_results": {
+        "symptom_radar": 0,
+        "risky_count": 0,
+        "needs_attention": false
+      },
+      "passive_sensing_compliance": {
+        "bat": 95
+      },
+      "conversations": [],
+      "passive_data_history": {
+        "2026-01-17": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 9716
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 78
+            },
+            "watch_sleep": {
+              "minutes_total": 486
+            },
+            "phone_screen_time": {
+              "minutes": 215
+            },
+            "phone_battery": [
+              58,
+              31,
+              18,
+              33
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 10
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 32
+              }
+            ]
+          }
+        },
+        "2026-01-18": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 11366
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 60
+            },
+            "watch_sleep": {
+              "minutes_total": 533
+            },
+            "phone_screen_time": {
+              "minutes": 237
+            },
+            "phone_battery": [
+              93,
+              41,
+              69,
+              92
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 6
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 1
+              }
+            ]
+          }
+        },
+        "2026-01-19": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 12075
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 86
+            },
+            "watch_sleep": {
+              "minutes_total": 425
+            },
+            "phone_screen_time": {
+              "minutes": 217
+            },
+            "phone_battery": [
+              97,
+              40,
+              55,
+              35
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 9
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 111
+              }
+            ]
+          }
+        },
+        "2026-01-20": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 9630
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 81
+            },
+            "watch_sleep": {
+              "minutes_total": 511
+            },
+            "phone_screen_time": {
+              "minutes": 230
+            },
+            "phone_battery": [
+              12,
+              81,
+              50,
+              83
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 3
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 35
+              }
+            ]
+          }
+        },
+        "2026-01-21": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 8812
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 80
+            },
+            "watch_sleep": {
+              "minutes_total": 456
+            },
+            "phone_screen_time": {
+              "minutes": 115
+            },
+            "phone_battery": [
+              8,
+              25,
+              53,
+              97
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 10
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 130
+              }
+            ]
+          }
+        },
+        "2026-01-22": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 10620
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 62
+            },
+            "watch_sleep": {
+              "minutes_total": 533
+            },
+            "phone_screen_time": {
+              "minutes": 379
+            },
+            "phone_battery": [
+              21,
+              54,
+              89,
+              67
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 10
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 122
+              }
+            ]
+          }
+        },
+        "2026-01-23": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 9297
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 83
+            },
+            "watch_sleep": {
+              "minutes_total": 490
+            },
+            "phone_screen_time": {
+              "minutes": 333
+            },
+            "phone_battery": [
+              65,
+              98,
+              33,
+              22
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 3
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 16
+              }
+            ]
+          }
+        },
+        "2026-01-24": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 10008
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 69
+            },
+            "watch_sleep": {
+              "minutes_total": 415
+            },
+            "phone_screen_time": {
+              "minutes": 240
+            },
+            "phone_battery": [
+              90,
+              5,
+              93,
+              58
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 9
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 71
+              }
+            ]
+          }
+        },
+        "2026-01-25": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 10772
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 68
+            },
+            "watch_sleep": {
+              "minutes_total": 566
+            },
+            "phone_screen_time": {
+              "minutes": 263
+            },
+            "phone_battery": [
+              27,
+              91,
+              17,
+              60
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 5
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 4
+              }
+            ]
+          }
+        },
+        "2026-01-26": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 8941
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 61
+            },
+            "watch_sleep": {
+              "minutes_total": 418
+            },
+            "phone_screen_time": {
+              "minutes": 151
+            },
+            "phone_battery": [
+              42,
+              34,
+              43,
+              37
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 2
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 114
+              }
+            ]
+          }
+        },
+        "2026-01-27": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 9944
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 71
+            },
+            "watch_sleep": {
+              "minutes_total": 513
+            },
+            "phone_screen_time": {
+              "minutes": 124
+            },
+            "phone_battery": [
+              93,
+              66,
+              9,
+              53
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 8
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 93
+              }
+            ]
+          }
+        },
+        "2026-01-28": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 9196
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 64
+            },
+            "watch_sleep": {
+              "minutes_total": 416
+            },
+            "phone_screen_time": {
+              "minutes": 142
+            },
+            "phone_battery": [
+              48,
+              21,
+              17,
+              68
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 5
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 35
+              }
+            ]
+          }
+        },
+        "2026-01-29": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 10649
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 72
+            },
+            "watch_sleep": {
+              "minutes_total": 450
+            },
+            "phone_screen_time": {
+              "minutes": 273
+            },
+            "phone_battery": [
+              31,
+              9,
+              35,
+              23
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 1
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 114
+              }
+            ]
+          }
+        },
+        "2026-01-30": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 10903
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 88
+            },
+            "watch_sleep": {
+              "minutes_total": 462
+            },
+            "phone_screen_time": {
+              "minutes": 140
+            },
+            "phone_battery": [
+              46,
+              74,
+              85,
+              81
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 8
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 151
+              }
+            ]
+          }
+        },
+        "2026-01-31": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 10394
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 63
+            },
+            "watch_sleep": {
+              "minutes_total": 499
+            },
+            "phone_screen_time": {
+              "minutes": 202
+            },
+            "phone_battery": [
+              58,
+              87,
+              40,
+              17
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 9
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 59
+              }
+            ]
+          }
+        },
+        "2026-02-01": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 10647
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 64
+            },
+            "watch_sleep": {
+              "minutes_total": 561
+            },
+            "phone_screen_time": {
+              "minutes": 388
+            },
+            "phone_battery": [
+              43,
+              47,
+              31,
+              20
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 10
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 152
+              }
+            ]
+          }
+        },
+        "2026-02-02": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 9006
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 60
+            },
+            "watch_sleep": {
+              "minutes_total": 515
+            },
+            "phone_screen_time": {
+              "minutes": 394
+            },
+            "phone_battery": [
+              63,
+              73,
+              74,
+              40
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 10
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 111
+              }
+            ]
+          }
+        },
+        "2026-02-03": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 8152
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 66
+            },
+            "watch_sleep": {
+              "minutes_total": 536
+            },
+            "phone_screen_time": {
+              "minutes": 101
+            },
+            "phone_battery": [
+              31,
+              26,
+              70,
+              34
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 6
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 56
+              }
+            ]
+          }
+        },
+        "2026-02-04": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 9098
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 71
+            },
+            "watch_sleep": {
+              "minutes_total": 387
+            },
+            "phone_screen_time": {
+              "minutes": 214
+            },
+            "phone_battery": [
+              93,
+              41,
+              57,
+              18
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 3
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 171
+              }
+            ]
+          }
+        },
+        "2026-02-05": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 9306
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 74
+            },
+            "watch_sleep": {
+              "minutes_total": 529
+            },
+            "phone_screen_time": {
+              "minutes": 103
+            },
+            "phone_battery": [
+              23,
+              90,
+              38,
+              29
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 6
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 43
+              }
+            ]
+          }
+        },
+        "2026-02-06": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 9851
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 80
+            },
+            "watch_sleep": {
+              "minutes_total": 573
+            },
+            "phone_screen_time": {
+              "minutes": 172
+            },
+            "phone_battery": [
+              42,
+              6,
+              42,
+              78
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 0
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 35
+              }
+            ]
+          }
+        },
+        "2026-02-07": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 10821
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 70
+            },
+            "watch_sleep": {
+              "minutes_total": 477
+            },
+            "phone_screen_time": {
+              "minutes": 224
+            },
+            "phone_battery": [
+              79,
+              47,
+              93,
+              62
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 4
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 154
+              }
+            ]
+          }
+        },
+        "2026-02-08": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 10552
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 61
+            },
+            "watch_sleep": {
+              "minutes_total": 596
+            },
+            "phone_screen_time": {
+              "minutes": 116
+            },
+            "phone_battery": [
+              8,
+              97,
+              54,
+              37
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 1
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 123
+              }
+            ]
+          }
+        },
+        "2026-02-09": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 11085
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 75
+            },
+            "watch_sleep": {
+              "minutes_total": 556
+            },
+            "phone_screen_time": {
+              "minutes": 142
+            },
+            "phone_battery": [
+              5,
+              45,
+              57,
+              33
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 5
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 125
+              }
+            ]
+          }
+        },
+        "2026-02-10": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 11051
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 69
+            },
+            "watch_sleep": {
+              "minutes_total": 435
+            },
+            "phone_screen_time": {
+              "minutes": 130
+            },
+            "phone_battery": [
+              26,
+              86,
+              23,
+              31
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 4
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 106
+              }
+            ]
+          }
+        },
+        "2026-02-11": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 10040
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 82
+            },
+            "watch_sleep": {
+              "minutes_total": 439
+            },
+            "phone_screen_time": {
+              "minutes": 184
+            },
+            "phone_battery": [
+              24,
+              42,
+              97,
+              6
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 9
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 140
+              }
+            ]
+          }
+        },
+        "2026-02-12": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 11757
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 78
+            },
+            "watch_sleep": {
+              "minutes_total": 403
+            },
+            "phone_screen_time": {
+              "minutes": 137
+            },
+            "phone_battery": [
+              16,
+              18,
+              81,
+              82
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 0
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 83
+              }
+            ]
+          }
+        },
+        "2026-02-13": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 11367
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 75
+            },
+            "watch_sleep": {
+              "minutes_total": 462
+            },
+            "phone_screen_time": {
+              "minutes": 270
+            },
+            "phone_battery": [
+              56,
+              81,
+              8,
+              5
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 1
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 58
+              }
+            ]
+          }
+        },
+        "2026-02-14": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 10214
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 88
+            },
+            "watch_sleep": {
+              "minutes_total": 441
+            },
+            "phone_screen_time": {
+              "minutes": 388
+            },
+            "phone_battery": [
+              87,
+              14,
+              29,
+              39
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 0
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 176
+              }
+            ]
+          }
+        },
+        "2026-02-15": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 10875
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 83
+            },
+            "watch_sleep": {
+              "minutes_total": 434
+            },
+            "phone_screen_time": {
+              "minutes": 127
+            },
+            "phone_battery": [
+              80,
+              14,
+              46,
+              46
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 3
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 154
+              }
+            ]
+          }
+        }
+      },
+      "events": []
+    },
+    {
+      "user_id": "user_002",
+      "redcap_id": "REDCAP-102",
+      "identifier": "Burnout Bob",
+      "is_active": true,
+      "research_assistant": "Dr. Smith",
+      "days_in_study": 30,
+      "decision_engine_results": {
+        "symptom_radar": 2,
+        "risky_count": 11,
+        "needs_attention": true
+      },
+      "passive_sensing_compliance": {
+        "bat": 60
+      },
+      "conversations": [
+        {
+          "prompt": "Risk Intervention",
+          "messages": [
+            {
+              "speaker": "Evie",
+              "text": "I noticed you haven't been sleeping well.",
+              "timestamp": "2026-01-22T10:00:00"
+            },
+            {
+              "speaker": "Participant",
+              "text": "Yeah, exams are killing me.",
+              "timestamp": "2026-01-22T10:05:00",
+              "risky": true
+            }
+          ]
+        },
+        {
+          "prompt": "Risk Intervention",
+          "messages": [
+            {
+              "speaker": "Evie",
+              "text": "I noticed you haven't been sleeping well.",
+              "timestamp": "2026-01-24T10:00:00"
+            },
+            {
+              "speaker": "Participant",
+              "text": "Yeah, exams are killing me.",
+              "timestamp": "2026-01-24T10:05:00",
+              "risky": true
+            }
+          ]
+        },
+        {
+          "prompt": "Risk Intervention",
+          "messages": [
+            {
+              "speaker": "Evie",
+              "text": "I noticed you haven't been sleeping well.",
+              "timestamp": "2026-01-26T10:00:00"
+            },
+            {
+              "speaker": "Participant",
+              "text": "Yeah, exams are killing me.",
+              "timestamp": "2026-01-26T10:05:00",
+              "risky": true
+            }
+          ]
+        },
+        {
+          "prompt": "Risk Intervention",
+          "messages": [
+            {
+              "speaker": "Evie",
+              "text": "I noticed you haven't been sleeping well.",
+              "timestamp": "2026-01-27T10:00:00"
+            },
+            {
+              "speaker": "Participant",
+              "text": "Yeah, exams are killing me.",
+              "timestamp": "2026-01-27T10:05:00",
+              "risky": true
+            }
+          ]
+        },
+        {
+          "prompt": "Risk Intervention",
+          "messages": [
+            {
+              "speaker": "Evie",
+              "text": "I noticed you haven't been sleeping well.",
+              "timestamp": "2026-01-29T10:00:00"
+            },
+            {
+              "speaker": "Participant",
+              "text": "Yeah, exams are killing me.",
+              "timestamp": "2026-01-29T10:05:00",
+              "risky": true
+            }
+          ]
+        },
+        {
+          "prompt": "Risk Intervention",
+          "messages": [
+            {
+              "speaker": "Evie",
+              "text": "I noticed you haven't been sleeping well.",
+              "timestamp": "2026-01-31T10:00:00"
+            },
+            {
+              "speaker": "Participant",
+              "text": "Yeah, exams are killing me.",
+              "timestamp": "2026-01-31T10:05:00",
+              "risky": true
+            }
+          ]
+        },
+        {
+          "prompt": "Risk Intervention",
+          "messages": [
+            {
+              "speaker": "Evie",
+              "text": "I noticed you haven't been sleeping well.",
+              "timestamp": "2026-02-04T10:00:00"
+            },
+            {
+              "speaker": "Participant",
+              "text": "Yeah, exams are killing me.",
+              "timestamp": "2026-02-04T10:05:00",
+              "risky": true
+            }
+          ]
+        },
+        {
+          "prompt": "Risk Intervention",
+          "messages": [
+            {
+              "speaker": "Evie",
+              "text": "I noticed you haven't been sleeping well.",
+              "timestamp": "2026-02-06T10:00:00"
+            },
+            {
+              "speaker": "Participant",
+              "text": "Yeah, exams are killing me.",
+              "timestamp": "2026-02-06T10:05:00",
+              "risky": true
+            }
+          ]
+        },
+        {
+          "prompt": "Risk Intervention",
+          "messages": [
+            {
+              "speaker": "Evie",
+              "text": "I noticed you haven't been sleeping well.",
+              "timestamp": "2026-02-08T10:00:00"
+            },
+            {
+              "speaker": "Participant",
+              "text": "Yeah, exams are killing me.",
+              "timestamp": "2026-02-08T10:05:00",
+              "risky": true
+            }
+          ]
+        },
+        {
+          "prompt": "Risk Intervention",
+          "messages": [
+            {
+              "speaker": "Evie",
+              "text": "I noticed you haven't been sleeping well.",
+              "timestamp": "2026-02-09T10:00:00"
+            },
+            {
+              "speaker": "Participant",
+              "text": "Yeah, exams are killing me.",
+              "timestamp": "2026-02-09T10:05:00",
+              "risky": true
+            }
+          ]
+        },
+        {
+          "prompt": "Risk Intervention",
+          "messages": [
+            {
+              "speaker": "Evie",
+              "text": "I noticed you haven't been sleeping well.",
+              "timestamp": "2026-02-12T10:00:00"
+            },
+            {
+              "speaker": "Participant",
+              "text": "Yeah, exams are killing me.",
+              "timestamp": "2026-02-12T10:05:00",
+              "risky": true
+            }
+          ]
+        }
+      ],
+      "passive_data_history": {
+        "2026-01-17": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 662
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 72
+            },
+            "watch_sleep": {
+              "minutes_total": 425
+            },
+            "phone_screen_time": {
+              "minutes": 288
+            },
+            "phone_battery": [
+              92,
+              8,
+              15,
+              66
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 0
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 177
+              }
+            ]
+          }
+        },
+        "2026-01-18": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 2154
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 85
+            },
+            "watch_sleep": {
+              "minutes_total": 389
+            },
+            "phone_screen_time": {
+              "minutes": 288
+            },
+            "phone_battery": [
+              29,
+              35,
+              58,
+              73
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 10
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 60
+              }
+            ]
+          }
+        },
+        "2026-01-19": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 4391
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 70
+            },
+            "watch_sleep": {
+              "minutes_total": 202
+            },
+            "phone_screen_time": {
+              "minutes": 112
+            },
+            "phone_battery": [
+              67,
+              10,
+              70,
+              47
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 9
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 28
+              }
+            ]
+          }
+        },
+        "2026-01-20": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 1623
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 72
+            },
+            "watch_sleep": {
+              "minutes_total": 326
+            },
+            "phone_screen_time": {
+              "minutes": 237
+            },
+            "phone_battery": [
+              9,
+              13,
+              30,
+              31
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 0
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 145
+              }
+            ]
+          }
+        },
+        "2026-01-21": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 4129
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 62
+            },
+            "watch_sleep": {
+              "minutes_total": 307
+            },
+            "phone_screen_time": {
+              "minutes": 254
+            },
+            "phone_battery": [
+              93,
+              52,
+              23,
+              41
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 10
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 61
+              }
+            ]
+          }
+        },
+        "2026-01-22": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 2886
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 64
+            },
+            "watch_sleep": {
+              "minutes_total": 199
+            },
+            "phone_screen_time": {
+              "minutes": 237
+            },
+            "phone_battery": [
+              5,
+              51,
+              38,
+              50
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 7
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 55
+              }
+            ]
+          }
+        },
+        "2026-01-23": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 2046
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 64
+            },
+            "watch_sleep": {
+              "minutes_total": 324
+            },
+            "phone_screen_time": {
+              "minutes": 195
+            },
+            "phone_battery": [
+              75,
+              19,
+              80,
+              30
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 5
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 74
+              }
+            ]
+          }
+        },
+        "2026-01-24": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 1316
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 76
+            },
+            "watch_sleep": {
+              "minutes_total": 256
+            },
+            "phone_screen_time": {
+              "minutes": 293
+            },
+            "phone_battery": [
+              7,
+              45,
+              9,
+              82
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 1
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 99
+              }
+            ]
+          }
+        },
+        "2026-01-25": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 821
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 87
+            },
+            "watch_sleep": {
+              "minutes_total": 416
+            },
+            "phone_screen_time": {
+              "minutes": 168
+            },
+            "phone_battery": [
+              79,
+              25,
+              9,
+              15
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 5
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 8
+              }
+            ]
+          }
+        },
+        "2026-01-26": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 2713
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 69
+            },
+            "watch_sleep": {
+              "minutes_total": 278
+            },
+            "phone_screen_time": {
+              "minutes": 299
+            },
+            "phone_battery": [
+              54,
+              64,
+              59,
+              61
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 8
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 71
+              }
+            ]
+          }
+        },
+        "2026-01-27": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 1481
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 66
+            },
+            "watch_sleep": {
+              "minutes_total": 257
+            },
+            "phone_screen_time": {
+              "minutes": 189
+            },
+            "phone_battery": [
+              91,
+              78,
+              53,
+              12
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 1
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 159
+              }
+            ]
+          }
+        },
+        "2026-01-28": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 2611
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 75
+            },
+            "watch_sleep": {
+              "minutes_total": 364
+            },
+            "phone_screen_time": {
+              "minutes": 213
+            },
+            "phone_battery": [
+              58,
+              69,
+              56,
+              93
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 0
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 55
+              }
+            ]
+          }
+        },
+        "2026-01-29": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 2343
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 70
+            },
+            "watch_sleep": {
+              "minutes_total": 200
+            },
+            "phone_screen_time": {
+              "minutes": 125
+            },
+            "phone_battery": [
+              81,
+              46,
+              28,
+              65
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 5
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 97
+              }
+            ]
+          }
+        },
+        "2026-01-30": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 1477
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 80
+            },
+            "watch_sleep": {
+              "minutes_total": 339
+            },
+            "phone_screen_time": {
+              "minutes": 368
+            },
+            "phone_battery": [
+              53,
+              59,
+              35,
+              36
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 1
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 28
+              }
+            ]
+          }
+        },
+        "2026-01-31": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 1982
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 60
+            },
+            "watch_sleep": {
+              "minutes_total": 271
+            },
+            "phone_screen_time": {
+              "minutes": 370
+            },
+            "phone_battery": [
+              97,
+              29,
+              5,
+              55
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 8
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 44
+              }
+            ]
+          }
+        },
+        "2026-02-01": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 2303
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 71
+            },
+            "watch_sleep": {
+              "minutes_total": 304
+            },
+            "phone_screen_time": {
+              "minutes": 280
+            },
+            "phone_battery": [
+              39,
+              66,
+              56,
+              22
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 6
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 2
+              }
+            ]
+          }
+        },
+        "2026-02-02": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 3966
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 78
+            },
+            "watch_sleep": {
+              "minutes_total": 262
+            },
+            "phone_screen_time": {
+              "minutes": 185
+            },
+            "phone_battery": [
+              74,
+              38,
+              80,
+              18
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 5
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 160
+              }
+            ]
+          }
+        },
+        "2026-02-03": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 3172
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 65
+            },
+            "watch_sleep": {
+              "minutes_total": 333
+            },
+            "phone_screen_time": {
+              "minutes": 393
+            },
+            "phone_battery": [
+              8,
+              24,
+              59,
+              22
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 2
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 109
+              }
+            ]
+          }
+        },
+        "2026-02-04": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 2856
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 87
+            },
+            "watch_sleep": {
+              "minutes_total": 219
+            },
+            "phone_screen_time": {
+              "minutes": 374
+            },
+            "phone_battery": [
+              56,
+              27,
+              69,
+              32
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 7
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 126
+              }
+            ]
+          }
+        },
+        "2026-02-05": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 805
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 85
+            },
+            "watch_sleep": {
+              "minutes_total": 300
+            },
+            "phone_screen_time": {
+              "minutes": 291
+            },
+            "phone_battery": [
+              18,
+              92,
+              11,
+              75
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 7
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 65
+              }
+            ]
+          }
+        },
+        "2026-02-06": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 2965
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 72
+            },
+            "watch_sleep": {
+              "minutes_total": 211
+            },
+            "phone_screen_time": {
+              "minutes": 184
+            },
+            "phone_battery": [
+              63,
+              80,
+              61,
+              20
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 5
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 73
+              }
+            ]
+          }
+        },
+        "2026-02-07": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 1213
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 60
+            },
+            "watch_sleep": {
+              "minutes_total": 350
+            },
+            "phone_screen_time": {
+              "minutes": 233
+            },
+            "phone_battery": [
+              30,
+              83,
+              19,
+              17
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 1
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 62
+              }
+            ]
+          }
+        },
+        "2026-02-08": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 2475
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 67
+            },
+            "watch_sleep": {
+              "minutes_total": 290
+            },
+            "phone_screen_time": {
+              "minutes": 329
+            },
+            "phone_battery": [
+              98,
+              21,
+              92,
+              25
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 1
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 5
+              }
+            ]
+          }
+        },
+        "2026-02-09": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 2624
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 88
+            },
+            "watch_sleep": {
+              "minutes_total": 298
+            },
+            "phone_screen_time": {
+              "minutes": 296
+            },
+            "phone_battery": [
+              52,
+              82,
+              67,
+              12
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 8
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 161
+              }
+            ]
+          }
+        },
+        "2026-02-10": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 2980
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 73
+            },
+            "watch_sleep": {
+              "minutes_total": 352
+            },
+            "phone_screen_time": {
+              "minutes": 244
+            },
+            "phone_battery": [
+              27,
+              13,
+              61,
+              18
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 8
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 174
+              }
+            ]
+          }
+        },
+        "2026-02-11": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 2494
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 69
+            },
+            "watch_sleep": {
+              "minutes_total": 345
+            },
+            "phone_screen_time": {
+              "minutes": 176
+            },
+            "phone_battery": [
+              75,
+              47,
+              61,
+              34
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 1
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 179
+              }
+            ]
+          }
+        },
+        "2026-02-12": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 2567
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 90
+            },
+            "watch_sleep": {
+              "minutes_total": 216
+            },
+            "phone_screen_time": {
+              "minutes": 345
+            },
+            "phone_battery": [
+              22,
+              59,
+              17,
+              35
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 5
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 90
+              }
+            ]
+          }
+        },
+        "2026-02-13": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 3546
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 85
+            },
+            "watch_sleep": {
+              "minutes_total": 375
+            },
+            "phone_screen_time": {
+              "minutes": 320
+            },
+            "phone_battery": [
+              78,
+              99,
+              20,
+              70
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 2
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 104
+              }
+            ]
+          }
+        },
+        "2026-02-14": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 2808
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 73
+            },
+            "watch_sleep": {
+              "minutes_total": 419
+            },
+            "phone_screen_time": {
+              "minutes": 182
+            },
+            "phone_battery": [
+              42,
+              100,
+              32,
+              97
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 8
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 49
+              }
+            ]
+          }
+        },
+        "2026-02-15": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 1546
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 65
+            },
+            "watch_sleep": {
+              "minutes_total": 323
+            },
+            "phone_screen_time": {
+              "minutes": 274
+            },
+            "phone_battery": [
+              74,
+              98,
+              41,
+              71
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 2
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 143
+              }
+            ]
+          }
+        }
+      },
+      "events": [
+        {
+          "date": "2026-01-17",
+          "type": "automated_nudge",
+          "details": "System detected low activity (662 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-01-18",
+          "type": "automated_nudge",
+          "details": "System detected low activity (2154 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-01-20",
+          "type": "automated_nudge",
+          "details": "System detected low activity (1623 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-01-22",
+          "type": "automated_nudge",
+          "details": "System detected low activity (2886 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-01-22",
+          "type": "staff_intervention",
+          "details": "RISK ALERT: Combo of low sleep/activity. Staff emailed participant."
+        },
+        {
+          "date": "2026-01-23",
+          "type": "automated_nudge",
+          "details": "System detected low activity (2046 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-01-24",
+          "type": "automated_nudge",
+          "details": "System detected low activity (1316 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-01-24",
+          "type": "staff_intervention",
+          "details": "RISK ALERT: Combo of low sleep/activity. Staff emailed participant."
+        },
+        {
+          "date": "2026-01-25",
+          "type": "automated_nudge",
+          "details": "System detected low activity (821 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-01-26",
+          "type": "automated_nudge",
+          "details": "System detected low activity (2713 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-01-26",
+          "type": "staff_intervention",
+          "details": "RISK ALERT: Combo of low sleep/activity. Staff emailed participant."
+        },
+        {
+          "date": "2026-01-27",
+          "type": "automated_nudge",
+          "details": "System detected low activity (1481 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-01-27",
+          "type": "staff_intervention",
+          "details": "RISK ALERT: Combo of low sleep/activity. Staff emailed participant."
+        },
+        {
+          "date": "2026-01-28",
+          "type": "automated_nudge",
+          "details": "System detected low activity (2611 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-01-29",
+          "type": "automated_nudge",
+          "details": "System detected low activity (2343 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-01-29",
+          "type": "staff_intervention",
+          "details": "RISK ALERT: Combo of low sleep/activity. Staff emailed participant."
+        },
+        {
+          "date": "2026-01-30",
+          "type": "automated_nudge",
+          "details": "System detected low activity (1477 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-01-31",
+          "type": "automated_nudge",
+          "details": "System detected low activity (1982 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-01-31",
+          "type": "staff_intervention",
+          "details": "RISK ALERT: Combo of low sleep/activity. Staff emailed participant."
+        },
+        {
+          "date": "2026-02-01",
+          "type": "automated_nudge",
+          "details": "System detected low activity (2303 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-02-04",
+          "type": "automated_nudge",
+          "details": "System detected low activity (2856 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-02-04",
+          "type": "staff_intervention",
+          "details": "RISK ALERT: Combo of low sleep/activity. Staff emailed participant."
+        },
+        {
+          "date": "2026-02-05",
+          "type": "automated_nudge",
+          "details": "System detected low activity (805 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-02-06",
+          "type": "automated_nudge",
+          "details": "System detected low activity (2965 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-02-06",
+          "type": "staff_intervention",
+          "details": "RISK ALERT: Combo of low sleep/activity. Staff emailed participant."
+        },
+        {
+          "date": "2026-02-07",
+          "type": "automated_nudge",
+          "details": "System detected low activity (1213 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-02-08",
+          "type": "automated_nudge",
+          "details": "System detected low activity (2475 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-02-08",
+          "type": "staff_intervention",
+          "details": "RISK ALERT: Combo of low sleep/activity. Staff emailed participant."
+        },
+        {
+          "date": "2026-02-09",
+          "type": "automated_nudge",
+          "details": "System detected low activity (2624 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-02-09",
+          "type": "staff_intervention",
+          "details": "RISK ALERT: Combo of low sleep/activity. Staff emailed participant."
+        },
+        {
+          "date": "2026-02-10",
+          "type": "automated_nudge",
+          "details": "System detected low activity (2980 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-02-11",
+          "type": "automated_nudge",
+          "details": "System detected low activity (2494 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-02-12",
+          "type": "automated_nudge",
+          "details": "System detected low activity (2567 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-02-12",
+          "type": "staff_intervention",
+          "details": "RISK ALERT: Combo of low sleep/activity. Staff emailed participant."
+        },
+        {
+          "date": "2026-02-14",
+          "type": "automated_nudge",
+          "details": "System detected low activity (2808 steps). Sent generic prompt."
+        },
+        {
+          "date": "2026-02-15",
+          "type": "automated_nudge",
+          "details": "System detected low activity (1546 steps). Sent generic prompt."
+        }
+      ]
+    },
+    {
+      "user_id": "user_003",
+      "redcap_id": "REDCAP-103",
+      "identifier": "Social Sarah",
+      "is_active": true,
+      "research_assistant": "Dr. Smith",
+      "days_in_study": 30,
+      "decision_engine_results": {
+        "symptom_radar": 0,
+        "risky_count": 0,
+        "needs_attention": false
+      },
+      "passive_sensing_compliance": {
+        "bat": 95
+      },
+      "conversations": [],
+      "passive_data_history": {
+        "2026-01-17": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 9151
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 74
+            },
+            "watch_sleep": {
+              "minutes_total": 439
+            },
+            "phone_screen_time": {
+              "minutes": 231
+            },
+            "phone_battery": [
+              49,
+              80,
+              94,
+              89
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 8
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 77
+              }
+            ]
+          }
+        },
+        "2026-01-18": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 7051
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 76
+            },
+            "watch_sleep": {
+              "minutes_total": 439
+            },
+            "phone_screen_time": {
+              "minutes": 370
+            },
+            "phone_battery": [
+              23,
+              13,
+              52,
+              29
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 6
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 24
+              }
+            ]
+          }
+        },
+        "2026-01-19": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 6802
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 73
+            },
+            "watch_sleep": {
+              "minutes_total": 449
+            },
+            "phone_screen_time": {
+              "minutes": 183
+            },
+            "phone_battery": [
+              48,
+              13,
+              25,
+              50
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 9
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 6
+              }
+            ]
+          }
+        },
+        "2026-01-20": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 7598
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 81
+            },
+            "watch_sleep": {
+              "minutes_total": 415
+            },
+            "phone_screen_time": {
+              "minutes": 236
+            },
+            "phone_battery": [
+              52,
+              12,
+              44,
+              44
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 1
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 110
+              }
+            ]
+          }
+        },
+        "2026-01-21": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 6010
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 89
+            },
+            "watch_sleep": {
+              "minutes_total": 341
+            },
+            "phone_screen_time": {
+              "minutes": 181
+            },
+            "phone_battery": [
+              59,
+              34,
+              19,
+              43
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 0
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 150
+              }
+            ]
+          }
+        },
+        "2026-01-22": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 7138
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 87
+            },
+            "watch_sleep": {
+              "minutes_total": 437
+            },
+            "phone_screen_time": {
+              "minutes": 206
+            },
+            "phone_battery": [
+              7,
+              72,
+              68,
+              95
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 10
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 37
+              }
+            ]
+          }
+        },
+        "2026-01-23": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 7716
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 75
+            },
+            "watch_sleep": {
+              "minutes_total": 352
+            },
+            "phone_screen_time": {
+              "minutes": 206
+            },
+            "phone_battery": [
+              79,
+              56,
+              26,
+              36
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 0
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 111
+              }
+            ]
+          }
+        },
+        "2026-01-24": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 6744
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 76
+            },
+            "watch_sleep": {
+              "minutes_total": 444
+            },
+            "phone_screen_time": {
+              "minutes": 161
+            },
+            "phone_battery": [
+              82,
+              100,
+              26,
+              17
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 1
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 102
+              }
+            ]
+          }
+        },
+        "2026-01-25": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 7848
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 64
+            },
+            "watch_sleep": {
+              "minutes_total": 407
+            },
+            "phone_screen_time": {
+              "minutes": 340
+            },
+            "phone_battery": [
+              63,
+              20,
+              61,
+              96
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 4
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 8
+              }
+            ]
+          }
+        },
+        "2026-01-26": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 7233
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 72
+            },
+            "watch_sleep": {
+              "minutes_total": 334
+            },
+            "phone_screen_time": {
+              "minutes": 179
+            },
+            "phone_battery": [
+              42,
+              8,
+              26,
+              55
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 10
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 117
+              }
+            ]
+          }
+        },
+        "2026-01-27": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 6030
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 84
+            },
+            "watch_sleep": {
+              "minutes_total": 443
+            },
+            "phone_screen_time": {
+              "minutes": 144
+            },
+            "phone_battery": [
+              75,
+              31,
+              36,
+              98
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 5
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 60
+              }
+            ]
+          }
+        },
+        "2026-01-28": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 8126
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 60
+            },
+            "watch_sleep": {
+              "minutes_total": 407
+            },
+            "phone_screen_time": {
+              "minutes": 102
+            },
+            "phone_battery": [
+              15,
+              13,
+              63,
+              16
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 2
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 150
+              }
+            ]
+          }
+        },
+        "2026-01-29": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 7413
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 73
+            },
+            "watch_sleep": {
+              "minutes_total": 433
+            },
+            "phone_screen_time": {
+              "minutes": 157
+            },
+            "phone_battery": [
+              50,
+              40,
+              44,
+              44
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 2
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 107
+              }
+            ]
+          }
+        },
+        "2026-01-30": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 5910
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 72
+            },
+            "watch_sleep": {
+              "minutes_total": 494
+            },
+            "phone_screen_time": {
+              "minutes": 143
+            },
+            "phone_battery": [
+              47,
+              92,
+              34,
+              32
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 10
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 34
+              }
+            ]
+          }
+        },
+        "2026-01-31": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 6637
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 65
+            },
+            "watch_sleep": {
+              "minutes_total": 570
+            },
+            "phone_screen_time": {
+              "minutes": 376
+            },
+            "phone_battery": [
+              19,
+              46,
+              5,
+              25
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 8
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 165
+              }
+            ]
+          }
+        },
+        "2026-02-01": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 7295
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 68
+            },
+            "watch_sleep": {
+              "minutes_total": 462
+            },
+            "phone_screen_time": {
+              "minutes": 269
+            },
+            "phone_battery": [
+              55,
+              86,
+              25,
+              61
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 5
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 16
+              }
+            ]
+          }
+        },
+        "2026-02-02": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 6615
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 64
+            },
+            "watch_sleep": {
+              "minutes_total": 441
+            },
+            "phone_screen_time": {
+              "minutes": 263
+            },
+            "phone_battery": [
+              67,
+              20,
+              44,
+              95
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 5
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 179
+              }
+            ]
+          }
+        },
+        "2026-02-03": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 5938
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 63
+            },
+            "watch_sleep": {
+              "minutes_total": 447
+            },
+            "phone_screen_time": {
+              "minutes": 119
+            },
+            "phone_battery": [
+              81,
+              33,
+              6,
+              80
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 5
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 153
+              }
+            ]
+          }
+        },
+        "2026-02-04": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 7509
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 78
+            },
+            "watch_sleep": {
+              "minutes_total": 382
+            },
+            "phone_screen_time": {
+              "minutes": 104
+            },
+            "phone_battery": [
+              38,
+              82,
+              85,
+              33
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 3
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 64
+              }
+            ]
+          }
+        },
+        "2026-02-05": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 6079
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 82
+            },
+            "watch_sleep": {
+              "minutes_total": 393
+            },
+            "phone_screen_time": {
+              "minutes": 317
+            },
+            "phone_battery": [
+              24,
+              76,
+              58,
+              58
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 0
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 173
+              }
+            ]
+          }
+        },
+        "2026-02-06": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 8785
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 90
+            },
+            "watch_sleep": {
+              "minutes_total": 391
+            },
+            "phone_screen_time": {
+              "minutes": 201
+            },
+            "phone_battery": [
+              32,
+              92,
+              6,
+              45
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 8
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 137
+              }
+            ]
+          }
+        },
+        "2026-02-07": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 7171
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 87
+            },
+            "watch_sleep": {
+              "minutes_total": 406
+            },
+            "phone_screen_time": {
+              "minutes": 189
+            },
+            "phone_battery": [
+              94,
+              49,
+              73,
+              19
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 3
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 105
+              }
+            ]
+          }
+        },
+        "2026-02-08": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 6305
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 80
+            },
+            "watch_sleep": {
+              "minutes_total": 521
+            },
+            "phone_screen_time": {
+              "minutes": 129
+            },
+            "phone_battery": [
+              84,
+              64,
+              22,
+              8
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 7
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 177
+              }
+            ]
+          }
+        },
+        "2026-02-09": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 6816
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 69
+            },
+            "watch_sleep": {
+              "minutes_total": 428
+            },
+            "phone_screen_time": {
+              "minutes": 201
+            },
+            "phone_battery": [
+              62,
+              85,
+              54,
+              7
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 9
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 34
+              }
+            ]
+          }
+        },
+        "2026-02-10": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 8011
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 72
+            },
+            "watch_sleep": {
+              "minutes_total": 421
+            },
+            "phone_screen_time": {
+              "minutes": 360
+            },
+            "phone_battery": [
+              69,
+              80,
+              74,
+              7
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 8
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 137
+              }
+            ]
+          }
+        },
+        "2026-02-11": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 8456
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 61
+            },
+            "watch_sleep": {
+              "minutes_total": 449
+            },
+            "phone_screen_time": {
+              "minutes": 321
+            },
+            "phone_battery": [
+              93,
+              11,
+              54,
+              51
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 6
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 84
+              }
+            ]
+          }
+        },
+        "2026-02-12": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 6790
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 84
+            },
+            "watch_sleep": {
+              "minutes_total": 416
+            },
+            "phone_screen_time": {
+              "minutes": 281
+            },
+            "phone_battery": [
+              56,
+              62,
+              87,
+              89
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 4
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 160
+              }
+            ]
+          }
+        },
+        "2026-02-13": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 6075
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 86
+            },
+            "watch_sleep": {
+              "minutes_total": 501
+            },
+            "phone_screen_time": {
+              "minutes": 398
+            },
+            "phone_battery": [
+              83,
+              44,
+              38,
+              11
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 4
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 139
+              }
+            ]
+          }
+        },
+        "2026-02-14": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 6485
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 63
+            },
+            "watch_sleep": {
+              "minutes_total": 489
+            },
+            "phone_screen_time": {
+              "minutes": 356
+            },
+            "phone_battery": [
+              29,
+              28,
+              74,
+              53
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 9
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 51
+              }
+            ]
+          }
+        },
+        "2026-02-15": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 8230
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 85
+            },
+            "watch_sleep": {
+              "minutes_total": 454
+            },
+            "phone_screen_time": {
+              "minutes": 374
+            },
+            "phone_battery": [
+              17,
+              73,
+              50,
+              16
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 7
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 132
+              }
+            ]
+          }
+        }
+      },
+      "events": []
+    },
+    {
+      "user_id": "user_004",
+      "redcap_id": "REDCAP-104",
+      "identifier": "Ghosting Greg",
+      "is_active": false,
+      "research_assistant": "Dr. Smith",
+      "days_in_study": 16,
+      "decision_engine_results": {
+        "symptom_radar": 0,
+        "risky_count": 0,
+        "needs_attention": false
+      },
+      "passive_sensing_compliance": {
+        "bat": 60
+      },
+      "conversations": [],
+      "passive_data_history": {
+        "2026-01-17": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 2960
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 77
+            },
+            "watch_sleep": {
+              "minutes_total": 312
+            },
+            "phone_screen_time": {
+              "minutes": 357
+            },
+            "phone_battery": [
+              82,
+              65,
+              53,
+              75
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 0
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 37
+              }
+            ]
+          }
+        },
+        "2026-01-18": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 4297
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 72
+            },
+            "watch_sleep": {
+              "minutes_total": 382
+            },
+            "phone_screen_time": {
+              "minutes": 147
+            },
+            "phone_battery": [
+              49,
+              25,
+              87,
+              47
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 4
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 102
+              }
+            ]
+          }
+        },
+        "2026-01-19": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 4007
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 76
+            },
+            "watch_sleep": {
+              "minutes_total": 342
+            },
+            "phone_screen_time": {
+              "minutes": 154
+            },
+            "phone_battery": [
+              52,
+              9,
+              14,
+              9
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 0
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 74
+              }
+            ]
+          }
+        },
+        "2026-01-20": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 3001
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 83
+            },
+            "watch_sleep": {
+              "minutes_total": 362
+            },
+            "phone_screen_time": {
+              "minutes": 387
+            },
+            "phone_battery": [
+              57,
+              62,
+              92,
+              10
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 3
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 159
+              }
+            ]
+          }
+        },
+        "2026-01-21": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 6136
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 73
+            },
+            "watch_sleep": {
+              "minutes_total": 301
+            },
+            "phone_screen_time": {
+              "minutes": 387
+            },
+            "phone_battery": [
+              59,
+              75,
+              72,
+              29
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 8
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 15
+              }
+            ]
+          }
+        },
+        "2026-01-22": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 4622
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 70
+            },
+            "watch_sleep": {
+              "minutes_total": 373
+            },
+            "phone_screen_time": {
+              "minutes": 179
+            },
+            "phone_battery": [
+              7,
+              83,
+              71,
+              77
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 8
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 150
+              }
+            ]
+          }
+        },
+        "2026-01-23": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 4872
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 86
+            },
+            "watch_sleep": {
+              "minutes_total": 422
+            },
+            "phone_screen_time": {
+              "minutes": 178
+            },
+            "phone_battery": [
+              25,
+              77,
+              46,
+              71
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 4
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 125
+              }
+            ]
+          }
+        },
+        "2026-01-24": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 4922
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 90
+            },
+            "watch_sleep": {
+              "minutes_total": 290
+            },
+            "phone_screen_time": {
+              "minutes": 316
+            },
+            "phone_battery": [
+              85,
+              14,
+              27,
+              23
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 1
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 136
+              }
+            ]
+          }
+        },
+        "2026-01-25": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 5229
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 76
+            },
+            "watch_sleep": {
+              "minutes_total": 343
+            },
+            "phone_screen_time": {
+              "minutes": 174
+            },
+            "phone_battery": [
+              49,
+              37,
+              23,
+              22
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 0
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 81
+              }
+            ]
+          }
+        },
+        "2026-01-26": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 3626
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 82
+            },
+            "watch_sleep": {
+              "minutes_total": 309
+            },
+            "phone_screen_time": {
+              "minutes": 311
+            },
+            "phone_battery": [
+              52,
+              63,
+              9,
+              46
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 2
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 19
+              }
+            ]
+          }
+        },
+        "2026-01-27": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 5145
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 78
+            },
+            "watch_sleep": {
+              "minutes_total": 409
+            },
+            "phone_screen_time": {
+              "minutes": 155
+            },
+            "phone_battery": [
+              87,
+              71,
+              65,
+              87
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 8
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 60
+              }
+            ]
+          }
+        },
+        "2026-01-28": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 4751
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 76
+            },
+            "watch_sleep": {
+              "minutes_total": 329
+            },
+            "phone_screen_time": {
+              "minutes": 373
+            },
+            "phone_battery": [
+              20,
+              36,
+              76,
+              5
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 5
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 95
+              }
+            ]
+          }
+        },
+        "2026-01-29": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 4536
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 78
+            },
+            "watch_sleep": {
+              "minutes_total": 206
+            },
+            "phone_screen_time": {
+              "minutes": 185
+            },
+            "phone_battery": [
+              41,
+              80,
+              52,
+              44
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 5
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 48
+              }
+            ]
+          }
+        },
+        "2026-01-30": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 5199
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 60
+            },
+            "watch_sleep": {
+              "minutes_total": 356
+            },
+            "phone_screen_time": {
+              "minutes": 147
+            },
+            "phone_battery": [
+              87,
+              22,
+              37,
+              38
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 10
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 138
+              }
+            ]
+          }
+        },
+        "2026-01-31": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 3844
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 85
+            },
+            "watch_sleep": {
+              "minutes_total": 363
+            },
+            "phone_screen_time": {
+              "minutes": 327
+            },
+            "phone_battery": [
+              62,
+              37,
+              5,
+              20
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 10
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 88
+              }
+            ]
+          }
+        },
+        "2026-02-01": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 3156
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 84
+            },
+            "watch_sleep": {
+              "minutes_total": 393
+            },
+            "phone_screen_time": {
+              "minutes": 346
+            },
+            "phone_battery": [
+              64,
+              43,
+              60,
+              86
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 9
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 36
+              }
+            ]
+          }
+        }
+      },
+      "events": [
+        {
+          "date": "2026-01-17",
+          "type": "automated_nudge",
+          "details": "System detected low activity (2960 steps). Sent generic prompt."
+        }
+      ]
+    },
+    {
+      "user_id": "user_005",
+      "redcap_id": "REDCAP-105",
+      "identifier": "Erratic Eve",
+      "is_active": true,
+      "research_assistant": "Dr. Smith",
+      "days_in_study": 30,
+      "decision_engine_results": {
+        "symptom_radar": 0,
+        "risky_count": 0,
+        "needs_attention": false
+      },
+      "passive_sensing_compliance": {
+        "bat": 60
+      },
+      "conversations": [],
+      "passive_data_history": {
+        "2026-01-17": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 4523
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 66
+            },
+            "watch_sleep": {
+              "minutes_total": 376
+            },
+            "phone_screen_time": {
+              "minutes": 314
+            },
+            "phone_battery": [
+              71,
+              86,
+              13,
+              55
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 2
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 5
+              }
+            ]
+          }
+        },
+        "2026-01-18": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 5488
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 80
+            },
+            "watch_sleep": {
+              "minutes_total": 427
+            },
+            "phone_screen_time": {
+              "minutes": 350
+            },
+            "phone_battery": [
+              75,
+              45,
+              88,
+              86
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 4
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 96
+              }
+            ]
+          }
+        },
+        "2026-01-19": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 4408
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 60
+            },
+            "watch_sleep": {
+              "minutes_total": 387
+            },
+            "phone_screen_time": {
+              "minutes": 171
+            },
+            "phone_battery": [
+              30,
+              11,
+              11,
+              78
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 1
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 91
+              }
+            ]
+          }
+        },
+        "2026-01-20": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 5151
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 61
+            },
+            "watch_sleep": {
+              "minutes_total": 380
+            },
+            "phone_screen_time": {
+              "minutes": 212
+            },
+            "phone_battery": [
+              74,
+              57,
+              99,
+              83
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 10
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 120
+              }
+            ]
+          }
+        },
+        "2026-01-21": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 5885
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 63
+            },
+            "watch_sleep": {
+              "minutes_total": 392
+            },
+            "phone_screen_time": {
+              "minutes": 215
+            },
+            "phone_battery": [
+              54,
+              8,
+              72,
+              69
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 7
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 171
+              }
+            ]
+          }
+        },
+        "2026-01-22": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 3155
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 69
+            },
+            "watch_sleep": {
+              "minutes_total": 406
+            },
+            "phone_screen_time": {
+              "minutes": 333
+            },
+            "phone_battery": [
+              30,
+              24,
+              59,
+              11
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 3
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 38
+              }
+            ]
+          }
+        },
+        "2026-01-23": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 4517
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 74
+            },
+            "watch_sleep": {
+              "minutes_total": 341
+            },
+            "phone_screen_time": {
+              "minutes": 247
+            },
+            "phone_battery": [
+              88,
+              13,
+              79,
+              63
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 6
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 147
+              }
+            ]
+          }
+        },
+        "2026-01-24": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 4411
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 73
+            },
+            "watch_sleep": {
+              "minutes_total": 382
+            },
+            "phone_screen_time": {
+              "minutes": 183
+            },
+            "phone_battery": [
+              52,
+              54,
+              35,
+              63
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 1
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 59
+              }
+            ]
+          }
+        },
+        "2026-01-25": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 5111
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 81
+            },
+            "watch_sleep": {
+              "minutes_total": 295
+            },
+            "phone_screen_time": {
+              "minutes": 336
+            },
+            "phone_battery": [
+              54,
+              41,
+              70,
+              15
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 5
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 154
+              }
+            ]
+          }
+        },
+        "2026-01-26": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 4294
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 85
+            },
+            "watch_sleep": {
+              "minutes_total": 200
+            },
+            "phone_screen_time": {
+              "minutes": 175
+            },
+            "phone_battery": [
+              30,
+              16,
+              32,
+              85
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 4
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 25
+              }
+            ]
+          }
+        },
+        "2026-01-27": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 4648
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 86
+            },
+            "watch_sleep": {
+              "minutes_total": 358
+            },
+            "phone_screen_time": {
+              "minutes": 245
+            },
+            "phone_battery": [
+              43,
+              75,
+              90,
+              48
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 10
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 145
+              }
+            ]
+          }
+        },
+        "2026-01-28": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 4989
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 85
+            },
+            "watch_sleep": {
+              "minutes_total": 419
+            },
+            "phone_screen_time": {
+              "minutes": 319
+            },
+            "phone_battery": [
+              12,
+              36,
+              38,
+              79
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 8
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 94
+              }
+            ]
+          }
+        },
+        "2026-01-29": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 2894
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 62
+            },
+            "watch_sleep": {
+              "minutes_total": 415
+            },
+            "phone_screen_time": {
+              "minutes": 393
+            },
+            "phone_battery": [
+              79,
+              28,
+              97,
+              60
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 6
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 33
+              }
+            ]
+          }
+        },
+        "2026-01-30": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 5521
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 88
+            },
+            "watch_sleep": {
+              "minutes_total": 295
+            },
+            "phone_screen_time": {
+              "minutes": 281
+            },
+            "phone_battery": [
+              67,
+              95,
+              59,
+              62
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 0
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 61
+              }
+            ]
+          }
+        },
+        "2026-01-31": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 5318
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 66
+            },
+            "watch_sleep": {
+              "minutes_total": 446
+            },
+            "phone_screen_time": {
+              "minutes": 213
+            },
+            "phone_battery": [
+              35,
+              34,
+              78,
+              92
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 7
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 134
+              }
+            ]
+          }
+        },
+        "2026-02-01": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 4896
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 63
+            },
+            "watch_sleep": {
+              "minutes_total": 478
+            },
+            "phone_screen_time": {
+              "minutes": 374
+            },
+            "phone_battery": [
+              57,
+              44,
+              63,
+              38
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 6
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 93
+              }
+            ]
+          }
+        },
+        "2026-02-02": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 3974
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 66
+            },
+            "watch_sleep": {
+              "minutes_total": 426
+            },
+            "phone_screen_time": {
+              "minutes": 337
+            },
+            "phone_battery": [
+              45,
+              88,
+              44,
+              61
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 7
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 146
+              }
+            ]
+          }
+        },
+        "2026-02-03": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 5800
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 74
+            },
+            "watch_sleep": {
+              "minutes_total": 411
+            },
+            "phone_screen_time": {
+              "minutes": 174
+            },
+            "phone_battery": [
+              98,
+              22,
+              59,
+              84
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 4
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 93
+              }
+            ]
+          }
+        },
+        "2026-02-04": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 4499
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 77
+            },
+            "watch_sleep": {
+              "minutes_total": 388
+            },
+            "phone_screen_time": {
+              "minutes": 237
+            },
+            "phone_battery": [
+              39,
+              36,
+              55,
+              54
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 1
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 179
+              }
+            ]
+          }
+        },
+        "2026-02-05": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 6183
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 83
+            },
+            "watch_sleep": {
+              "minutes_total": 365
+            },
+            "phone_screen_time": {
+              "minutes": 350
+            },
+            "phone_battery": [
+              88,
+              44,
+              34,
+              69
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 1
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 53
+              }
+            ]
+          }
+        },
+        "2026-02-06": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 5347
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 90
+            },
+            "watch_sleep": {
+              "minutes_total": 429
+            },
+            "phone_screen_time": {
+              "minutes": 248
+            },
+            "phone_battery": [
+              45,
+              71,
+              27,
+              48
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 10
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 149
+              }
+            ]
+          }
+        },
+        "2026-02-07": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 7113
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 89
+            },
+            "watch_sleep": {
+              "minutes_total": 314
+            },
+            "phone_screen_time": {
+              "minutes": 375
+            },
+            "phone_battery": [
+              98,
+              30,
+              57,
+              42
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 7
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 26
+              }
+            ]
+          }
+        },
+        "2026-02-08": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 5690
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 62
+            },
+            "watch_sleep": {
+              "minutes_total": 388
+            },
+            "phone_screen_time": {
+              "minutes": 296
+            },
+            "phone_battery": [
+              9,
+              5,
+              56,
+              87
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 7
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 75
+              }
+            ]
+          }
+        },
+        "2026-02-09": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 4313
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 78
+            },
+            "watch_sleep": {
+              "minutes_total": 468
+            },
+            "phone_screen_time": {
+              "minutes": 243
+            },
+            "phone_battery": [
+              33,
+              57,
+              21,
+              85
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 4
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 33
+              }
+            ]
+          }
+        },
+        "2026-02-10": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 3888
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 76
+            },
+            "watch_sleep": {
+              "minutes_total": 398
+            },
+            "phone_screen_time": {
+              "minutes": 207
+            },
+            "phone_battery": [
+              36,
+              85,
+              42,
+              31
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 10
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 171
+              }
+            ]
+          }
+        },
+        "2026-02-11": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 3933
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 83
+            },
+            "watch_sleep": {
+              "minutes_total": 329
+            },
+            "phone_screen_time": {
+              "minutes": 388
+            },
+            "phone_battery": [
+              57,
+              28,
+              22,
+              34
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 2
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 127
+              }
+            ]
+          }
+        },
+        "2026-02-12": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 5191
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 89
+            },
+            "watch_sleep": {
+              "minutes_total": 424
+            },
+            "phone_screen_time": {
+              "minutes": 174
+            },
+            "phone_battery": [
+              56,
+              37,
+              21,
+              79
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 2
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 78
+              }
+            ]
+          }
+        },
+        "2026-02-13": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 5029
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 87
+            },
+            "watch_sleep": {
+              "minutes_total": 433
+            },
+            "phone_screen_time": {
+              "minutes": 329
+            },
+            "phone_battery": [
+              19,
+              10,
+              80,
+              16
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 2
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 81
+              }
+            ]
+          }
+        },
+        "2026-02-14": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 3372
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 79
+            },
+            "watch_sleep": {
+              "minutes_total": 463
+            },
+            "phone_screen_time": {
+              "minutes": 320
+            },
+            "phone_battery": [
+              82,
+              30,
+              64,
+              19
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 4
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 145
+              }
+            ]
+          }
+        },
+        "2026-02-15": {
+          "quantitative": {
+            "watch_activity": {
+              "steps": 5812
+            },
+            "watch_heart_rate": {
+              "avg_bpm": 78
+            },
+            "watch_sleep": {
+              "minutes_total": 375
+            },
+            "phone_screen_time": {
+              "minutes": 198
+            },
+            "phone_battery": [
+              37,
+              51,
+              28,
+              73
+            ]
+          },
+          "campus": {
+            "canvas_logs": {
+              "files_viewed": 10
+            },
+            "wireless_locations": [
+              {
+                "building": "Baker-Berry",
+                "duration_mins": 159
+              }
+            ]
+          }
+        }
+      },
+      "events": [
+        {
+          "date": "2026-01-29",
+          "type": "automated_nudge",
+          "details": "System detected low activity (2894 steps). Sent generic prompt."
+        }
+      ]
+    }
+  ]
+}

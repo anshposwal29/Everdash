@@ -1247,14 +1247,8 @@ def get_participant_passive_data(user_id):
     """
     Serve passive sensor data from mock API to the frontend charts
     """
-    from datetime import datetime
-
-    print(f"\n🔥🔥🔥 API CALLED FOR USER: {user_id} 🔥🔥🔥")
-    
     metric = request.args.get('metric', 'steps')
     time_range = request.args.get('range', '30d')
-    
-    print(f"Metric: {metric}, Range: {time_range}")
     
     # Parse time range
     if time_range == '3d':
@@ -1271,26 +1265,20 @@ def get_participant_passive_data(user_id):
                                timeout=5)
         
         if response.status_code != 200:
-            print(f"ERROR: Mock API returned {response.status_code}")
             return jsonify({'error': 'Failed to fetch data'}), 500
         
         data = response.json()
         user = next((p for p in data['participants'] if p['user_id'] == user_id), None)
         
         if not user:
-            print(f"ERROR: User {user_id} not found")
             return jsonify({'error': 'User not found'}), 404
         
-        print(f"✅ User found: {user.get('identifier', 'Unknown')}")
-        
         history = user.get('passive_data_history', {})
-        dates = sorted(history.keys())[-days:]
+        dates = sorted(history.keys())[-days:]  # Get last N days
         
         labels = []
         values = []
         events = []
-        
-        print(f"Processing {len(dates)} days of data...")
         
         for date_str in dates:
             day_data = history[date_str]
@@ -1323,142 +1311,17 @@ def get_participant_passive_data(user_id):
             
             values.append(val)
         
-        print(f"✅ Processed {len(values)} data points")
-        print(f"Date range: {labels[0]} to {labels[-1]}")
-        
-        # ========================================
-        # GENERATE EVENTS FOR CHART OVERLAY
-        # ========================================
-        
-        print(f"\n========== EVENT GENERATION ==========")
-        
-        conversations = user.get('conversations', [])
-        print(f"Found {len(conversations)} conversations in user data")
-        
-        if len(conversations) == 0:
-            print("⚠️  WARNING: No conversations found!")
-            print(f"User keys available: {list(user.keys())}")
-        
-        for idx, conv in enumerate(conversations):
-            print(f"\n--- Conversation {idx + 1} ---")
-            
-            messages = conv.get('messages', [])
-            print(f"  Messages: {len(messages)}")
-            
-            if not messages:
-                print("  ❌ SKIP: No messages")
-                continue
-            
-            first_msg = messages[0]
-            
-            if 'timestamp' not in first_msg:
-                print("  ❌ SKIP: No timestamp")
-                continue
-            
-            try:
-                conv_time = datetime.fromisoformat(first_msg['timestamp'])
-                conv_date_str = conv_time.strftime('%Y-%m-%d')  # Full date format
-                conv_date_label = conv_time.strftime('%m/%d')   # Chart label format
-                
-                print(f"  Conversation date: {conv_date_label} ({conv_date_str})")
-                print(f"  Chart range: {labels[0]} to {labels[-1]}")
-                
-                # NEW LOGIC: If conversation date not in chart range, check if we can add it
-                if conv_date_label not in labels:
-                    # Check if this date exists in the passive data history
-                    if conv_date_str in history:
-                        print(f"  ℹ️  Date not in chart range, but exists in history - extending range")
-                        
-                        # Add this date to the chart
-                        day_data = history[conv_date_str]
-                        q = day_data.get('quantitative', {})
-                        
-                        # Extract the metric value
-                        if metric == 'steps':
-                            val = q.get('watch_activity', {}).get('steps', 0)
-                        elif metric == 'heart_rate_avg':
-                            val = q.get('watch_heart_rate', {}).get('avg_bpm', 0)
-                        elif metric == 'sleep_minutes':
-                            val = q.get('watch_sleep', {}).get('minutes_total', 0)
-                        elif metric == 'screen_time_minutes':
-                            val = q.get('phone_screen_time', {}).get('minutes', 0)
-                        elif metric == 'battery_drain':
-                            battery = q.get('phone_battery', [])
-                            val = (100 - min(battery)) if battery else 0
-                        elif metric == 'canvas_activity':
-                            val = day_data.get('campus', {}).get('canvas_logs', {}).get('files_viewed', 0)
-                        elif metric == 'library_hours':
-                            locations = day_data.get('campus', {}).get('wireless_locations', [])
-                            library_mins = sum(loc['duration_mins'] for loc in locations if 'library' in loc.get('building', '').lower())
-                            val = round(library_mins / 60, 1)
-                        else:
-                            val = 0
-                        
-                        # Add to chart data
-                        labels.append(conv_date_label)
-                        values.append(val)
-                        
-                        print(f"  ✅ Extended chart to include {conv_date_label} with value {val}")
-                    else:
-                        print(f"  ❌ SKIP: {conv_date_label} not in passive history")
-                        continue
-
-                    
-                print(f"  ✅ Date {conv_date_label} IS in range!")
-                
-                day_index = labels.index(conv_date_label)
-                metric_value = values[day_index]
-                
-                initiated_by = conv.get('initiated_by', 'user')
-                if initiated_by == 'bot':
-                    event_type = 'bot'
-                    event_details = 'Bot check-in conversation'
-                else:
-                    event_type = 'user'
-                    event_details = 'User initiated conversation'
-                
-                time_str = conv_time.strftime('%I:%M %p')
-                event_details = f"{event_details} at {time_str}"
-                
-                event = {
-                    'x': conv_date_label,
-                    'y': metric_value,
-                    'type': event_type,
-                    'details': event_details
-                }
-                
-                events.append(event)
-                print(f"  ✅ SUCCESS: Created event at ({conv_date_label}, {metric_value})")
-                
-            except Exception as e:
-                print(f"  ❌ ERROR: {e}")
-                import traceback
-                traceback.print_exc()
-                continue
-        
-        print(f"\n========== FINAL RESULT ==========")
-        print(f"Total events created: {len(events)}")
-        if events:
-            for e in events:
-                print(f"  • {e['type']} on {e['x']} at y={e['y']}: {e['details']}")
-        print(f"==================================\n")
-        
         return jsonify({
             'metric': metric,
             'labels': labels,
             'values': values,
-            'events': events
+            'events': events  # TODO: Add intervention events here if needed
         })
         
     except Exception as e:
-        print(f"❌ EXCEPTION in passive data endpoint: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"Error in passive data endpoint: {e}")
         return jsonify({'error': str(e)}), 500
-
-
     
-
 @app.route('/api/sensor_data')
 @login_required
 def get_sensor_data_api():

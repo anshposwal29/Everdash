@@ -354,22 +354,6 @@
                     <div style="position: relative; height: 400px; width: 100%;">
                         <canvas id="passiveChart"></canvas>
                     </div>
-                    <!-- EVENT LEGEND -->
-                    <!-- EVENT LEGEND -->
-                    <div style="margin-top: 20px; padding: 12px; background: #f8fafc; border-radius: 8px; display: flex; justify-content: center; gap: 32px; font-size: 13px;">
-                        <span style="display: flex; align-items: center; gap: 8px;">
-                            <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #dc3545; border: 2px solid white; box-shadow: 0 0 0 1px #dc3545;"></span>
-                            <span style="color: #475569; font-weight: 500;">Staff Intervention</span>
-                        </span>
-                        <span style="display: flex; align-items: center; gap: 8px;">
-                            <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #ffc107; border: 2px solid white; box-shadow: 0 0 0 1px #ffc107;"></span>
-                            <span style="color: #475569; font-weight: 500;">Bot Check-in</span>
-                        </span>
-                        <span style="display: flex; align-items: center; gap: 8px;">
-                            <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #fd7e14; border: 2px solid white; box-shadow: 0 0 0 1px #fd7e14;"></span>
-                            <span style="color: #475569; font-weight: 500;">User Conversation</span>
-                        </span>
-                    </div>
                 </div>
             </div>
 
@@ -446,82 +430,25 @@
                 if(['heart_rate_avg', 'sleep_minutes'].includes(metric)) color = '#7c3aed';
                 if(['canvas_activity', 'library_hours'].includes(metric)) color = '#ea580c';
 
-               myChart = new Chart(ctx, {
+                myChart = new Chart(ctx, {
+                    type: 'line',
                     data: {
                         labels: data.labels,
-                        datasets: [
-                            // Dataset 1: LINE GRAPH (the metric line)
-                            {
-                                type: 'line',
-                                label: metric.replace('_', ' ').toUpperCase(),
-                                data: data.values,
-                                borderColor: color,
-                                backgroundColor: color + '20',
-                                fill: true,
-                                tension: 0.3,
-                                pointRadius: 0,
-                                pointHoverRadius: 0
-                            },
-                            // Dataset 2: SCATTER PLOT (the event dots!)
-                            {
-                                type: 'scatter',
-                                label: 'Events',
-                                data: data.events || [],
-                                pointRadius: 10,
-                                pointHoverRadius: 14,
-                                backgroundColor: function(context) {
-                                    const raw = context.raw;
-                                    if (!raw) return '#999999';
-                                    if (raw.type === 'staff') return '#dc3545';
-                                    if (raw.type === 'bot') return '#ffc107';
-                                    return '#fd7e14';
-                                },
-                                borderColor: '#ffffff',
-                                borderWidth: 3,
-                                pointStyle: 'circle',
-                                hoverBorderWidth : 4
-
-                            }
-                        ]
+                        datasets: [{
+                            label: metric.replace('_', ' ').toUpperCase(),
+                            data: data.values,
+                            borderColor: color,
+                            backgroundColor: color + '20', // transparent fill
+                            fill: true,
+                            tension: 0.3
+                        }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        interaction: { 
-                            mode: 'nearest',
-                            axis: 'xy',
-                            intersect: true
-                        },
-                        plugins: { 
-                            legend: { display: false },
-                            tooltip: {
-                                filter: function(tooltipItem) {
-                                    return tooltipItem.dataset.type === 'scatter';
-                                },
-                                callbacks: {
-                                    label: function(context) {
-                                        const raw = context.raw;
-                                        if (!raw || !raw.details) return '';
-                                        return raw.details;
-                                    }
-                                }
-                            }
-                        },
-                        scales: { 
-                            y: { 
-                                beginAtZero: true,
-                                grid: { color: '#f1f5f9' }
-                            },
-                            x: { 
-                                grid: { display: false },
-                                ticks: {
-                                    maxRotation: 45,
-                                    minRotation: 45,
-                                    autoSkip: true,
-                                    maxTicksLimit: 15
-                                }
-                            }
-                        }
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true }, x: { grid: { display: false } } }
                     }
                 });
             })
@@ -674,7 +601,7 @@
         });
     }
 
-
+    
 </script>
 {% endblock %}
 

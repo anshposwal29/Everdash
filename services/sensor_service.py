@@ -1,101 +1,66 @@
-import random
+import requests
 from datetime import datetime, timedelta
+from config import Config
 
-# ==========================================
-# FUNCTION 1: FETCH SENSOR DATA (Line Graph)
-# ==========================================
+# The address of your Mock Server (must be running on port 5001)
+MOCK_API_URL = "http://127.0.0.1:5001/api/v1/all_users"
+API_KEY = "sk_everdash_test_123"
+
 def fetch_sensor_data_external(user_identifier, metric_type, start_date, end_date, api_key):
     """
-    Simulates a secure request to the External Sensor API.
-    Returns a list of values for the graph.
+    Fetches mock data. Now UPDATED to find users by either user_id OR redcap_id.
     """
-    
-    # 1. SECURITY CHECK (Simulated)
-    if not api_key or api_key != "sk_sensor_test_key_v1":
-        print(f"Warning: Invalid API Key used for {metric_type}")
-    
-    # 2. CONFIGURATION: Statistical profiles
-    SENSOR_PROFILES = {
-        # Physiological
-        'heart_rate_avg':      {'mu': 72, 'sigma': 8,  'min': 45, 'max': 130, 'decimals': 0},
-        'steps':               {'mu': 6000, 'sigma': 2500, 'min': 100, 'max': 20000, 'decimals': 0},
-        'sleep_minutes':       {'mu': 400, 'sigma': 60, 'min': 120, 'max': 720, 'decimals': 0},
+    try:
+        # 1. Fetch Master Data
+        headers = {"X-API-KEY": api_key}
+        response = requests.get(MOCK_API_URL, headers=headers, timeout=5)
         
-        # Digital Phenotyping (Phone)
-        'screen_time_minutes': {'mu': 300, 'sigma': 90, 'min': 30, 'max': 700, 'decimals': 0},
-        'battery_drain':       {'mu': 85, 'sigma': 10, 'min': 10, 'max': 100, 'decimals': 0},
-        'ambient_light_lux':   {'mu': 600, 'sigma': 200, 'min': 50, 'max': 5000, 'decimals': 0},
-        
-        # Mobility & Connectivity
-        'travel_radius':       {'mu': 5.0, 'sigma': 3.5, 'min': 0.1, 'max': 25.0, 'decimals': 2}, # km
-        'wifi_interactions':   {'mu': 6,   'sigma': 2,   'min': 1,   'max': 15,   'decimals': 0},
-        'bluetooth_devices':   {'mu': 15,  'sigma': 8,   'min': 0,   'max': 60,   'decimals': 0},
-        
-        # Campus Data
-        'dining_expense':      {'mu': 22.50, 'sigma': 8.50, 'min': 0, 'max': 60.00, 'decimals': 2},
-        'canvas_activity':     {'mu': 8,     'sigma': 5,    'min': 0, 'max': 30,    'decimals': 0},
-    }
+        if response.status_code != 200:
+            print(f"Error fetching from Mock API: {response.status_code}")
+            return []
 
-    # Default profile
-    profile = SENSOR_PROFILES.get(metric_type, {'mu': 50, 'sigma': 20, 'min': 0, 'max': 100, 'decimals': 0})
-
-    data_points = []
-    current = start_date
-    
-    # 3. GENERATE DATA
-    while current <= end_date:
-        val = random.gauss(profile['mu'], profile['sigma'])
-        val = max(profile['min'], min(profile['max'], val))
+        data = response.json()
+        participants = data.get('participants', [])
         
-        if profile['decimals'] == 0:
-            val = int(val)
-        else:
-            val = round(val, profile['decimals'])
+        # --- CRITICAL FIX ---
+        # Look for a match in 'user_id' OR 'redcap_id'
+        user = next((p for p in participants if p['user_id'] == user_identifier or p.get('redcap_id') == user_identifier), None)
+        
+        if not user:
+            print(f"User {user_identifier} not found in Mock Data (checked ID and REDCap)")
+            return []
+
+        # 2. Extract Data (Same as before)
+        history = user.get('passive_data_history', {})
+        values = []
+        
+        current = start_date
+        while current <= end_date:
+            d_str = current.strftime('%Y-%m-%d')
+            day_data = history.get(d_str)
+            val = 0 
             
-        data_points.append(val)
-        current += timedelta(days=1)
-        
-    return data_points
+            if day_data:
+                q = day_data.get('quantitative', {})
+                if metric_type == 'steps':
+                    val = q.get('watch_activity', {}).get('steps', 0)
+                elif metric_type == 'heart_rate_avg':
+                    val = q.get('watch_heart_rate', {}).get('avg_bpm', 0)
+                elif metric_type == 'sleep_minutes':
+                    val = q.get('watch_sleep', {}).get('minutes_total', 0)
+                elif metric_type == 'screen_time_minutes':
+                    val = q.get('phone_screen_time', {}).get('minutes', 0)
+                elif metric_type == 'battery_drain':
+                    levels = q.get('phone_battery', [])
+                    val = (100 - min(levels)) if levels else 0
+                
+            values.append(val)
+            current += timedelta(days=1)
+            
+        return values
 
-
-# ==========================================
-# FUNCTION 2: FETCH INTERVENTIONS (Dots)
-# ==========================================
-def fetch_intervention_history_external(user_identifier, start_date, end_date, api_key):
-    """
-    Simulates fetching clinical/staff interventions from the external API.
-    Returns a list of dicts: [{'date': 'YYYY-MM-DD', 'type': 'staff', 'details': '...'}]
-    """
-    # 1. SECURITY CHECK
-    if not api_key:
+    except Exception as e:
+        print(f"Sensor Service Error: {e}")
         return []
-
-    interventions = []
     
-    current = start_date
-    while current <= end_date:
-        # Mock Logic: 10% chance of a Staff Note on any given day
-        if random.random() < 0.10:
-            date_str = current.strftime('%Y-%m-%d')
-            note_type = random.choice(['Risk Assessment', 'Phone Call', 'Check-in', 'Medication Adjust'])
-            
-            interventions.append({
-                'date': date_str,
-                'type': 'staff', # Red Dot
-                'details': f"{note_type} - Logged via External API"
-            })
-            
-        # Mock Logic: 5% chance of a User Report
-        elif random.random() < 0.05:
-            date_str = current.strftime('%Y-%m-%d')
-            
-            interventions.append({
-                'date': date_str,
-                'type': 'user', # Orange Dot
-                'details': "User submitted symptom report"
-            })
-            
-        current += timedelta(days=1)
-        
-    return interventions
 
