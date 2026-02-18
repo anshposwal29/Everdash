@@ -102,8 +102,21 @@
             <th style="padding: 12px 16px; font-weight: 600; text-align: right;">Actions</th>
           </tr>
         </thead>
-        
+
         <tbody id="user-table-body">
+            {% macro compliance_icon(value, icon) %}
+              {% set color =
+                  "#16a34a" if value is not none and value >= 50 else
+                  "#f59e0b" if value is not none and value > 0 else
+                  "#dc2626"
+              %}
+              <span class="compliance-icon-wrapper"
+                    data-tooltip="{{ value }}% compliance">
+                <i data-lucide="{{ icon }}"
+                  style="color:{{ color }}; width:24px; height:24px;"></i>
+              </span>
+            {% endmacro %}
+
             {% if participants %}
                 {% for u in participants %}
                 <tr style="border-bottom: 1px solid #eee;">
@@ -148,19 +161,13 @@
 
                     <td style="padding: 12px 16px;">
                         <div style="display:flex; gap:12px;">
-                            {% for sensor, key in [('map-pin', 'loc'), ('battery', 'bat'), ('activity', 'acc'), ('rotate-cw', 'gyr')] %}
-                                {% set pct = u.passive_sensing_compliance[key] %}
-                                {% set dot_color = '#dc2626' %}
-                                {% if pct >= 50 %}
-                                    {% set dot_color = '#16a34a' %}
-                                {% elif pct > 0 %}
-                                    {% set dot_color = '#f59e0b' %}
-                                {% endif %}
-                                
-                                <div style="text-align:center;">
-                                    <div style="width:10px; height:10px; border-radius:50%; background:{{ dot_color }}; margin:0 auto 4px;"></div>
-                                    <i data-lucide="{{ sensor }}" style="width:14px; height:14px; color:#666;"></i>
-                                </div>
+                            {% for icon, key in [
+                                ('map-pin', 'loc'),
+                                ('battery', 'bat'),
+                                ('activity', 'acc'),
+                                ('rotate-cw', 'gyr')
+                              ] %}
+                                {{ compliance_icon(u.passive_sensing_compliance[key], icon) }}
                             {% endfor %}
                         </div>
                     </td>
@@ -180,6 +187,18 @@
                     No participants found. Please ensure <b>mock_server.py</b> is running in your other terminal!
                 </td></tr>
             {% endif %}
+
+            <div id="tooltip" style="
+              position: fixed;
+              background: rgba(0,0,0,0.8);
+              color: white;
+              padding: 6px 8px;
+              font-size: 12px;
+              border-radius: 4px;
+              pointer-events: none;
+              opacity: 0;
+              transition: opacity 0.1s;
+            "></div>
         </tbody>
       </table>
     </div>
@@ -201,8 +220,50 @@
   
   document.addEventListener('DOMContentLoaded', () => {
     if(window.lucide) lucide.createIcons();
+    setupComplianceHover();
   });
 </script>
 
 {% endblock %}
+
+{% block extra_js %}
+<script>
+function getComplianceColor(goodDays, windowDays) {
+  if (goodDays === null || goodDays === undefined) return "#dc2626";
+
+  const ratio = goodDays / windowDays;
+  if (ratio >= 0.5) return "#16a34a";
+  if (ratio > 0) return "#f59e0b";
+  return "#dc2626";
+}
+
+function setupComplianceHover() {
+  const tooltip = document.getElementById("tooltip");
+
+  document.querySelectorAll(".compliance-icon-wrapper").forEach(wrapper => {
+    wrapper.addEventListener("mouseenter", (e) => {
+      tooltip.textContent = wrapper.dataset.tooltip;
+      tooltip.style.opacity = 1;
+      wrapper.style.transform = "scale(1.25)";
+    });
+
+    wrapper.addEventListener("mouseleave", () => {
+      tooltip.style.opacity = 0;
+      wrapper.style.transform = "scale(1)";
+    });
+
+    wrapper.addEventListener("mousemove", (e) => {
+      tooltip.style.left = e.clientX + 12 + "px";
+      tooltip.style.top = e.clientY + 12 + "px";
+    });
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (window.lucide) lucide.createIcons();
+  setupComplianceHover();
+});
+</script>
+{% endblock %}
+
 
