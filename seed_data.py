@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 def seed_database():
     with app.app_context():
-        print("🌱 Seeding database...")
+        print("Seeding database...")
 
         # 1. Create ADMIN User (So you can log in!)
         if not Admin.query.filter_by(username='admin').first():
@@ -13,9 +13,9 @@ def seed_database():
             admin.is_approved = True
             admin.is_active = True
             db.session.add(admin)
-            print("✅ Admin user created (User: admin / Pass: password123)")
+            print("Admin user created (User: admin / Pass: password123)")
         else:
-            print("ℹ️ Admin user already exists.")
+            print("Admin user already exists.")
 
         # 2. Create Dummy Project
         if not REDCapProject.query.filter_by(project_id='test_project').first():
@@ -96,7 +96,7 @@ def seed_database():
                     db.session.add(msg2)
         
         db.session.commit()
-        print("✅ Database fully populated!")
+        print("Database fully populated!")
 
 if __name__ == "__main__":
     seed_database()

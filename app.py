@@ -1,5 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask_mail import Mail, Message as EmailMessage
 from models import db, Admin, User, Message, Conversation, SyncLog, Notes, PassiveData
 from config import Config
 from middleware import require_ip_whitelist, ip_and_admin_required
@@ -23,6 +24,8 @@ from api_client import fetch_all_participants
 app = Flask(__name__)
 app.config.from_object(Config)
 
+# Initialize 'mail' tool for sending 2FA code
+mail = Mail(app)
 
 @app.template_filter('strftime')
 def _jinja2_filter_datetime(date, fmt=None):
@@ -381,7 +384,6 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-
         admin = Admin.query.filter_by(username=username).first()
 
         if admin and admin.check_password(password):
@@ -393,16 +395,85 @@ def login():
                 flash('Your account has been deactivated.', 'error')
                 return redirect(url_for('login'))
 
+            # Trigger Twilio SMS Verification
+            # Assuming your Admin model has a 'phone_number' field
+            success, message = twilio_service.start_verification(admin.phone_number)
+
+            if success:
+                session['mfa_admin_id'] = admin.id
+                # Store phone in session for the 'check' step
+                session['mfa_phone'] = admin.phone_number 
+                return redirect(url_for('login_verify'))
+            else:
+                flash(f"Error sending SMS: {message}", "error")
+        else:
+            flash('Invalid username or password', 'error')
+
+    return render_template('login.html')
+
+@app.route('/login-verify', methods=['GET', 'POST'])
+def login_verify():
+    admin_id = session.get('mfa_admin_id')
+    phone_number = session.get('mfa_phone')
+
+    if not admin_id or not phone_number:
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        entered_code = request.form.get('otp_code')
+        
+        # Verify the code via Twilio
+        success, message = twilio_service.check_verification(phone_number, entered_code)
+
+        if success:
+            admin = Admin.query.get(admin_id)
             login_user(admin)
+            
+            # Clean up session
+            session.pop('mfa_admin_id', None)
+            session.pop('mfa_phone', None)
+            
             admin.last_login = datetime.utcnow()
             db.session.commit()
 
             next_page = request.args.get('next')
             return redirect(next_page or url_for('dashboard'))
-        else:
-            flash('Invalid username or password', 'error')
+        else: 
+            flash(message, "error")
 
-    return render_template('login.html')
+    return render_template('login_verify.html')
+
+@app.route('/resend-code')
+def resend_code():
+    admin_id = session.get('mfa_admin_id')
+    phone_number = session.get('mfa_phone')
+
+    if not admin_id or not phone_number:
+        flash("Session expired. Please log in again.", "error")
+        return redirect(url_for('login'))
+
+    success, message = twilio_service.start_verification(phone_number)
+    
+    if success:
+        flash("A new verification code has been sent.", "success")
+    else:
+        flash(f"Error resending code: {message}", "error")
+        
+    return redirect(url_for('login_verify'))
+
+@app.route('/test-mail')
+def test_mail():
+    try:
+        msg = EmailMessage(
+            "Everdash Connection Test",
+            sender=app.config.get('MAIL_USERNAME'),
+            recipients=['charlotte.g.crawford.29@dartmouth.edu']
+        )
+        msg.body="If you are reading this, your Flask-Mail settings are working!"
+        mail.send(msg)
+        return "Success! Check your inbox."
+    except Exception as e:
+        return f"Failed to send email. Error: {str(e)}"
 
 
 @app.route('/logout')
@@ -851,12 +922,23 @@ def user_detail(firebase_id):
             for msg in conv['messages']:
                 unique_dates.add(msg['timestamp_et'].date())
         days_with_activity = len(unique_dates)
+
+    # Calculate average conversation completion
+    total_pct = 0
+    for conv in conversations:
+        total_pct += conv['completion_pct'] 
+
+    if conversations:
+        conversation_completion = round(total_pct / len(conversations))
+    else:
+        conversation_completion = 0
     
     user_stats = {
         'last_message_date': last_msg_date,
         'total_messages': total_msgs,
         'days_in_study': user_data.get('days_in_study', 0),
-        'days_with_activity': days_with_activity
+        'days_with_activity': days_with_activity,
+        'conversation_completion': conversation_completion
     }
     
     # --- 4. ADD COMPATIBILITY FIELDS ---

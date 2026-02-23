@@ -72,3 +72,23 @@ function showNotification(message, type = 'info') {
     // Remove toast element after it's hidden
     toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
 }
+
+function copyStatsToClipboard(button) {
+    const statsText = button.getAttribute('data-stats');
+    
+    navigator.clipboard.writeText(statsText).then(() => {
+        const originalContent = button.innerHTML;
+        
+        // Visual feedback
+        button.innerHTML = '✅ Copied!';
+        button.classList.add('success');
+        
+        // Reset after 2 seconds
+        setTimeout(() => {
+            button.innerHTML = originalContent;
+            button.classList.remove('success');
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy stats: ', err);
+    });
+}

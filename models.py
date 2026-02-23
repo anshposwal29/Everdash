@@ -1,7 +1,8 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, timedelta
+import random
 
 db = SQLAlchemy()
 
@@ -18,6 +19,7 @@ class Admin(UserMixin, db.Model):
     last_login = db.Column(db.DateTime)
     is_active = db.Column(db.Boolean, default=True)
     is_approved = db.Column(db.Boolean, default=False)
+    phone_number = db.Column(db.String(20), nullable=False)   # added for Twilio
 
     def set_password(self, password):
         """Hash and set the password"""

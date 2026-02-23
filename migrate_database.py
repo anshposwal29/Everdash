@@ -202,6 +202,16 @@ def migrate_admins_table(conn, inspector):
         result = conn.execute(text('UPDATE admins SET is_approved = 1'))
         print(f"  [DATA] Set {result.rowcount} existing admin(s) to approved")
 
+    # --- NEW: 2FA Migrations ---
+    
+    # Migration: email_otp field
+    if add_column_if_missing(conn, 'admins', 'email_otp', 'VARCHAR(6)', columns):
+        migrations_applied += 1
+
+    # Migration: otp_expiry field
+    if add_column_if_missing(conn, 'admins', 'otp_expiry', 'DATETIME', columns):
+        migrations_applied += 1
+
     if migrations_applied > 0:
         print(f"  Applied {migrations_applied} migration(s) to admins table")
     else:
@@ -229,13 +239,14 @@ def migrate_conversations_table(conn, inspector):
         if 'timestamp' in create_sql and 'NOT NULL' in create_sql and 'timestamp DATETIME NOT NULL' in create_sql.replace('\n', ' '):
             print("  [MIGRATE] Making conversations.timestamp nullable...")
 
+            conn.execute(text('DROP TABLE IF EXISTS conversations_new'))
+
             # Step 1: Create new table with nullable timestamp
             conn.execute(text('''
                 CREATE TABLE conversations_new (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     firebase_convo_id VARCHAR(100) NOT NULL UNIQUE,
                     user_id INTEGER NOT NULL,
-                    prompt TEXT,
                     timestamp DATETIME,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (user_id) REFERENCES users(id)
@@ -244,8 +255,8 @@ def migrate_conversations_table(conn, inspector):
 
             # Step 2: Copy data from old table
             conn.execute(text('''
-                INSERT INTO conversations_new (id, firebase_convo_id, user_id, prompt, timestamp, created_at)
-                SELECT id, firebase_convo_id, user_id, prompt, timestamp, created_at FROM conversations
+                INSERT INTO conversations_new (id, firebase_convo_id, user_id, timestamp, created_at)
+                SELECT id, firebase_convo_id, user_id, timestamp, created_at FROM conversations
             '''))
 
             # Step 3: Drop old table

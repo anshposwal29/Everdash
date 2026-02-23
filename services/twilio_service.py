@@ -13,9 +13,19 @@ class TwilioService:
         self.from_number = Config.TWILIO_FROM_NUMBER
         self.admin_numbers = Config.TWILIO_ADMIN_NUMBERS
         self.client = None
+        # Add your Verify Service SID (starts with VA...)
+        # self.verify_sid = Config.TWILIO_VERIFY_SERVICE_ID 
+        self.client = None
 
-        if self.account_sid and self.auth_token:
+        #if self.account_sid and self.auth_token:
+        #    self.client = Client(self.account_sid, self.auth_token)
+
+        self.use_mock = not (self.account_sid and self.auth_token)
+        
+        if not self.use_mock:
             self.client = Client(self.account_sid, self.auth_token)
+            self.verify_sid = Config.TWILIO_VERIFY_SERVICE_ID
+
 
     def send_risk_alert(self, user_firebase_id, message_text):
         """
@@ -78,6 +88,47 @@ class TwilioService:
         except Exception as e:
             return False, f"Failed to send test message: {str(e)}"
 
+    # --- New 2FA Methods ---
+
+    def start_verification(self, phone_number, channel='sms'):
+        """
+        Triggers a 2FA code to the user. 
+        Channels: 'sms', 'call', or 'whatsapp'
+        """
+        if self.use_mock:
+            print(f"\n[MOCK TWILIO] Sending code to {phone_number}")
+            # In mock mode, we'll just "pretend" it worked.
+            # We'll use a hardcoded code like '123456' for testing.
+            return True, "pending"
+
+        try:
+            verification = self.client.verify.v2.services(self.verify_sid) \
+                .verifications \
+                .create(to=phone_number, channel=channel)
+            return True, verification.status
+        except Exception as e:
+            return False, str(e)
+
+    def check_verification(self, phone_number, code):
+        """
+        Validates the code entered by the user.
+        """
+        if self.use_mock:
+            # In mock mode, let's just accept '123456' as the correct code
+            if code == '123456':
+                return True, "Verification successful"
+            return False, "Invalid mock code. Try '123456'"
+        
+        try:
+            verification_check = self.client.verify.v2.services(self.verify_sid) \
+                .verification_checks \
+                .create(to=phone_number, code=code)
+            
+            if verification_check.status == 'approved':
+                return True, "Verification successful"
+            return False, "Invalid or expired code"
+        except Exception as e:
+            return False, str(e)
 
 # Singleton instance
 twilio_service = TwilioService()

@@ -13,9 +13,9 @@ def check_data():
     data_points = db.query(PassiveData).limit(5).all()
     
     if not data_points:
-        print("❌ NO PASSIVE DATA FOUND IN DATABASE.")
+        print("NO PASSIVE DATA FOUND IN DATABASE.")
     else:
-        print(f"✓ Found {db.query(PassiveData).count()} total data points.")
+        print(f"Found {db.query(PassiveData).count()} total data points.")
         first_point = data_points[0]
         print(f"Sample Data -> User ID: {first_point.user_id} | Metric: {first_point.metric_type} | Value: {first_point.value}")
         
