@@ -19,7 +19,7 @@ class Admin(UserMixin, db.Model):
     last_login = db.Column(db.DateTime)
     is_active = db.Column(db.Boolean, default=True)
     is_approved = db.Column(db.Boolean, default=False)
-    phone_number = db.Column(db.String(20), nullable=False)   # added for Twilio
+    phone_number = db.Column(db.String(20), nullable=False) 
 
     def set_password(self, password):
         """Hash and set the password"""

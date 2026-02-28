@@ -14,7 +14,7 @@ from sqlalchemy import func, and_
 from database import get_db
 from services.sensor_service import fetch_sensor_data_external
 from sqlalchemy import func, case, desc
-from datetime import timedelta
+from datetime import timedelta, datetime
 import pytz
 from models import db, Admin, User, Message, Conversation, SyncLog, Notes, PassiveDailySummary
 from api_client import fetch_all_participants
@@ -23,6 +23,14 @@ from api_client import fetch_all_participants
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+
+@app.route('/test_routes')
+def test_routes():
+    output = []
+    for rule in app.url_map.iter_rules():
+        output.append(f"{rule.endpoint}: {rule}")
+    return "<br>".join(output)
 
 # Initialize 'mail' tool for sending 2FA code
 mail = Mail(app)
@@ -384,96 +392,28 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
+
         admin = Admin.query.filter_by(username=username).first()
 
         if admin and admin.check_password(password):
             if not admin.is_approved:
-                flash('Your account is pending approval.', 'info')
+                flash('Your account is pending approval. An administrator will review your registration.', 'info')
                 return redirect(url_for('login'))
 
             if not admin.is_active:
-                flash('Your account has been deactivated.', 'error')
+                flash('Your account has been deactivated. Contact an administrator.', 'error')
                 return redirect(url_for('login'))
 
-            # Trigger Twilio SMS Verification
-            # Assuming your Admin model has a 'phone_number' field
-            success, message = twilio_service.start_verification(admin.phone_number)
-
-            if success:
-                session['mfa_admin_id'] = admin.id
-                # Store phone in session for the 'check' step
-                session['mfa_phone'] = admin.phone_number 
-                return redirect(url_for('login_verify'))
-            else:
-                flash(f"Error sending SMS: {message}", "error")
-        else:
-            flash('Invalid username or password', 'error')
-
-    return render_template('login.html')
-
-@app.route('/login-verify', methods=['GET', 'POST'])
-def login_verify():
-    admin_id = session.get('mfa_admin_id')
-    phone_number = session.get('mfa_phone')
-
-    if not admin_id or not phone_number:
-        return redirect(url_for('login'))
-    
-    if request.method == 'POST':
-        entered_code = request.form.get('otp_code')
-        
-        # Verify the code via Twilio
-        success, message = twilio_service.check_verification(phone_number, entered_code)
-
-        if success:
-            admin = Admin.query.get(admin_id)
             login_user(admin)
-            
-            # Clean up session
-            session.pop('mfa_admin_id', None)
-            session.pop('mfa_phone', None)
-            
             admin.last_login = datetime.utcnow()
             db.session.commit()
 
             next_page = request.args.get('next')
             return redirect(next_page or url_for('dashboard'))
-        else: 
-            flash(message, "error")
+        else:
+            flash('Invalid username or password', 'error')
 
-    return render_template('login_verify.html')
-
-@app.route('/resend-code')
-def resend_code():
-    admin_id = session.get('mfa_admin_id')
-    phone_number = session.get('mfa_phone')
-
-    if not admin_id or not phone_number:
-        flash("Session expired. Please log in again.", "error")
-        return redirect(url_for('login'))
-
-    success, message = twilio_service.start_verification(phone_number)
-    
-    if success:
-        flash("A new verification code has been sent.", "success")
-    else:
-        flash(f"Error resending code: {message}", "error")
-        
-    return redirect(url_for('login_verify'))
-
-@app.route('/test-mail')
-def test_mail():
-    try:
-        msg = EmailMessage(
-            "Everdash Connection Test",
-            sender=app.config.get('MAIL_USERNAME'),
-            recipients=['charlotte.g.crawford.29@dartmouth.edu']
-        )
-        msg.body="If you are reading this, your Flask-Mail settings are working!"
-        mail.send(msg)
-        return "Success! Check your inbox."
-    except Exception as e:
-        return f"Failed to send email. Error: {str(e)}"
+    return render_template('login.html')
 
 
 @app.route('/logout')
@@ -618,6 +558,7 @@ def dashboard():
     for user in filtered_users:
         # CRITICAL: Map API 'user_id' -> Template 'firebase_id'
         # This ensures the link {{ url_for('user_detail', firebase_id=...) }} works.
+        print(f"DEBUG LOOP: Raw User ID from JSON: {user.get('user_id')}")
         user_row = {
             'firebase_id': user.get('user_id'), 
             'redcap_id': user.get('redcap_id', '-'),
@@ -628,6 +569,7 @@ def dashboard():
             'needs_attention': user.get('decision_engine_results', {}).get('needs_attention', False),
             'dates': {}
         }
+        print(f"DEBUG LOOP: Resulting user_row ID: {user_row['firebase_id']}")
         
         conversations = user.get('conversations', [])
         
@@ -707,7 +649,13 @@ def sync():
 @login_required
 def get_messages_for_date(firebase_id, date_str):
     """Get messages for a specific user and date"""
+    print(f"\nMESSAGE REQUEST RECEIVED!")
+    print(f"Target User: {firebase_id}")
+    print(f"Target Date: {date_str}")
     try:
+        all_users = User.query.all()
+        print(f"DEBUG: I see {len(all_users)} users in the DB.")
+        print(f"DEBUG: Looking for ID: [{firebase_id}]")
         user = User.query.filter_by(firebase_id=firebase_id).first()
         if not user:
             return jsonify({'success': False, 'message': 'User not found'}), 404
@@ -819,8 +767,9 @@ def user_detail(firebase_id):
     """
     User detail page - processes mock API data into the format expected by the template
     """
-    from datetime import datetime, timedelta
-    
+    print("!!!!!!!!!!!!!!!! I AM IN THE CORRECT ROUTE !!!!!!!!!!!!!!!!")
+    print(f"DEBUG: Received ID: {firebase_id}")
+
     # --- 1. FETCH DATA FROM MOCK API ---
     try:
         all_users = fetch_all_participants()
@@ -829,7 +778,8 @@ def user_detail(firebase_id):
         all_users = []
     
     # Find the user
-    user_data = next((u for u in all_users if u['user_id'] == firebase_id), None)
+    user_data = next((u for u in all_users if str(u.get('user_id')) == str(firebase_id)), None)
+    #user_data = next((u for u in all_users if u['user_id'] == firebase_id), None)
     
     if not user_data:
         flash(f"User {firebase_id} not found.", "warning")
@@ -840,38 +790,35 @@ def user_detail(firebase_id):
     raw_conversations = user_data.get('conversations', [])
     
     for idx, conv in enumerate(raw_conversations):
-        # Calculate timestamps working backwards from now
-        last_msg_time = datetime.now(et_tz) - timedelta(hours=idx * 3)
-        
-        # Process messages as DICTS (not objects)
         processed_messages = []
+        
+        conv_base_time = datetime.now(et_tz) - timedelta(days=idx)
+
         for msg_idx, msg in enumerate(conv.get('messages', [])):
-            # Get timestamp from JSON if it exists, otherwise create one
-            if 'timestamp' in msg:
-                # Parse the ISO string to datetime
-                from datetime import datetime
-                msg_time = datetime.fromisoformat(msg['timestamp'])
-            else:
-                # Fallback: create timestamp
-                msg_time = last_msg_time - timedelta(minutes=msg_idx * 2)
+            # 1. Determine the correct time for this specific message
+            msg_time = datetime.fromisoformat(msg['timestamp'])
             
             text = msg.get('text', '')
             is_risky = any(word in text.lower() for word in ['overwhelmed', 'stop', 'die', 'hurt', 'suicide', 'harm'])
-            speaker = msg.get('speaker', 'Participant')
             
-            # Create message DICT with datetime object
+            # 2. Build the dictionary
             msg_dict = {
                 'text': text,
-                'timestamp': msg_time,  # NOW A DATETIME OBJECT
+                'timestamp': msg_time,
                 'timestamp_et': msg_time,
                 'is_risky': is_risky,
-                'risky': is_risky,
-                'conversation_id': idx + 1,
-                'speaker': speaker
+                'speaker': msg.get('speaker', 'Participant')
             }
             processed_messages.append(msg_dict)
 
-        
+        # SECOND: Sort the messages for this conversation chronologically
+        processed_messages.sort(key=lambda x: x['timestamp'])
+
+        # THIRD: Now we can safely identify the "last" activity
+        if processed_messages:
+            last_activity = processed_messages[-1]['timestamp']
+        else:
+            last_activity = conv_base_time
         
         # Determine trigger type and completion
         trigger_type = conv.get('initiated_by', 'user_initiated')
@@ -895,7 +842,7 @@ def user_detail(firebase_id):
             'trigger_type': trigger_type,
             'trigger_display': 'Bot Nudge' if trigger_type in ['passive_sensing', 'bot'] else 'User Initiated',
             'messages': processed_messages,
-            'last_activity_et': last_msg_time,
+            'last_activity_et': last_activity,
             'completion_pct': completion_pct,
             'has_risk': has_risk,
             'status': conv.get('status', 'completed')
@@ -925,7 +872,9 @@ def user_detail(firebase_id):
 
     # Calculate average conversation completion
     total_pct = 0
+    total_convs = 0
     for conv in conversations:
+        total_convs += 1
         total_pct += conv['completion_pct'] 
 
     if conversations:
@@ -938,9 +887,10 @@ def user_detail(firebase_id):
         'total_messages': total_msgs,
         'days_in_study': user_data.get('days_in_study', 0),
         'days_with_activity': days_with_activity,
+        'total_conversations': total_convs,
         'conversation_completion': conversation_completion
     }
-    
+
     # --- 4. ADD COMPATIBILITY FIELDS ---
     user_data['firebase_id'] = user_data['user_id']
     user_data['is_active'] = not user_data.get('dropped', False)
@@ -1567,6 +1517,7 @@ def get_sensor_data_api():
 if __name__ == '__main__':
     init_db()
     app.run(debug=True, host='0.0.0.0', port=5002)
+
 
 
 

@@ -28,27 +28,27 @@
             {
               "speaker": "Evie",
               "text": "Hi Casey, how are you today?",
-              "timestamp": "2026-02-15T15:42:23.426998"
+              "timestamp": "2026-02-21T17:50:32.395202"
             },
             {
               "speaker": "Participant",
               "text": "I am doing great, thanks!",
-              "timestamp": "2026-02-15T15:40:23.426998"
+              "timestamp": "2026-02-21T17:52:32.395202"
             },
             {
               "speaker": "Evie",
               "text": "Glad to hear. Did you sleep well?",
-              "timestamp": "2026-02-15T15:38:23.426998"
+              "timestamp": "2026-02-21T17:54:32.395202"
             },
             {
               "speaker": "Participant",
               "text": "Yes, about 8 hours.",
-              "timestamp": "2026-02-15T15:36:23.426998"
+              "timestamp": "2026-02-21T17:56:32.395202"
             },
             {
               "speaker": "Evie",
               "text": "Wonderful. Have a productive day!",
-              "timestamp": "2026-02-15T15:34:23.426998"
+              "timestamp": "2026-02-21T17:58:32.395202"
             }
           ]
         }
@@ -3330,13 +3330,34 @@
               "minutes": 290,
               "unlocks": 40
             },
-            "phone_battery": [98, 93, 88, 83, 78, 73, 68, 63, 58, 53, 48, 43, 38, 33, 28, 23, 18, 13, 8, 100],
+            "phone_battery": [
+              98,
+              93,
+              88,
+              83,
+              78,
+              73,
+              68,
+              63,
+              58,
+              53,
+              48,
+              43,
+              38,
+              33,
+              28,
+              23,
+              18,
+              13,
+              8,
+              100
+            ],
             "phone_ambient_light": {
               "avg_lux": 350
             },
             "phone_accelerometer": {
               "hours_collected": 15.0,
-              "magnitude_avg": 9.10
+              "magnitude_avg": 9.1
             },
             "phone_gyroscope": {
               "hours_collected": 13.5
@@ -3360,7 +3381,7 @@
             "dining_purchases": [
               {
                 "item": "Lunch",
-                "cost": 12.50,
+                "cost": 12.5,
                 "location": "Foco"
               }
             ],
@@ -3406,27 +3427,58 @@
             {
               "speaker": "Participant",
               "text": "I feel really overwhelmed today.",
-              "timestamp": "2026-02-15T15:42:23.427033"
+              "timestamp": "2026-02-21T17:50:32.395202"
             },
             {
               "speaker": "Evie",
               "text": "I'm sorry to hear that. Want to talk about it?",
-              "timestamp": "2026-02-15T15:40:23.427033"
+              "timestamp": "2026-02-21T17:52:32.395202"
             },
             {
               "speaker": "Participant",
               "text": "I just want everything to stop.",
-              "timestamp": "2026-02-15T15:38:23.427033"
+              "timestamp": "2026-02-21T17:54:32.395202"
             },
             {
               "speaker": "Evie",
               "text": "That sounds very heavy. Are you safe right now?",
-              "timestamp": "2026-02-15T15:36:23.427033"
+              "timestamp": "2026-02-21T17:56:32.395202"
             },
             {
               "speaker": "Participant",
               "text": "I don't know honestly.",
-              "timestamp": "2026-02-15T15:34:23.427033"
+              "timestamp": "2026-02-21T17:58:32.395202"
+            }
+          ]
+        },
+        {
+          "initiated_by": "bot",
+          "status": "completed",
+          "messages": [
+            {
+              "speaker": "Evie",
+              "text": "Hi Casey, how are you today?",
+              "timestamp": "2026-02-21T17:50:32.395202"
+            },
+            {
+              "speaker": "Participant",
+              "text": "I am doing great, thanks!",
+              "timestamp": "2026-02-21T17:52:32.395202"
+            },
+            {
+              "speaker": "Evie",
+              "text": "Glad to hear. Did you sleep well?",
+              "timestamp": "2026-02-21T17:54:32.395202"
+            },
+            {
+              "speaker": "Participant",
+              "text": "Yes, about 8 hours.",
+              "timestamp": "2026-02-21T17:56:32.395202"
+            },
+            {
+              "speaker": "Evie",
+              "text": "Wonderful. Have a productive day!",
+              "timestamp": "2026-02-21T17:58:32.395202"
             }
           ]
         }
@@ -6679,29 +6731,29 @@
           "status": "incomplete",
           "messages": [
             {
-              "speaker": "Staff",
+              "speaker": "Evie",
               "text": "Hi Ian, this is Jordan from the study. Checking in.",
-              "timestamp": "2026-02-15T15:42:23.427047"
+              "timestamp": "2026-02-21T17:50:32.395202"
             },
             {
               "speaker": "Participant",
               "text": "Hey Jordan, I'm a bit busy.",
-              "timestamp": "2026-02-15T15:40:23.427047"
+              "timestamp": "2026-02-21T17:52:32.395202"
             },
             {
-              "speaker": "Staff",
+              "speaker": "Evie",
               "text": "No worries. Can we talk for 5 minutes?",
-              "timestamp": "2026-02-15T15:38:23.427047"
+              "timestamp": "2026-02-21T17:54:32.395202"
             },
             {
               "speaker": "Participant",
               "text": "Maybe later.",
-              "timestamp": "2026-02-15T15:36:23.427047"
+              "timestamp": "2026-02-21T17:56:32.395202"
             },
             {
-              "speaker": "Staff",
+              "speaker": "Evie",
               "text": "...",
-              "timestamp": "2026-02-15T15:34:23.427047"
+              "timestamp": "2026-02-21T17:58:32.395202"
             }
           ]
         }

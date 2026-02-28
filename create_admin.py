@@ -14,7 +14,7 @@ def create_custom_admin():
         custom_username = 'new_admin'
         custom_email = 'admin@everdash.com'
         custom_password = 'pass123'
-        custom_phone = '+15551234567' # E.164 format for Twilio
+        custom_phone = '+17042400795' # E.164 format for Twilio
 
         # Check if user already exists (just in case)
         existing_admin = Admin.query.filter_by(username=custom_username).first()

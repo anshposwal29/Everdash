@@ -150,6 +150,7 @@ class Config:
     TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
     TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
     TWILIO_FROM_NUMBER = os.environ.get('TWILIO_FROM_NUMBER')
+    TWILIO_MESSAGING_SERVICE_SID = os.environ.get('TWILIO_MESSAGING_SERVICE_SID')
     TWILIO_ADMIN_NUMBERS = os.environ.get('TWILIO_ADMIN_NUMBERS', '').split(',')
 
     # Security settings

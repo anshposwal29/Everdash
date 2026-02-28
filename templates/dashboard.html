@@ -1,8 +1,7 @@
 
-
 {% block title %}Dashboard - Everdash{% endblock %}
 
-
+{% block content %}
 <div class="dashboard-header-v2" style="padding: 24px 0; font-family: 'Inter', system-ui, sans-serif;">
     <div class="header-top" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
         <h1 class="dashboard-title" style="margin: 0; font-size: 26px; font-weight: 700; color: #1e293b; letter-spacing: -0.02em;">
@@ -218,8 +217,9 @@
                     {% endif %}
                 </td>
                 {% for date in date_range %}
-                {% set date_key = date.isoformat() %}
+                {% set date_key = date.strftime('%Y-%m-%d') %}
                 {% set cell_data = user_row.dates.get(date_key, {'count': 0, 'has_risky': False, 'has_unreviewed': False, 'phone_count': 0, 'email_count': 0, 'text_count': 0}) %}
+                
                 <td class="message-cell {% if cell_data.has_risky %}high-risk{% elif cell_data.count > 0 %}has-messages{% endif %} {% if cell_data.has_unreviewed %}unreviewed{% endif %}"
                     data-count="{{ cell_data.count }}"
                     data-firebase-id="{{ user_row.firebase_id }}"
@@ -257,4 +257,4 @@
 
 <div id="sync-status-message" class="status-message" style="display: none;"></div>
 
-
+{% endblock %}
