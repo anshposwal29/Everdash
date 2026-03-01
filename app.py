@@ -404,17 +404,39 @@ def login():
                 flash('Your account has been deactivated. Contact an administrator.', 'error')
                 return redirect(url_for('login'))
 
-            login_user(admin)
-            admin.last_login = datetime.utcnow()
-            db.session.commit()
+            # Trigger Twilio SMS Verification
+            # Assuming your Admin model has a 'phone_number' field
+            success, message = twilio_service.start_verification(admin.phone_number)
 
-            next_page = request.args.get('next')
-            return redirect(next_page or url_for('dashboard'))
+            if success:
+                session['mfa_admin_id'] = admin.id
+                # Store phone in session for the 'check' step
+                session['mfa_phone'] = admin.phone_number 
+                return redirect(url_for('login_verify'))
+            else:
+                flash(f"Error sending SMS: {message}", "error")
         else:
             flash('Invalid username or password', 'error')
 
     return render_template('login.html')
 
+
+@app.route('/login-verify', methods=['GET', 'POST'])
+def login_verify():
+    admin_id = session.get('mfa_admin_id')
+    phone_number = session.get('mfa_phone')
+
+    if not admin_id or not phone_number:
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        entered_code = request.form.get('otp_code')
+        
+        # Verify the code via Twilio
+        success, message = twilio_service.check_verification(phone_number, entered_code)
+
+        if success:
+            admin = Admin.query.get(admin_id)
 
 @app.route('/logout')
 @login_required
@@ -489,13 +511,42 @@ def dashboard():
 
     # --- 4. LIST VIEW ---
     if view == 'list':
-        return render_template('overall_list.html', 
-                               view=view, 
-                               participants=api_participants, 
-                               window_days=window_days, 
-                               sort=sort, 
-                               order=order,
-                               attention_count=attention_count)
+
+        participants = api_participants.copy()
+
+        if sort == 'recent':
+            participants.sort(
+                key=lambda u: u.get('last_message_at') or '',
+                reverse=(order == 'desc')
+            )
+
+        elif sort == 'silence':
+            participants.sort(
+                key=lambda u: u.get('decision_engine_results', {}).get('silence_days', 0),
+                reverse=(order == 'desc')
+            )
+
+        elif sort == 'risk':
+            participants.sort(
+                key=lambda u: u.get('decision_engine_results', {}).get('risky_count', 0),
+                reverse=(order == 'desc')
+            )
+
+        elif sort == 'days':
+            participants.sort(
+                key=lambda u: u.get('days_in_study', 0),
+                reverse=(order == 'asc')
+            )
+
+        return render_template(
+            'overall_list.html',
+            view=view,
+            participants=participants,
+            window_days=window_days,
+            sort=sort,
+            order=order,
+            attention_count=attention_count
+        )
 
     # --- 5. WEEK VIEW ---
     elif view == 'week':
