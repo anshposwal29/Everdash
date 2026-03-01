@@ -224,7 +224,7 @@
                     data-count="{{ cell_data.count }}"
                     data-firebase-id="{{ user_row.firebase_id }}"
                     data-date="{{ date_key }}"
-                    onclick="{% if cell_data.count > 0 %}showMessages('{{ user_row.firebase_id }}', '{{ date_key }}'){% endif %}"
+                    onclick="handleCellClick(this)"
                     style="{% if cell_data.count > 0 %}cursor: pointer;{% endif %}"
                     title="{% if cell_data.has_risky %}RISKY MESSAGE! {% endif %}{{ cell_data.count }} message(s){% if cell_data.has_unreviewed %} - UNREVIEWED{% endif %}{% if cell_data.phone_count > 0 %} | {{ cell_data.phone_count }} phone call(s){% endif %}{% if cell_data.email_count > 0 %} | {{ cell_data.email_count }} email(s){% endif %}{% if cell_data.text_count > 0 %} | {{ cell_data.text_count }} text(s){% endif %}">
                     <div class="cell-content">
