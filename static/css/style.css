@@ -301,6 +301,7 @@ body {
 
 .header-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--space-sm);
 }
 
@@ -4055,4 +4056,86 @@ body {
     margin-bottom: 4px;
     display: flex;
     justify-content: space-between;
+}
+
+
+.date-range-picker {
+    display: flex;
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 6px 12px;
+}
+
+.calendar-icon {
+    margin-right: 8px;
+    font-size: 14px;
+    opacity: 0.5;
+}
+
+.date-range-picker input[type="date"] {
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    color: #475569;
+    outline: none;
+}
+
+.date-separator {
+    margin: 0 8px;
+    color: #cbd5e1;
+}
+
+.btn-apply-filter {
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 12px;
+    margin-left: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.btn-apply-filter:hover {
+    background: #1d4ed8;
+}
+
+/* Helper class for the JS */
+.hidden {
+    display: none !important;
+}
+
+
+/* Styling for the risky message within the modal */
+.message-item.high-risk {
+    animation: pulse-red-border 2s infinite;
+}
+
+@keyframes pulse-red-border {
+    0% { border-color: #ef4444; }
+    50% { border-color: #fca5a5; }
+    100% { border-color: #ef4444; }
+}
+
+.risk-badge {
+    background-color: #ef4444;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 10px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.risk-score-text {
+    color: #b91c1c;
+    font-size: 10px;
+    font-weight: bold;
+    margin-left: 4px;
+    text-transform: uppercase;
 }

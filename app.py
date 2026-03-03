@@ -404,39 +404,16 @@ def login():
                 flash('Your account has been deactivated. Contact an administrator.', 'error')
                 return redirect(url_for('login'))
 
-            # Trigger Twilio SMS Verification
-            # Assuming your Admin model has a 'phone_number' field
-            success, message = twilio_service.start_verification(admin.phone_number)
+            login_user(admin)
+            admin.last_login = datetime.utcnow()
+            db.session.commit()
 
-            if success:
-                session['mfa_admin_id'] = admin.id
-                # Store phone in session for the 'check' step
-                session['mfa_phone'] = admin.phone_number 
-                return redirect(url_for('login_verify'))
-            else:
-                flash(f"Error sending SMS: {message}", "error")
+            next_page = request.args.get('next')
+            return redirect(next_page or url_for('dashboard'))
         else:
             flash('Invalid username or password', 'error')
 
     return render_template('login.html')
-
-
-@app.route('/login-verify', methods=['GET', 'POST'])
-def login_verify():
-    admin_id = session.get('mfa_admin_id')
-    phone_number = session.get('mfa_phone')
-
-    if not admin_id or not phone_number:
-        return redirect(url_for('login'))
-    
-    if request.method == 'POST':
-        entered_code = request.form.get('otp_code')
-        
-        # Verify the code via Twilio
-        success, message = twilio_service.check_verification(phone_number, entered_code)
-
-        if success:
-            admin = Admin.query.get(admin_id)
 
 @app.route('/logout')
 @login_required
@@ -786,6 +763,9 @@ def get_messages_for_date(firebase_id, date_str):
                 # Format the time beautifully (05:50 PM)
                 m_time = dt_obj.strftime('%I:%M %p')
 
+                text = m.get('text', '')
+                is_risky = any(word in text.lower() for word in ['overwhelmed', 'stop', 'die', 'hurt', 'suicide', 'harm'])
+
                 if m_date == date_str:
                     # Format for the frontend
                     messages_data.append({
@@ -795,7 +775,7 @@ def get_messages_for_date(firebase_id, date_str):
                         'speaker': m.get('speaker'),
                         'text': m.get('text'),
                         'timestamp': m_time,
-                        'is_risky': m.get('is_risky', False),
+                        'is_risky': is_risky,
                         'is_reviewed': m.get('is_reviewed', False)
                     })
 
@@ -873,8 +853,6 @@ def user_detail(firebase_id):
     """
     User detail page - processes mock API data into the format expected by the template
     """
-    print("!!!!!!!!!!!!!!!! I AM IN THE CORRECT ROUTE !!!!!!!!!!!!!!!!")
-    print(f"DEBUG: Received ID: {firebase_id}")
 
     # --- 1. FETCH DATA FROM MOCK API ---
     try:
@@ -1386,8 +1364,6 @@ def get_participant_passive_data(user_id):
     Serve passive sensor data from mock API to the frontend charts
     """
     from datetime import datetime
-
-    print(f"\n🔥🔥🔥 API CALLED FOR USER: {user_id} 🔥🔥🔥")
     
     metric = request.args.get('metric', 'steps')
     time_range = request.args.get('range', '30d')

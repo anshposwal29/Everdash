@@ -474,10 +474,13 @@
                             const sideClass = (msg.speaker === 'Evie' || msg.speaker === 'Assistant') ? 'msg-left' : 'msg-right';
 
                             const riskClass = msg.is_risky ? 'high-risk' : '';
+
+                            // Define the border color: Red if risky, standard gray if not
+                            const borderColor = msg.is_risky ? '#ef4444' : '#e2e8f0';
+                            const borderWidth = msg.is_risky ? '2px' : '1px';
+                            const bgColor = msg.is_risky ? '#fef2f2' : (sideClass === 'msg-left' ? '#f8fafc' : '#eff6ff');
+
                             const reviewedClass = msg.is_reviewed ? 'reviewed' : 'unreviewed';
-                            const riskBadge = msg.is_risky
-                                ? `<span class="risk-badge">!</span><span class="risk-score-text">Risky</span>`
-                                : '';
                             const reviewedBadge = msg.is_reviewed ? '<span class="reviewed-badge">✓ Reviewed</span>' : '<span class="unreviewed-badge">⚠ Unreviewed</span>';
     
                             // Conversation badge
@@ -487,9 +490,6 @@
                                 const shortPrompt = convInfo.prompt.length > 20 ? convInfo.prompt.substring(0, 20) + '...' : convInfo.prompt;
                                 convBadge = `<span class="convo-badge" style="background-color: ${convInfo.color};" title="${escapeHtml(convInfo.prompt)}">Conv ${convInfo.index}</span>`;
                             }
-
-                            // DEBUG: Open your browser console (F12) to see these
-                            console.log("Current Msg Conv ID:", msg.conversation_id, "Last ID:", lastConversationId);
 
                             // 1. Add Divider if conversation changed
                             if (msg.conversation_id !== lastConversationId) {
@@ -508,17 +508,18 @@
                             messagesHtml += `
                                 <div class="message-bubble-container ${sideClass}" style="display: flex; width: 100%; justify-content: ${sideClass === 'msg-left' ? 'flex-start' : 'flex-end'};">
                                     <div class="message-item ${sideClass} ${riskClass} ${reviewedClass}" 
-                                        style="max-width: 80%; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; 
-                                                background-color: ${sideClass === 'msg-left' ? '#f8fafc' : '#eff6ff'};">
+                                        style="max-width: 80%; padding: 12px; border-radius: 12px; border: ${borderWidth} solid ${borderColor}; 
+                                                background-color: ${bgColor};
+                                                ${msg.is_risky ? 'box-shadow: 0 0 8px rgba(239, 68, 68, 0.2);' : ''}">
                                         <div class="message-header" style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; opacity: 0.7;">
-                                            <span class="message-speaker"><strong>${msg.speaker}</strong></span>
+                                            <span class="message-speaker"><strong>${msg.speaker} ${msg.is_risky ? '⚠️' : ''}</strong></span>
                                             <span class="message-time">${msg.timestamp}</span>
                                         </div>
                                         <div class="message-text" style="font-size: 14px; line-height: 1.4; color: #1e293b;">
                                             ${escapeHtml(msg.text)}
                                         </div>
                                         <div class="message-footer" style="margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap;">
-                                            ${convBadge} ${riskBadge} ${reviewedBadge}
+                                            ${convBadge} ${reviewedBadge}
                                         </div>
                                     </div>
                                 </div>

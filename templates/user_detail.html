@@ -7,7 +7,7 @@
 <div class="container-fluid py-4" style="max-width: 1400px;">
     
     <div class="mb-4">
-        <a href="{{ url_for('dashboard') }}" class="text-decoration-none text-secondary">← Back to Dashboard</a>
+        <a href="javascript:history.back()" class="text-decoration-none text-secondary">← Back to Previous Page</a>
     </div>
 
     <div class="user-detail-header">
@@ -106,7 +106,17 @@
                         </div>
                         
                         <div class="header-actions">
-                            <select id="risk-filter" class="filter-dropdown" onchange="applyFilter(this.value)">
+                            <div class="filter-item date-range-picker">
+                                <span class="calendar-icon">📅</span>
+                                <input type="date" id="chat-start-date" value="{{ start_date if start_date else '' }}">
+                                <span class="date-separator">–</span>
+                                <input type="date" id="chat-end-date" value="{{ end_date if end_date else '' }}">
+                                <button type="button" class="btn-apply-filter" onclick="applyChatFilters()">
+                                    Apply
+                                </button>
+                            </div>
+
+                            <select id="risk-filter" class="filter-dropdown" onchange="applyChatFilters(this.value)">
                                 <option value="all">All Conversations</option>
                                 <option value="risky">Risky Only</option>
                                 <option value="passive-sensing">Bot Triggered</option>
@@ -118,7 +128,7 @@
                             </button>
                         </div>
                     </div>
-
+                    
                     {% if conversations %}
                     <div class="messages-timeline">
                         {% set current_date = namespace(value=None) %}
@@ -168,7 +178,8 @@
                                     {% for message in conv.messages %}
                                         {% set is_evie = message.speaker == 'Evie' %}
                                         
-                                        <div class="message-wrapper {{ 'evie-align' if is_evie else 'participant-align' }}">
+                                        <div class="message-wrapper {{ 'evie-align' if is_evie else 'participant-align' }}"
+                                             data-msg-date="{{ message.timestamp_et.strftime('%Y-%m-%d') }}">
                                             <div class="chat-bubble 
                                                 {{ 'bubble-evie' if is_evie else 'bubble-participant' }} 
                                                 {{ 'bubble-risky' if message.is_risky }}">
@@ -513,7 +524,7 @@
 
     // Toggle ALL conversations at once
     function toggleAllGroups() {
-        const allContents = document.querySelectorAll('.collapsible-content');
+        const allContents = document.querySelectorAll('.collapsible-content-chat-window');
         const allIcons = document.querySelectorAll('.group-icon');
         const button = document.getElementById('global-toggle-btn');
         
@@ -534,30 +545,69 @@
         button.textContent = allExpanded ? 'Collapse All' : 'Expand All';
     }
 
-    // Filter conversations by risk level or trigger type
-    function applyRiskFilter(filterValue) {
-        const allGroups = document.querySelectorAll('.prompt-conversation-group');
+
+    function applyChatFilters() {
+        const startVal = document.getElementById('chat-start-date').value;
+        const endVal = document.getElementById('chat-end-date').value;
+        const filterType = document.getElementById('risk-filter').value;
         
-        allGroups.forEach(group => {
-            const hasRisk = group.getAttribute('data-has-risk') === 'true';
+        const groups = document.querySelectorAll('.prompt-conversation-group');
+        const markers = document.querySelectorAll('.timeline-date-marker');
+
+        groups.forEach(group => {
+            const isRisky = group.getAttribute('data-has-risk') === 'true';
             const isPassive = group.getAttribute('data-is-passive') === 'true';
             
-            let shouldShow = false;
-            
-            if (filterValue === 'all') {
-                shouldShow = true;
-            } else if (filterValue === 'risky') {
-                shouldShow = hasRisk;
-            } else if (filterValue === 'passive-sensing') {
-                shouldShow = isPassive;
-            } else if (filterValue === 'user-initiated') {
-                shouldShow = !isPassive;
+            // 1. Handle Risk Filter first (at the Conversation level)
+            let filter = (filterType === 'all') || 
+                         (filterType === 'risky' && isRisky) || 
+                         (filterType === 'passive-sensing' && isPassive) || 
+                         (filterType === 'user-initiated' && !isPassive);
+
+            if (!filter) {
+                group.classList.add('hidden');
+                return; // Skip message processing for this group
             }
-            
-            group.style.display = shouldShow ? 'block' : 'none';
+
+            // 2. Handle Date Range (at the Message level)
+            const messages = group.querySelectorAll('.message-wrapper');
+            let visibleMessagesInGroup = 0;
+
+            messages.forEach(msg => {
+                const msgDate = msg.getAttribute('data-msg-date');
+                const dateMatch = (!startVal || msgDate >= startVal) && 
+                                (!endVal || msgDate <= endVal);
+
+                if (dateMatch) {
+                    msg.style.display = 'flex'; // Or whatever your default display is
+                    visibleMessagesInGroup++;
+                } else {
+                    msg.style.display = 'none';
+                }
+            });
+
+            // 3. Show/Hide the whole group header based on if it has visible messages
+            if (visibleMessagesInGroup > 0) {
+                group.classList.remove('hidden');
+            } else {
+                group.classList.add('hidden');
+            }
+        });
+
+        // 4. Cleanup Date Markers (headers for the days)
+        markers.forEach(marker => {
+            let sibling = marker.nextElementSibling;
+            let hasVisibleContent = false;
+            while (sibling && !sibling.classList.contains('timeline-date-marker')) {
+                if (sibling.classList.contains('prompt-conversation-group') && !sibling.classList.contains('hidden')) {
+                    hasVisibleContent = true;
+                    break;
+                }
+                sibling = sibling.nextElementSibling;
+            }
+            marker.classList.toggle('hidden', !hasVisibleContent);
         });
     }
-
 
 </script>
 {% endblock %}
