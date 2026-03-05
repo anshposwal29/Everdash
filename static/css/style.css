@@ -301,6 +301,7 @@ body {
 
 .header-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--space-sm);
 }
 
@@ -3937,3 +3938,204 @@ body {
     font-size: 13px; font-weight: 600; color: #64748b; background: transparent;
 }
 .time-button.active { color: #2563eb; background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+
+/* Container to force the alignment */
+.message-bubble-container {
+    display: flex;
+    width: 100%;
+    margin-bottom: 12px;
+}
+
+.msg-left { justify-content: flex-start; }
+.msg-right { justify-content: flex-end; }
+
+/* The actual bubble */
+.message-item {
+    max-width: 80%;
+    padding: 12px;
+    border-radius: 15px;
+    position: relative;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.message-item.msg-left {
+    background-color: #f1f5f9; /* Light grey for Evie */
+    color: #1e293b;
+    border-bottom-left-radius: 2px;
+}
+
+.message-item.msg-right {
+    background-color: #dbeafe; /* Light blue for Participant */
+    color: #1e3a8a;
+    border-bottom-right-radius: 2px;
+}
+
+/* High Risk styling */
+.message-item.high-risk {
+    border: 2px solid #ef4444;
+    background-color: #fef2f2;
+}
+
+
+/* Container for the whole message list */
+.messages-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 15px;
+}
+
+/* The Conversation Divider */
+.conversation-divider {
+    display: flex !important;
+    align-items: center;
+    width: 100%;
+    margin: 24px 0 12px 0;
+}
+
+.divider-line {
+    flex: 1;
+    height: 1px !important;
+    background-color: #cbd5e1 !important;
+    min-width: 50px; 
+}
+
+/* Message Bubble Logic */
+.message-bubble-container {
+    display: flex;
+    width: 100%;
+    margin-bottom: 4px;
+}
+
+.message-bubble-container.msg-left { justify-content: flex-start; }
+.message-bubble-container.msg-right { justify-content: flex-end; }
+
+.message-item {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 14px;
+    line-height: 1.5;
+    position: relative;
+}
+
+.message-item.msg-left {
+    background-color: #f1f5f9; /* Slate 100 */
+    color: #1e293b;
+    border-bottom-left-radius: 4px;
+}
+
+.message-item.msg-right {
+    background-color: #dbeafe; /* Blue 100 */
+    color: #1e3a8a;
+    border-bottom-right-radius: 4px;
+}
+
+.divider-text {
+    padding: 0 16px;
+    font-size: 11px;
+    color: #64748b; /* Slate 500 */
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: #ffffff; /* Matches modal background */
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.prompt-icon {
+    font-size: 12px;
+    filter: grayscale(1);
+    opacity: 0.7;
+}
+
+.message-header {
+    font-size: 10px;
+    opacity: 0.6;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+}
+
+
+.date-range-picker {
+    display: flex;
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 6px 12px;
+}
+
+.calendar-icon {
+    margin-right: 8px;
+    font-size: 14px;
+    opacity: 0.5;
+}
+
+.date-range-picker input[type="date"] {
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    color: #475569;
+    outline: none;
+}
+
+.date-separator {
+    margin: 0 8px;
+    color: #cbd5e1;
+}
+
+.btn-apply-filter {
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 12px;
+    margin-left: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.btn-apply-filter:hover {
+    background: #1d4ed8;
+}
+
+/* Helper class for the JS */
+.hidden {
+    display: none !important;
+}
+
+
+/* Styling for the risky message within the modal */
+.message-item.high-risk {
+    animation: pulse-red-border 2s infinite;
+}
+
+@keyframes pulse-red-border {
+    0% { border-color: #ef4444; }
+    50% { border-color: #fca5a5; }
+    100% { border-color: #ef4444; }
+}
+
+.risk-badge {
+    background-color: #ef4444;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 10px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.risk-score-text {
+    color: #b91c1c;
+    font-size: 10px;
+    font-weight: bold;
+    margin-left: 4px;
+    text-transform: uppercase;
+}

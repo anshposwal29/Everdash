@@ -404,39 +404,16 @@ def login():
                 flash('Your account has been deactivated. Contact an administrator.', 'error')
                 return redirect(url_for('login'))
 
-            # Trigger Twilio SMS Verification
-            # Assuming your Admin model has a 'phone_number' field
-            success, message = twilio_service.start_verification(admin.phone_number)
+            login_user(admin)
+            admin.last_login = datetime.utcnow()
+            db.session.commit()
 
-            if success:
-                session['mfa_admin_id'] = admin.id
-                # Store phone in session for the 'check' step
-                session['mfa_phone'] = admin.phone_number 
-                return redirect(url_for('login_verify'))
-            else:
-                flash(f"Error sending SMS: {message}", "error")
+            next_page = request.args.get('next')
+            return redirect(next_page or url_for('dashboard'))
         else:
             flash('Invalid username or password', 'error')
 
     return render_template('login.html')
-
-
-@app.route('/login-verify', methods=['GET', 'POST'])
-def login_verify():
-    admin_id = session.get('mfa_admin_id')
-    phone_number = session.get('mfa_phone')
-
-    if not admin_id or not phone_number:
-        return redirect(url_for('login'))
-    
-    if request.method == 'POST':
-        entered_code = request.form.get('otp_code')
-        
-        # Verify the code via Twilio
-        success, message = twilio_service.check_verification(phone_number, entered_code)
-
-        if success:
-            admin = Admin.query.get(admin_id)
 
 @app.route('/logout')
 @login_required
@@ -625,28 +602,32 @@ def dashboard():
         conversations = user.get('conversations', [])
         
         for date in date_range:
-            d_key = date.isoformat()
+            d_key = date.isoformat() # This produces "2026-02-21"
             
-            # --- MOCK VISUALIZATION ---
-            # Show the most recent conversation on "Today" (end_date)
-            # so the calendar isn't empty.
-            is_today = (date == end_date)
             msgs_for_day = []
-            
-            if is_today and conversations:
-                msgs_for_day = conversations[-1].get('messages', [])
-            
-            # Check for risk keywords in messages to color the dots
             has_risky = False
             has_unreviewed = False
             
-            for m in msgs_for_day:
-                txt = m.get('text', '').lower()
-                if 'overwhelmed' in txt or 'stop' in txt or 'die' in txt or 'hurt' in txt:
-                    has_risky = True
-                if m.get('speaker') == 'Participant':
-                    has_unreviewed = True 
+            for conv in conversations:
+                for m in conv.get('messages', []):
+                    # 1. Grab the timestamp
+                    m_timestamp = m.get('timestamp', '')
+                    
+                    # 2. Split at the 'T' to get only "2026-02-21"
+                    m_date = m_timestamp.split('T')[0] if 'T' in m_timestamp else ""
 
+                    # 3. Compare to the current calendar column
+                    if m_date == d_key:
+                        msgs_for_day.append(m)
+                        
+                        # --- RISK & REVIEW LOGIC ---
+                        txt = m.get('text', '').lower()
+                        if any(word in txt for word in ['overwhelmed', 'stop', 'die', 'hurt']):
+                            has_risky = True
+                        if m.get('speaker') == 'Participant':
+                            has_unreviewed = True 
+
+            # 4. Save to user_row
             user_row['dates'][d_key] = {
                 'count': len(msgs_for_day),
                 'has_risky': has_risky,
@@ -704,14 +685,21 @@ def get_messages_for_date(firebase_id, date_str):
     print(f"Target User: {firebase_id}")
     print(f"Target Date: {date_str}")
     try:
-        all_users = User.query.all()
+        all_users = fetch_all_participants()
+        # all_users = User.query.all()
         print(f"DEBUG: I see {len(all_users)} users in the DB.")
         print(f"DEBUG: Looking for ID: [{firebase_id}]")
-        user = User.query.filter_by(firebase_id=firebase_id).first()
-        if not user:
-            return jsonify({'success': False, 'message': 'User not found'}), 404
+        
+        user_data = next((u for u in all_users if str(u.get('user_id')) == str(firebase_id)), None)
+        #user = User.query.filter_by(firebase_id=firebase_id).first()
 
+        if not user_data:
+            print(f"DEBUG: Could not find {firebase_id} in the participant list.")
+            return jsonify({'success': False, 'message': f'User {firebase_id} not found'}), 404
+    
+        
         date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        """
         date_start_utc, date_end_utc = date_to_utc_range(date)
 
         messages = Message.query.filter(
@@ -739,6 +727,7 @@ def get_messages_for_date(firebase_id, date_str):
             messages_data.append({
                 'id': msg.id,
                 'text': msg.text,
+                'speaker': msg.speaker,
                 'timestamp': timestamp_et.strftime('%I:%M %p'),
                 'is_risky': msg.is_risky,
                 'is_reviewed': msg.is_reviewed,
@@ -751,6 +740,52 @@ def get_messages_for_date(firebase_id, date_str):
             'user': {'firebase_id': user.firebase_id, 'redcap_id': user.redcap_id},
             'date': date_str
         })
+        """
+
+        messages_data = []
+        
+        # Loop through conversations in the JSON/Dict object
+        i = 1
+        for conv in user_data.get('conversations', []):
+            #c_id = conv.get('id') or conv.get('conversation_id')
+            c_id = i
+            i += 1
+            current_prompt = conv.get('prompt', 'New Conversation')
+
+            for m in conv.get('messages', []):
+                m_timestamp = m.get('timestamp', '')
+                # Convert string to a real datetime object
+                dt_obj = datetime.fromisoformat(m_timestamp)
+                
+                # Extract just the date (2026-02-21)
+                m_date = dt_obj.date().isoformat() 
+                
+                # Format the time beautifully (05:50 PM)
+                m_time = dt_obj.strftime('%I:%M %p')
+
+                text = m.get('text', '')
+                is_risky = any(word in text.lower() for word in ['overwhelmed', 'stop', 'die', 'hurt', 'suicide', 'harm'])
+
+                if m_date == date_str:
+                    # Format for the frontend
+                    messages_data.append({
+                        'prompt': current_prompt,
+                        'conversation_id': c_id,
+                        'id': m.get('id'),
+                        'speaker': m.get('speaker'),
+                        'text': m.get('text'),
+                        'timestamp': m_time,
+                        'is_risky': is_risky,
+                        'is_reviewed': m.get('is_reviewed', False)
+                    })
+
+        return jsonify({
+            'success': True,
+            'messages': messages_data,
+            'user': {'redcap_id': user_data.get('redcap_id'), 'identifier': user_data.get('identifier')},
+            'date': date_str
+        })
+
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
@@ -818,8 +853,6 @@ def user_detail(firebase_id):
     """
     User detail page - processes mock API data into the format expected by the template
     """
-    print("!!!!!!!!!!!!!!!! I AM IN THE CORRECT ROUTE !!!!!!!!!!!!!!!!")
-    print(f"DEBUG: Received ID: {firebase_id}")
 
     # --- 1. FETCH DATA FROM MOCK API ---
     try:
@@ -1331,8 +1364,6 @@ def get_participant_passive_data(user_id):
     Serve passive sensor data from mock API to the frontend charts
     """
     from datetime import datetime
-
-    print(f"\n🔥🔥🔥 API CALLED FOR USER: {user_id} 🔥🔥🔥")
     
     metric = request.args.get('metric', 'steps')
     time_range = request.args.get('range', '30d')
