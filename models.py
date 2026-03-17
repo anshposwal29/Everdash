@@ -18,8 +18,8 @@ class Admin(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
     is_active = db.Column(db.Boolean, default=True)
-    is_approved = db.Column(db.Boolean, default=False)
-    phone_number = db.Column(db.String(20), nullable=False) 
+    is_approved = db.Column(db.Boolean, default=True)
+    phone_number = db.Column(db.String(20), nullable=True) 
 
     def set_password(self, password):
         """Hash and set the password"""

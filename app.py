@@ -81,59 +81,6 @@ def date_to_utc_range(date_obj, tz=et_tz):
     end_utc = date_end.astimezone(pytz.utc).replace(tzinfo=None)
     return start_utc, end_utc
 
-
-def process_conversations(messages):
-    """
-    Groups a flat list of message objects into conversation dictionaries 
-    and calculates completion percentages for the V2 UI.
-    """
-    if not messages:
-        return []
-
-    sorted_msgs = sorted(messages, key=lambda x: x.timestamp)
-    conversations = []
-    current_conv = None
-    GAP_THRESHOLD = timedelta(hours=2)
-
-    for msg in sorted_msgs:
-        msg_timestamp_et = msg.timestamp.replace(tzinfo=pytz.utc).astimezone(et_tz)
-        setattr(msg, 'timestamp_et', msg_timestamp_et)
-        msg_time = msg.timestamp
-        
-        if current_conv is None or (msg_time - current_conv['last_msg_time'] > GAP_THRESHOLD):
-            if current_conv:
-                conversations.append(current_conv)
-            
-            current_conv = {
-                'id': len(conversations) + 1,
-                'messages': [],
-                'start_time': msg_timestamp_et,
-                'last_msg_time': msg_time,
-                'prompt': "General Conversation", 
-                'trigger_type': 'user_initiated',
-                'trigger_display': 'User Initiated', 
-                'has_risk': False,
-                'completion_pct': 0  # Initialized here
-            }
-
-            if msg.conversation_id:
-                try:
-                    linked_conv = Conversation.query.get(msg.conversation_id)
-                    if linked_conv:
-                        current_conv['prompt'] = linked_conv.prompt
-                        current_conv['trigger_type'] = linked_conv.trigger_type or 'user_initiated'
-                        if linked_conv.trigger_type == 'passive_sensing':
-                            current_conv['trigger_display'] = 'Passive Sensing'
-                except:
-                    pass
-        
-        current_conv['messages'].append(msg)
-        current_conv['last_msg_time'] = msg_time
-        if msg.is_risky:
-            current_conv['has_risk'] = True
-
-    if current_conv:
-        conversations.append(current_conv)
 def process_conversations(messages):
     """
     Groups a flat list of message objects into conversation dictionaries 
@@ -206,89 +153,6 @@ def process_conversations(messages):
 def load_user(user_id):
     return Admin.query.get(int(user_id))
 
-
-def get_overall_users(window_days=14, sort='silence', order='desc', limit=50, offset=0):
-    """
-    Generates summary statistics for the 'Overall - List View'
-    """
-    # 1. Setup Time Window
-    now = datetime.now(et_tz)
-    cutoff_date = now - timedelta(days=window_days)
-    cutoff_date_naive = cutoff_date.replace(tzinfo=None) # For DB comparison
-
-    # 2. Base Query
-    users = User.query.filter_by(dropped=False).all()
-    
-    rows = []
-    
-    for u in users:
-        # --- A. Calculate Silence (Days since last message) ---
-        last_msg = Message.query.filter(
-            Message.user_id == u.id,
-            Message.text.isnot(None) 
-        ).order_by(Message.timestamp.desc()).first()
-        
-        silence_days = None
-        if last_msg:
-            # Ensure timezone awareness for subtraction
-            msg_tz = last_msg.timestamp.replace(tzinfo=pytz.utc).astimezone(et_tz)
-            delta = now - msg_tz
-            silence_days = delta.days
-        
-        # --- B. Calculate Risk (Count in window) ---
-        risky_count = Message.query.filter(
-            Message.user_id == u.id,
-            Message.is_risky == True,
-            Message.timestamp >= cutoff_date_naive
-        ).count()
-
-        # --- C. Passive Data Compliance (Good Days in window) ---
-        passive_stats = {
-            'loc': {'good_days': 0},
-            'bat': {'good_days': 0},
-            'acc': {'good_days': 0},
-            'gyr': {'good_days': 0}
-        }
-        
-        # This will be empty until the new table fills up, which is fine!
-        summaries = PassiveDailySummary.query.filter(
-            PassiveDailySummary.user_id == u.id,
-            PassiveDailySummary.day >= cutoff_date.date()
-        ).all()
-
-        for s in summaries:
-            if s.loc_hours > 0: passive_stats['loc']['good_days'] += 1
-            if s.bat_hours > 0: passive_stats['bat']['good_days'] += 1
-            if s.acc_hours > 0: passive_stats['acc']['good_days'] += 1
-            if s.gyr_hours > 0: passive_stats['gyr']['good_days'] += 1
-
-        # --- D. Build Row ---
-        rows.append({
-            'user_id': u.id,
-            'redcap_id': u.redcap_id,
-            'identifier': u.identifier,
-            'days_in_study': (now.date() - u.study_start_date).days if u.study_start_date else 0,
-            'silence_days': silence_days,
-            'risky_count': risky_count,
-            'symptom_radar': u.symptom_radar,
-            'passive_compliance': passive_stats,
-            'dropped': u.dropped,
-            'utilization_status': 'Active'
-        })
-
-    # 3. Sorting Logic
-    reverse = (order == 'desc')
-    if sort == 'silence':
-        # Sort by silence (None counts as infinity)
-        rows.sort(key=lambda x: x['silence_days'] if x['silence_days'] is not None else 9999, reverse=reverse)
-    elif sort == 'risk':
-        rows.sort(key=lambda x: x['risky_count'], reverse=reverse)
-    elif sort == 'days':
-        rows.sort(key=lambda x: x['days_in_study'], reverse=reverse)
-    elif sort == 'recent':
-        rows.sort(key=lambda x: x['silence_days'] if x['silence_days'] is not None else 9999, reverse=not reverse)
-
-    return rows
 
 
 def get_overall_users(window_days=14, sort='silence', order='desc'):
@@ -608,7 +472,7 @@ def dashboard():
             has_risky = False
             has_unreviewed = False
             
-            for conv in conversations:
+            for conv in (conversations or []):
                 for m in conv.get('messages', []):
                     # 1. Grab the timestamp
                     m_timestamp = m.get('timestamp', '')
@@ -873,7 +737,7 @@ def user_detail(firebase_id):
     conversations = []
     raw_conversations = user_data.get('conversations', [])
     
-    for idx, conv in enumerate(raw_conversations):
+    for idx, conv in enumerate(raw_conversations or []):
         processed_messages = []
         
         conv_base_time = datetime.now(et_tz) - timedelta(days=idx)
@@ -1361,217 +1225,141 @@ def init_db():
 @login_required
 def get_participant_passive_data(user_id):
     """
-    Serve passive sensor data from mock API to the frontend charts
+    Serves passive sensor data from the real Evergreen API to the frontend charts.
+
+    Supported metrics:
+      - screen_time  → counts screen-on events per day from the screen_time sensor
+      - battery_drain → averages battery % per day from the battery sensor
+
+    Unsupported metrics (steps, heart_rate_avg, sleep_minutes, canvas_activity,
+    library_hours) return empty data since HealthKit and campus data are not
+    available from the Evergreen API for this study.
     """
-    from datetime import datetime
-    
-    metric = request.args.get('metric', 'steps')
+    from datetime import datetime, timedelta, timezone
+
+    EVERGREEN_BASE = "https://evergreen-data-service.dali.dartmouth.edu"
+    EVERGREEN_KEY  = "DdXis0P9ceZI6gnMoUH2h7S9lZf23hcEvGxQMXeg9GKVLdd6HkEwo4xZmDh9J2IX"
+
+    metric     = request.args.get('metric', 'screen_time')
     time_range = request.args.get('range', '30d')
-    
-    print(f"Metric: {metric}, Range: {time_range}")
-    
-    # Parse time range
+
+    print(f"[passive-data] user={user_id} metric={metric} range={time_range}")
+
+    # --- Parse the time range into a number of days ---
     if time_range == '3d':
         days = 3
     elif time_range == '7d':
         days = 7
     else:
         days = 30
-    
+
+    # --- Build UTC unix timestamps for the window ---
+    now_utc   = datetime.now(timezone.utc)
+    start_utc = now_utc - timedelta(days=days)
+    start_ts  = int(start_utc.timestamp())
+    end_ts    = int(now_utc.timestamp())
+
+    # --- Metrics not available from the Evergreen API ---
+    UNAVAILABLE_METRICS = {
+        'steps', 'heart_rate_avg', 'sleep_minutes',
+        'canvas_activity', 'library_hours'
+    }
+    if metric in UNAVAILABLE_METRICS:
+        print(f"[passive-data] metric '{metric}' not available from Evergreen API")
+        return jsonify({
+            'metric': metric,
+            'labels': [],
+            'values': [],
+            'events': [],
+            'unavailable': True,
+            'message': f"'{metric}' data is not available for this study."
+        })
+
+    # --- Map frontend metric names to Evergreen sensor names ---
+    METRIC_TO_SENSOR = {
+         'screen_time': 'screen_time',
+         'screen_time_minutes': 'screen_time',
+         'battery_drain': 'battery',
+    }
+    sensor = METRIC_TO_SENSOR.get(metric)
+    if not sensor:
+        return jsonify({'error': f"Unknown metric: {metric}"}), 400
+
     try:
-        # Fetch from mock API
-        response = requests.get('http://127.0.0.1:5001/api/v1/all_users', 
-                               headers={'X-API-KEY': 'sk_everdash_test_123'},
-                               timeout=5)
-        
-        if response.status_code != 200:
-            print(f"ERROR: Mock API returned {response.status_code}")
-            return jsonify({'error': 'Failed to fetch data'}), 500
-        
-        data = response.json()
-        user = next((p for p in data['participants'] if p['user_id'] == user_id), None)
-        
-        if not user:
-            print(f"ERROR: User {user_id} not found")
-            return jsonify({'error': 'User not found'}), 404
-        
-        print(f"✅ User found: {user.get('identifier', 'Unknown')}")
-        
-        history = user.get('passive_data_history', {})
-        dates = sorted(history.keys())[-days:]
-        
+        # --- Fetch raw sensor data from Evergreen API ---
+        url = (
+            f"{EVERGREEN_BASE}/api/v1/internal/users/{user_id}/raw-data"
+            f"?sensor={sensor}&start_time={start_ts}&end_time={end_ts}&limit=5000"
+        )
+        resp = requests.get(url, headers={"X-API-KEY": EVERGREEN_KEY}, timeout=15)
+
+        if resp.status_code != 200:
+            print(f"[passive-data] Evergreen returned {resp.status_code}")
+            return jsonify({'error': f"Evergreen API error: {resp.status_code}"}), 500
+
+        data      = resp.json()
+        raw_items = data.get('data', [])
+        print(f"[passive-data] Got {len(raw_items)} raw records for sensor '{sensor}'")
+
+        # --- Bucket raw records into per-day values ---
+        # We build a dict: { "YYYY-MM-DD": [values...] }
+        daily_buckets = {}
+        for item in raw_items:
+            ts_str = item.get('timestamp', '')
+            if not ts_str:
+                continue
+            # Parse ISO timestamp e.g. "2026-02-13T17:50:34.241593Z"
+            try:
+                dt = datetime.fromisoformat(ts_str.replace('Z', '+00:00'))
+                date_key = dt.strftime('%Y-%m-%d')
+            except ValueError:
+                continue
+
+            if date_key not in daily_buckets:
+                daily_buckets[date_key] = []
+
+            if metric in ('screen_time', 'screen_time_minutes'):
+                # Count events where screen was active/on (not "unknown" or "off")
+                state = item.get('screen_state', '')
+                if state in ('on', 'active', 'unknown'):
+                    daily_buckets[date_key].append(1)
+
+            elif metric == 'battery_drain':
+                pct = item.get('battery_percent')
+                if pct is not None:
+                    daily_buckets[date_key].append(float(pct))
+
+        # --- Build ordered labels + values for every day in the window ---
         labels = []
         values = []
-        events = []
-        
-        print(f"Processing {len(dates)} days of data...")
-        
-        for date_str in dates:
-            day_data = history[date_str]
-            q = day_data.get('quantitative', {})
-            
-            # Format label
-            date_obj = datetime.strptime(date_str, '%Y-%m-%d')
-            labels.append(date_obj.strftime('%m/%d'))
-            
-            # Extract value based on metric
-            if metric == 'steps':
-                val = q.get('watch_activity', {}).get('steps', 0)
-            elif metric == 'heart_rate_avg':
-                val = q.get('watch_heart_rate', {}).get('avg_bpm', 0)
-            elif metric == 'sleep_minutes':
-                val = q.get('watch_sleep', {}).get('minutes_total', 0)
-            elif metric == 'screen_time_minutes':
-                val = q.get('phone_screen_time', {}).get('minutes', 0)
-            elif metric == 'battery_drain':
-                battery = q.get('phone_battery', [])
-                val = (100 - min(battery)) if battery else 0
-            elif metric == 'canvas_activity':
-                val = day_data.get('campus', {}).get('canvas_logs', {}).get('files_viewed', 0)
-            elif metric == 'library_hours':
-                locations = day_data.get('campus', {}).get('wireless_locations', [])
-                library_mins = sum(loc['duration_mins'] for loc in locations if 'library' in loc.get('building', '').lower())
-                val = round(library_mins / 60, 1)
-            else:
-                val = 0
-            
-            values.append(val)
-        
-        print(f"✅ Processed {len(values)} data points")
-        print(f"Date range: {labels[0]} to {labels[-1]}")
-        
-        # ========================================
-        # GENERATE EVENTS FOR CHART OVERLAY
-        # ========================================
-        
-        print(f"\n========== EVENT GENERATION ==========")
-        
-        conversations = user.get('conversations', [])
-        print(f"Found {len(conversations)} conversations in user data")
-        
-        if len(conversations) == 0:
-            print("⚠️  WARNING: No conversations found!")
-            print(f"User keys available: {list(user.keys())}")
-        
-        for idx, conv in enumerate(conversations):
-            print(f"\n--- Conversation {idx + 1} ---")
-            
-            messages = conv.get('messages', [])
-            print(f"  Messages: {len(messages)}")
-            
-            if not messages:
-                print("  ❌ SKIP: No messages")
-                continue
-            
-            first_msg = messages[0]
-            
-            if 'timestamp' not in first_msg:
-                print("  ❌ SKIP: No timestamp")
-                continue
-            
-            try:
-                conv_time = datetime.fromisoformat(first_msg['timestamp'])
-                conv_date_str = conv_time.strftime('%Y-%m-%d')  # Full date format
-                conv_date_label = conv_time.strftime('%m/%d')   # Chart label format
-                
-                print(f"  Conversation date: {conv_date_label} ({conv_date_str})")
-                print(f"  Chart range: {labels[0]} to {labels[-1]}")
-                
-                # NEW LOGIC: If conversation date not in chart range, check if we can add it
-                if conv_date_label not in labels:
-                    # Check if this date exists in the passive data history
-                    if conv_date_str in history:
-                        print(f"  ℹ️  Date not in chart range, but exists in history - extending range")
-                        
-                        # Add this date to the chart
-                        day_data = history[conv_date_str]
-                        q = day_data.get('quantitative', {})
-                        
-                        # Extract the metric value
-                        if metric == 'steps':
-                            val = q.get('watch_activity', {}).get('steps', 0)
-                        elif metric == 'heart_rate_avg':
-                            val = q.get('watch_heart_rate', {}).get('avg_bpm', 0)
-                        elif metric == 'sleep_minutes':
-                            val = q.get('watch_sleep', {}).get('minutes_total', 0)
-                        elif metric == 'screen_time_minutes':
-                            val = q.get('phone_screen_time', {}).get('minutes', 0)
-                        elif metric == 'battery_drain':
-                            battery = q.get('phone_battery', [])
-                            val = (100 - min(battery)) if battery else 0
-                        elif metric == 'canvas_activity':
-                            val = day_data.get('campus', {}).get('canvas_logs', {}).get('files_viewed', 0)
-                        elif metric == 'library_hours':
-                            locations = day_data.get('campus', {}).get('wireless_locations', [])
-                            library_mins = sum(loc['duration_mins'] for loc in locations if 'library' in loc.get('building', '').lower())
-                            val = round(library_mins / 60, 1)
-                        else:
-                            val = 0
-                        
-                        # Add to chart data
-                        labels.append(conv_date_label)
-                        values.append(val)
-                        
-                        print(f"  ✅ Extended chart to include {conv_date_label} with value {val}")
-                    else:
-                        print(f"  ❌ SKIP: {conv_date_label} not in passive history")
-                        continue
+        for i in range(days - 1, -1, -1):
+            day = (now_utc - timedelta(days=i)).strftime('%Y-%m-%d')
+            label = (now_utc - timedelta(days=i)).strftime('%m/%d')
+            labels.append(label)
 
-                    
-                print(f"  ✅ Date {conv_date_label} IS in range!")
-                
-                day_index = labels.index(conv_date_label)
-                metric_value = values[day_index]
-                
-                initiated_by = conv.get('initiated_by', 'user')
-                if initiated_by == 'bot':
-                    event_type = 'bot'
-                    event_details = 'Bot check-in conversation'
-                else:
-                    event_type = 'user'
-                    event_details = 'User initiated conversation'
-                
-                time_str = conv_time.strftime('%I:%M %p')
-                event_details = f"{event_details} at {time_str}"
-                
-                event = {
-                    'x': conv_date_label,
-                    'y': metric_value,
-                    'type': event_type,
-                    'details': event_details
-                }
-                
-                events.append(event)
-                print(f"  ✅ SUCCESS: Created event at ({conv_date_label}, {metric_value})")
-                
-            except Exception as e:
-                print(f"  ❌ ERROR: {e}")
-                import traceback
-                traceback.print_exc()
-                continue
-        
-        print(f"\n========== FINAL RESULT ==========")
-        print(f"Total events created: {len(events)}")
-        if events:
-            for e in events:
-                print(f"  • {e['type']} on {e['x']} at y={e['y']}: {e['details']}")
-        print(f"==================================\n")
-        
+            bucket = daily_buckets.get(day, [])
+            if metric in ('screen_time', 'screen_time_minutes'):
+                values.append(sum(bucket))
+                print(f"[screen_time] {label}: {sum(bucket)} events")
+            elif metric == 'battery_drain':
+                # Average battery % that day (or 0 if no data)
+                values.append(round(sum(bucket) / len(bucket), 1) if bucket else 0)
+
+        print(f"[passive-data] Returning {len(labels)} days of data")
+
         return jsonify({
             'metric': metric,
             'labels': labels,
             'values': values,
-            'events': events
+            'events': [],   # No conversation events until messages API is ready
         })
-        
+
     except Exception as e:
-        print(f"❌ EXCEPTION in passive data endpoint: {e}")
+        print(f"[passive-data] ❌ Exception: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-
-    
 
 @app.route('/api/sensor_data')
 @login_required
