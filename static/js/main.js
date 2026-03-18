@@ -72,3 +72,69 @@ function showNotification(message, type = 'info') {
     // Remove toast element after it's hidden
     toastElement.addEventListener('hidden.bs.toast', () => toastElement.remove());
 }
+
+function applyFilter(filterValue) {
+    const groups = document.querySelectorAll('.prompt-conversation-group');
+    const markers = document.querySelectorAll('.timeline-date-marker');
+
+    // 1. Filter the conversation groups
+    groups.forEach(group => {
+        const hasRisk = group.getAttribute('data-has-risk') === 'true';
+        const isPassive = group.getAttribute('data-is-passive') === 'true';
+
+        let show = false;
+
+        if (filterValue === 'all') {
+            show = true;
+        } else if (filterValue === 'risky') {
+            show = hasRisk;
+        } else if (filterValue === 'passive-sensing') {
+            // "Bot Triggered" matches your passive sensing data
+            show = isPassive;
+        } else if (filterValue === 'user-initiated') {
+            // If it's not passive, it's user initiated
+            show = !isPassive;
+        }
+
+        group.style.display = show ? "block" : "none";
+    });
+
+    // 2. Hide date headers that no longer have visible conversations
+    markers.forEach(marker => {
+        let nextEl = marker.nextElementSibling;
+        let hasVisibleContent = false;
+
+        // Look at all elements until the next date marker
+        while (nextEl && !nextEl.classList.contains('timeline-date-marker')) {
+            // If we find a conversation group that is currently visible
+            if (nextEl.classList.contains('prompt-conversation-group') && nextEl.style.display !== 'none') {
+                hasVisibleContent = true;
+                break;
+            }
+            nextEl = nextEl.nextElementSibling;
+        }
+
+        // Apply the visibility to the date marker
+        marker.style.display = hasVisibleContent ? "block" : "none";
+    });
+}
+
+function copyStatsToClipboard(button) {
+    const statsText = button.getAttribute('data-stats');
+    
+    navigator.clipboard.writeText(statsText).then(() => {
+        const originalContent = button.innerHTML;
+        
+        // Visual feedback
+        button.innerHTML = '✅ Copied!';
+        button.classList.add('success');
+        
+        // Reset after 2 seconds
+        setTimeout(() => {
+            button.innerHTML = originalContent;
+            button.classList.remove('success');
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy stats: ', err);
+    });
+}

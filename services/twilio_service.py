@@ -13,7 +13,8 @@ class TwilioService:
         self.from_number = Config.TWILIO_FROM_NUMBER
         self.admin_numbers = Config.TWILIO_ADMIN_NUMBERS
         self.client = None
-
+        self.messaging_service_sid = Config.TWILIO_MESSAGING_SERVICE_SID
+        
         if self.account_sid and self.auth_token:
             self.client = Client(self.account_sid, self.auth_token)
 
@@ -77,7 +78,6 @@ class TwilioService:
             return True, f"Test message sent successfully. SID: {message.sid}"
         except Exception as e:
             return False, f"Failed to send test message: {str(e)}"
-
 
 # Singleton instance
 twilio_service = TwilioService()

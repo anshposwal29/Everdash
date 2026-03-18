@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div style="padding: 24px; max-width: 1200px; margin: 0 auto;">
+
+  <div style="
+    background: #fff;
+    border: 1px solid #e6e6e6;
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    overflow: hidden;
+  ">
+
+    <div style="
+      padding: 18px 20px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: #fafafa;
+    ">
+      <div>
+        <h1 style="margin: 0; font-size: 26px;">Overall — Priority View</h1>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div style="font-weight:600;">Sort:</div>
+        <select id="sort-select" style="padding:8px 10px; border-radius:10px; border:1px solid #d0d0d0; background:white; min-width:220px;" onchange="updateFilters()">
+          <option value="recent" {% if sort == 'recent' %}selected{% endif %}>Most recent dialogue</option>
+          <option value="silence" {% if sort == 'silence' %}selected{% endif %}>Silence (longest first)</option>
+          <option value="risk" {% if sort == 'risk' %}selected{% endif %}>Risky messages (high → low)</option>
+          <option value="days" {% if sort == 'days' %}selected{% endif %}>Days in study (less → more)</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="
+        padding: 10px 20px;
+        border-bottom: 1px solid #eee;
+        display:flex;
+        justify-content: space-between;
+        align-items:center;
+        gap:20px;
+        flex-wrap: wrap;
+      ">
+      
+      <div style="display:flex; gap:10px; align-items:center;">
+        <a href="{{ url_for('dashboard', view='list', window=window_days, sort=sort) }}"
+           style="text-decoration:none; padding: 8px 12px; border-radius: 999px; border: 1px solid #2b6cb0; background: #ebf8ff; color: #1e40af; font-weight: 600; font-size: 14px;">
+           List
+        </a>
+        <a href="{{ url_for('dashboard', view='week', window=window_days, sort=sort) }}"
+           style="text-decoration:none; padding: 8px 12px; border-radius: 999px; border: 1px solid #cfd8e3; background: #f8fafc; color: #334155; font-weight: 600; font-size: 14px;">
+           Week
+        </a>
+        <a href="{{ url_for('dashboard', view='calendar', window=window_days, sort=sort) }}"
+           style="text-decoration:none; padding: 8px 12px; border-radius: 999px; border: 1px solid #cfd8e3; background: #f8fafc; color: #334155; font-weight: 600; font-size: 14px;">
+           Calendar
+        </a>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:18px; font-size:14px; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:6px;"><i data-lucide="map-pin" style="width:14px;"></i> Location</div>
+        <div style="display:flex; align-items:center; gap:6px;"><i data-lucide="battery" style="width:14px;"></i> Battery</div>
+        <div style="display:flex; align-items:center; gap:6px;"><i data-lucide="activity" style="width:14px;"></i> Accel</div>
+        <div style="display:flex; align-items:center; gap:6px;"><i data-lucide="rotate-cw" style="width:14px;"></i> Gyro</div>
+
+        <div style="display:flex; align-items:center; gap:6px; margin-left:10px;">
+          <span style="width:10px; height:10px; background:#16a34a; border-radius:50%; display:inline-block;"></span> ≥ 50%
+        </div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="width:10px; height:10px; background:#f59e0b; border-radius:50%; display:inline-block;"></span> < 50%
+        </div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="width:10px; height:10px; background:#dc2626; border-radius:50%; display:inline-block;"></span> Missing
+        </div>
+      </div>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; min-width: 900px;">
+        <thead>
+          <tr style="background: #f9fafb; border-bottom: 1px solid #eee; text-align: left; font-size: 13px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">
+            <th style="padding: 12px 16px; font-weight: 600;">Participant</th>
+            <th style="padding: 12px 16px; font-weight: 600;">Silence</th>
+            <th style="padding: 12px 16px; font-weight: 600;">Risky Dialogues</th>
+            <th style="padding: 12px 16px; font-weight: 600;">Symptom Radar</th>
+            <th style="padding: 12px 16px; font-weight: 600;">Passive Sensing (Compliance)</th>
+            <th style="padding: 12px 16px; font-weight: 600; text-align: right;">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody id="user-table-body">
+
+          {# 
+            compliance_icon macro:
+            Shows a colored icon based on compliance percentage.
+            Green = >= 50%, Amber = > 0%, Red = missing/null
+          #}
+          {% macro compliance_icon(value, icon) %}
+            {% if value is none %}
+              {% set color = "#dc2626" %}
+              {% set tooltip_text = "No data" %}
+            {% elif value >= 50 %}
+              {% set color = "#16a34a" %}
+              {% set tooltip_text = value|string + "% compliance" %}
+            {% elif value > 0 %}
+              {% set color = "#f59e0b" %}
+              {% set tooltip_text = value|string + "% compliance" %}
+            {% else %}
+              {% set color = "#dc2626" %}
+              {% set tooltip_text = "0% compliance" %}
+            {% endif %}
+            <span class="compliance-icon-wrapper" data-tooltip="{{ tooltip_text }}">
+              <i data-lucide="{{ icon }}" style="color:{{ color }}; width:24px; height:24px;"></i>
+            </span>
+          {% endmacro %}
+
+          {% if participants %}
+            {% for u in participants %}
+            <tr style="border-bottom: 1px solid #eee;">
+
+              {# --- Participant Name + Meta --- #}
+              <td style="padding: 12px 16px;">
+                <div style="font-weight: 600; color: #111;">
+                  {{ u.identifier or u.name or u.email or "Unknown" }}
+                </div>
+                <div style="font-size: 13px; color: #666;">
+                  {# REDCap ID is not available from the Evergreen API #}
+                  ID: {{ u.redcap_id or "N/A" }} &bull;
+
+                  {# Dropped status is not available from the Evergreen API #}
+                  {% if u.dropped is none %}
+                    <span style="color:#999;">●</span> Status N/A
+                  {% elif u.dropped %}
+                    <span style="color:red;">●</span> Dropped
+                  {% else %}
+                    <span style="color:green;">●</span> Active
+                  {% endif %}
+
+                  &bull;
+                  {# Days in study is calculated from account creation date #}
+                  {% if u.days_in_study is not none %}
+                    {{ u.days_in_study }} days
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </div>
+              </td>
+
+              {# --- Silence --- #}
+              <td style="padding: 12px 16px; font-weight: 500;
+                {% if u.decision_engine_results.silence_days is not none and u.decision_engine_results.silence_days > 7 %}
+                  color: #dc2626;
+                {% elif u.decision_engine_results.silence_days is not none and u.decision_engine_results.silence_days > 3 %}
+                  color: #d97706;
+                {% else %}
+                  color: #111;
+                {% endif %}">
+                {% if u.decision_engine_results.silence_days is not none %}
+                  {{ u.decision_engine_results.silence_days }} days
+                {% else %}
+                  <span style="color:#999;">N/A</span>
+                {% endif %}
+              </td>
+
+              {# --- Risky Dialogues --- #}
+              {# Not available from Evergreen API — messages API not ready yet #}
+              <td style="padding: 12px 16px;">
+                <span style="background:#f3f4f6; color:#999; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600;">
+                  N/A
+                </span>
+              </td>
+
+              {# --- Symptom Radar --- #}
+              {# Not available from Evergreen API #}
+              <td style="padding: 12px 16px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-weight:600; color:#999;">N/A</span>
+                </div>
+              </td>
+
+              {# --- Passive Sensing Compliance --- #}
+              {# Calculated from real sensor data — null means no data received #}
+              <td style="padding: 12px 16px;">
+                <div style="display:flex; gap:12px;">
+                  {% for icon, key in [
+                      ('map-pin', 'loc'),
+                      ('battery', 'bat'),
+                      ('activity', 'acc'),
+                      ('rotate-cw', 'gyr')
+                    ] %}
+                    {{ compliance_icon(u.passive_sensing_compliance[key], icon) }}
+                  {% endfor %}
+                </div>
+              </td>
+
+              {# --- Actions --- #}
+              <td style="padding: 12px 16px; text-align: right;">
+                <div style="display:flex; justify-content:flex-end; gap:8px;">
+                  <a href="{{ url_for('user_detail', firebase_id=u.user_id) }}" 
+                     style="padding:6px 12px; background:#2563eb; color:white; border-radius:6px; text-decoration:none; font-size:13px; font-weight:500;">
+                     View
+                  </a>
+                </div>
+              </td>
+
+            </tr>
+            {% endfor %}
+
+          {% else %}
+            <tr>
+              <td colspan="6" style="padding:40px; text-align:center; color:#666;">
+                No participants found. Please ensure the cache is populated by running
+                <b>python cache_updater.py</b> in a separate terminal.
+              </td>
+            </tr>
+          {% endif %}
+
+          <div id="tooltip" style="
+            position: fixed;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 6px 8px;
+            font-size: 12px;
+            border-radius: 4px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.1s;
+          "></div>
+
+        </tbody>
+      </table>
+    </div>
+
+    <div style="padding: 12px 20px; border-top: 1px solid #eee; background: #fafafa;">
+      <div style="font-size: 14px; color: #666;">
+        Displaying participants from the Evergreen API.
+        Some fields (REDCap ID, Research Assistant, Risky Dialogues, Symptom Radar)
+        are not yet available from the API and are shown as N/A.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function updateFilters() {
+    const sortVal = document.getElementById('sort-select').value;
+    window.location.href = `{{ url_for('dashboard') }}?view=list&sort=${sortVal}`;
+  }
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.lucide) lucide.createIcons();
+    setupComplianceHover();
+  });
+</script>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function setupComplianceHover() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+
+  document.querySelectorAll(".compliance-icon-wrapper").forEach(wrapper => {
+    wrapper.addEventListener("mouseenter", (e) => {
+      tooltip.textContent = wrapper.dataset.tooltip;
+      tooltip.style.opacity = 1;
+      wrapper.style.transform = "scale(1.25)";
+    });
+
+    wrapper.addEventListener("mouseleave", () => {
+      tooltip.style.opacity = 0;
+      wrapper.style.transform = "scale(1)";
+    });
+
+    wrapper.addEventListener("mousemove", (e) => {
+      tooltip.style.left = e.clientX + 12 + "px";
+      tooltip.style.top = e.clientY + 12 + "px";
+    });
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (window.lucide) lucide.createIcons();
+  setupComplianceHover();
+});
+</script>
+{% endblock %}

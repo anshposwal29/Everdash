@@ -3,11 +3,139 @@
 {% block title %}User Detail - {{ user.identifier or user.redcap_id }} - Everdash{% endblock %}
 
 {% block content %}
+<style>
+    /* --- LAYOUT & HEADER (From Reference 2) --- */
+    .user-detail-header {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border: 1px solid #e2e8f0;
+    }
+    
+    .detail-top-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 20px;
+    }
+
+    .user-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1a202c;
+        margin: 0;
+    }
+
+    .detail-badges {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .badge-custom {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    .badge-active { background: #d1fae5; color: #065f46; }
+    .badge-dropped { background: #fee2e2; color: #991b1b; }
+
+    /* Info Grid */
+    .detail-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #f1f5f9;
+    }
+    .info-card-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+    .info-card-value { font-size: 15px; font-weight: 600; color: #334155; }
+
+    /* Stats Bar */
+    .detail-stats-bar {
+        display: flex;
+        gap: 24px;
+        margin-top: 20px;
+        background: #f8fafc;
+        padding: 16px;
+        border-radius: 8px;
+    }
+    .detail-stat { display: flex; flex-direction: column; }
+    .detail-stat-value { font-size: 20px; font-weight: 700; color: #2563eb; }
+    .detail-stat-label { font-size: 12px; color: #64748b; }
+
+    /* --- TABS (From Current) --- */
+    .tabs-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+        min-height: 600px;
+    }
+    .nav-tabs .nav-link {
+        color: #64748b;
+        font-weight: 500;
+        padding: 16px 24px;
+        border: none;
+        border-bottom: 2px solid transparent;
+    }
+    .nav-tabs .nav-link.active {
+        color: #2563eb;
+        border-bottom: 2px solid #2563eb;
+        background: none;
+    }
+    .tab-content { padding: 0; }
+    .tab-pane { padding: 24px; }
+
+    /* --- CHAT STYLES (From Reference 2) --- */
+    .chat-window {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 20px;
+        max-height: 600px;
+        overflow-y: auto;
+    }
+    .message-wrapper { margin-bottom: 16px; display: flex; flex-direction: column; }
+    .evie-align { align-items: flex-start; }
+    .participant-align { align-items: flex-end; }
+    
+    .chat-bubble {
+        max-width: 70%;
+        padding: 12px 16px;
+        border-radius: 12px;
+        position: relative;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .bubble-evie { background: white; border: 1px solid #e2e8f0; border-top-left-radius: 2px; }
+    .bubble-participant { background: #3b82f6; color: white; border-top-right-radius: 2px; }
+    .bubble-risky { border: 2px solid #dc2626; background: #fef2f2; color: #1e293b; }
+    
+    .bubble-meta { font-size: 11px; margin-bottom: 4px; opacity: 0.8; display: flex; gap: 8px; }
+    .timestamp-wrapper { margin-left: auto; }
+
+    /* --- CHART STYLES (From Reference 1) --- */
+    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 16px; }
+    .time-button {
+        border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer;
+        font-size: 13px; font-weight: 600; color: #64748b; background: transparent;
+    }
+    .time-button.active { color: #2563eb; background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+
+    /* --- NOTES STYLES (From Reference 2) --- */
+    .note-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+    .note-meta { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; color: #64748b; }
+    .note-type { font-weight: 600; color: #2563eb; background: #eff6ff; padding: 2px 8px; border-radius: 12px; }
+</style>
 
 <div class="container-fluid py-4" style="max-width: 1400px;">
     
     <div class="mb-4">
-        <a href="javascript:history.back()" class="text-decoration-none text-secondary">← Back to Previous Page</a>
+        <a href="{{ url_for('dashboard') }}" class="text-decoration-none text-secondary">← Back to Dashboard</a>
     </div>
 
     <div class="user-detail-header">
@@ -56,23 +184,12 @@
                 <span class="detail-stat-label">Conversations</span>
             </div>
             <div class="detail-stat">
-                <span class="detail-stat-value">{{ user_stats.conversation_completion }}%</span>
-                <span class="detail-stat-label">Conversation<br>Completion</span>
-            </div>
-            <div class="detail-stat">
                 <span class="detail-stat-value">{{ user.passive_sensing_compliance.bat }}%</span>
                 <span class="detail-stat-label">Battery Data</span>
             </div>
-            <div class="detail-stat">
+             <div class="detail-stat">
                 <span class="detail-stat-value">{{ user_stats.last_message_date|strftime('%b %d') }}</span>
                 <span class="detail-stat-label">Last Activity</span>
-            </div>
-            <div class="detail-stats-copy">
-                <button class="btn-copy-stats" 
-                        onclick="copyStatsToClipboard(this)" 
-                        data-stats="Total Messages: {{ user_stats.total_messages }}, Conversations: {{ user_stats.total_conversations }}, Conversation Completion: {{ user_stats.conversation_completion }}%, Battery: {{ user.passive_sensing_compliance.bat }}%, Last Activity: {{ user_stats.last_message_date|strftime('%b %d') }}">
-                    <span class="copy-icon">📋</span> Copy Summary
-                </button>
             </div>
         </div>
         {% endif %}
@@ -99,38 +216,28 @@
                 <div class="messages-container-v2">
                     <div class="messages-header">
                         <div>
-                            <h2>All Messages</h2>
-                            <span class="messages-count">
+                            <h2 style="margin: 0; font-size: 20px;">All Messages</h2>
+                            <span class="messages-count" style="color: #64748b; font-size: 14px; margin-left: 8px;">
                                 {% if conversations %}{{ conversations|length }} conversation{% if conversations|length != 1 %}s{% endif %}{% else %}0 conversations{% endif %}
                             </span>
                         </div>
                         
-                        <div class="header-actions">
-                            <div class="filter-item date-range-picker">
-                                <span class="calendar-icon">📅</span>
-                                <input type="date" id="chat-start-date" value="{{ start_date if start_date else '' }}">
-                                <span class="date-separator">–</span>
-                                <input type="date" id="chat-end-date" value="{{ end_date if end_date else '' }}">
-                                <button type="button" class="btn-apply-filter" onclick="applyChatFilters()">
-                                    Apply
-                                </button>
-                            </div>
-
-                            <select id="risk-filter" class="filter-dropdown" onchange="applyChatFilters(this.value)">
+                        <div class="header-actions" style="display: flex; gap: 12px;">
+                            <select id="risk-filter" class="filter-dropdown" onchange="applyRiskFilter(this.value)" style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; background: white; font-size: 14px; cursor: pointer;">
                                 <option value="all">All Conversations</option>
                                 <option value="risky">Risky Only</option>
                                 <option value="passive-sensing">Bot Triggered</option>
                                 <option value="user-initiated">User Initiated</option>
                             </select>
 
-                            <button id="global-toggle-btn" class="btn-toggle-all" onclick="toggleAllGroups()">
+                            <button id="global-toggle-btn" class="btn-toggle-all" onclick="toggleAllGroups()" style="padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px;">
                                 Expand All
                             </button>
                         </div>
                     </div>
-                    
+
                     {% if conversations %}
-                    <div class="messages-timeline">
+                    <div class="messages-timeline" style="display: flex; flex-direction: column; gap: 12px;">
                         {% set current_date = namespace(value=None) %}
                         
                         {% for conv in conversations %}
@@ -138,10 +245,10 @@
                             {% set conv_date_str = conv.last_activity_et.strftime('%Y-%m-%d') %}
                             {% if current_date.value != conv_date_str %}
                                 {% set current_date.value = conv_date_str %}
-                                <div class="timeline-date-marker">
-                                    <span class="date-marker-text {{ 'is-risky' if conv.has_risk }}">
+                                <div class="timeline-date-marker" style="margin: 24px 0 16px 0; text-align: center;">
+                                    <span class="date-marker-text" style="background: {% if conv.has_risk %}#fef2f2{% else %}#f8fafc{% endif %}; padding: 8px 24px; border-radius: 20px; font-weight: 600; font-size: 14px; color: {% if conv.has_risk %}#dc2626{% else %}#475569{% endif %}; display: inline-block;">
                                         {% if conv.has_risk %}
-                                            <span class="risk-icon-mini">⚠</span> &nbsp;
+                                            <span class="risk-icon-mini" style="color: #dc2626; font-size: 16px;">⚠</span> &nbsp;
                                         {% endif %}
                                         {{ conv.last_activity_et.strftime('%A, %B %d, %Y') }}
                                     </span>
@@ -151,48 +258,46 @@
                             {# --- CONVERSATION COLLAPSIBLE GROUP --- #}
                             <div class="prompt-conversation-group" 
                                 data-has-risk="{{ 'true' if conv.has_risk else 'false' }}" 
-                                data-is-passive="{{ 'true' if conv.trigger_type == 'passive_sensing' else 'false'}}">
+                                data-is-passive="{{ 'true' if conv.trigger_type == 'passive_sensing' else 'false'}}"
+                                style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; transition: all 0.2s; margin-bottom: 12px;">
 
-                                <div class="collapsible-header" onclick="toggleDateGroup('conv-{{ conv.id }}')">
-                                    <div class="header-content-left">
-                                        <span class="prompt-badge">
+                                <div class="collapsible-header" onclick="toggleDateGroup('conv-{{ conv.id }}')" style="padding: 16px 20px; background: #fafafa; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s;">
+                                    <div class="header-content-left" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                        <span class="prompt-badge" style="background: #eff6ff; color: #1e40af; padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 600;">
                                             {{ conv.prompt or "General Conversation" }}
                                         </span>
-                                        <span class="trigger-badge {{ 'trigger-passive' if conv.trigger_type == 'passive_sensing' else 'trigger-user' }}">
+                                        <span class="trigger-badge" style="padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase; {% if conv.trigger_type == 'passive_sensing' %}background: #fef3c7; color: #92400e;{% else %}background: #dbeafe; color: #1e40af;{% endif %}">
                                             {{ conv.trigger_display }}
                                         </span>
+                                        <span class="convo-time-meta" style="color: #64748b; font-size: 13px;">
+                                            {{ conv.last_activity_et.strftime('%I:%M %p') }}
+                                        </span>
                                         {% if conv.has_risk %}
-                                            <span class="risk-tag-header">
+                                            <span class="risk-tag-header" style="background: #fee2e2; color: #dc2626; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; text-transform: uppercase;">
                                                 Risk Detected
                                             </span>
                                         {% endif %}
-                                        <span class="convo-time-meta">
-                                            {{ conv.last_activity_et.strftime('%I:%M %p') }}
-                                        </span>
                                     </div>
-                                    <span class="group-icon" id="icon-conv-{{ conv.id }}">▼</span>
+                                    <span class="group-icon" id="icon-conv-{{ conv.id }}" style="color: #64748b; font-size: 14px; font-weight: bold; transition: transform 0.2s;">▼</span>
                                 </div>
 
                                 {# --- MESSAGES CONTENT (Collapsed by default) --- #}
-                                <div id="conv-{{ conv.id }}" class="collapsible-content-chat-window">
+                                <div id="conv-{{ conv.id }}" class="collapsible-content chat-window" style="display: none; max-height: none; padding: 20px;">
                                     {% for message in conv.messages %}
                                         {% set is_evie = message.speaker == 'Evie' %}
                                         
-                                        <div class="message-wrapper {{ 'evie-align' if is_evie else 'participant-align' }}"
-                                             data-msg-date="{{ message.timestamp_et.strftime('%Y-%m-%d') }}">
-                                            <div class="chat-bubble 
-                                                {{ 'bubble-evie' if is_evie else 'bubble-participant' }} 
-                                                {{ 'bubble-risky' if message.is_risky }}">
-
-                                                <div class="bubble-meta">
+                                        <div class="message-wrapper {{ 'evie-align' if is_evie else 'participant-align' }}" style="margin-bottom: 16px; display: flex; flex-direction: column; {% if is_evie %}align-items: flex-start;{% else %}align-items: flex-end;{% endif %}">
+                                            <div class="chat-bubble {{ 'bubble-evie' if is_evie else 'bubble-participant' }} {{ 'bubble-risky' if message.is_risky else '' }}" style="max-width: 70%; padding: 12px 16px; border-radius: 12px; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.05); {% if message.is_risky %}border: 2px solid #dc2626; background: #fef2f2; color: #1e293b;{% elif is_evie %}background: white; border: 1px solid #e2e8f0; border-top-left-radius: 2px;{% else %}background: #3b82f6; color: white; border-top-right-radius: 2px;{% endif %}">
+                                                
+                                                <div class="bubble-meta" style="font-size: 11px; margin-bottom: 4px; opacity: 0.8; display: flex; gap: 8px;">
                                                     <strong>{{ 'Evie' if is_evie else 'Participant' }}</strong>
-                                                    <span class="timestamp-wrapper">
-                                                        <span class="date-part">{{ message.timestamp_et.strftime('%b %d') }}</span>
-                                                        <span class="time-part">{{ message.timestamp_et.strftime('%I:%M %p') }}</span>
+                                                    <span class="timestamp-wrapper" style="margin-left: auto; display: flex; gap: 4px; align-items: center;">
+                                                        <span class="date-part" style="opacity: 0.6;">{{ message.timestamp_et.strftime('%b %d') }}</span>
+                                                        <span class="time-part" style="font-weight: 600;">{{ message.timestamp_et.strftime('%I:%M %p') }}</span>
                                                     </span>
                                                 </div>
                                                 
-                                                <div class="bubble-body">
+                                                <div class="bubble-body" style="line-height: 1.5;">
                                                     {{ message.text }}
                                                 </div>
                                             </div>
@@ -204,9 +309,9 @@
                     </div>
 
                     {% else %}
-                    <div class="no-messages-v2">
-                        <div class="no-messages-icon">💬</div>
-                        <p class="no-messages-text">No conversations found</p>
+                    <div class="no-messages-v2" style="text-align: center; padding: 60px 20px; color: #94a3b8;">
+                        <div class="no-messages-icon" style="font-size: 48px; margin-bottom: 16px;">💬</div>
+                        <p class="no-messages-text" style="font-size: 16px; margin: 0;">No conversations found</p>
                     </div>
                     {% endif %}
                 </div>
@@ -248,22 +353,6 @@
                     
                     <div style="position: relative; height: 400px; width: 100%;">
                         <canvas id="passiveChart"></canvas>
-                    </div>
-                    <!-- EVENT LEGEND -->
-                    <!-- EVENT LEGEND -->
-                    <div style="margin-top: 20px; padding: 12px; background: #f8fafc; border-radius: 8px; display: flex; justify-content: center; gap: 32px; font-size: 13px;">
-                        <span style="display: flex; align-items: center; gap: 8px;">
-                            <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #dc3545; border: 2px solid white; box-shadow: 0 0 0 1px #dc3545;"></span>
-                            <span style="color: #475569; font-weight: 500;">Staff Intervention</span>
-                        </span>
-                        <span style="display: flex; align-items: center; gap: 8px;">
-                            <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #ffc107; border: 2px solid white; box-shadow: 0 0 0 1px #ffc107;"></span>
-                            <span style="color: #475569; font-weight: 500;">Bot Check-in</span>
-                        </span>
-                        <span style="display: flex; align-items: center; gap: 8px;">
-                            <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #fd7e14; border: 2px solid white; box-shadow: 0 0 0 1px #fd7e14;"></span>
-                            <span style="color: #475569; font-weight: 500;">User Conversation</span>
-                        </span>
                     </div>
                 </div>
             </div>
@@ -341,82 +430,25 @@
                 if(['heart_rate_avg', 'sleep_minutes'].includes(metric)) color = '#7c3aed';
                 if(['canvas_activity', 'library_hours'].includes(metric)) color = '#ea580c';
 
-               myChart = new Chart(ctx, {
+                myChart = new Chart(ctx, {
+                    type: 'line',
                     data: {
                         labels: data.labels,
-                        datasets: [
-                            // Dataset 1: LINE GRAPH (the metric line)
-                            {
-                                type: 'line',
-                                label: metric.replace('_', ' ').toUpperCase(),
-                                data: data.values,
-                                borderColor: color,
-                                backgroundColor: color + '20',
-                                fill: true,
-                                tension: 0.3,
-                                pointRadius: 0,
-                                pointHoverRadius: 0
-                            },
-                            // Dataset 2: SCATTER PLOT (the event dots!)
-                            {
-                                type: 'scatter',
-                                label: 'Events',
-                                data: data.events || [],
-                                pointRadius: 10,
-                                pointHoverRadius: 14,
-                                backgroundColor: function(context) {
-                                    const raw = context.raw;
-                                    if (!raw) return '#999999';
-                                    if (raw.type === 'staff') return '#dc3545';
-                                    if (raw.type === 'bot') return '#ffc107';
-                                    return '#fd7e14';
-                                },
-                                borderColor: '#ffffff',
-                                borderWidth: 3,
-                                pointStyle: 'circle',
-                                hoverBorderWidth : 4
-
-                            }
-                        ]
+                        datasets: [{
+                            label: metric.replace('_', ' ').toUpperCase(),
+                            data: data.values,
+                            borderColor: color,
+                            backgroundColor: color + '20', // transparent fill
+                            fill: true,
+                            tension: 0.3
+                        }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        interaction: { 
-                            mode: 'nearest',
-                            axis: 'xy',
-                            intersect: true
-                        },
-                        plugins: { 
-                            legend: { display: false },
-                            tooltip: {
-                                filter: function(tooltipItem) {
-                                    return tooltipItem.dataset.type === 'scatter';
-                                },
-                                callbacks: {
-                                    label: function(context) {
-                                        const raw = context.raw;
-                                        if (!raw || !raw.details) return '';
-                                        return raw.details;
-                                    }
-                                }
-                            }
-                        },
-                        scales: { 
-                            y: { 
-                                beginAtZero: true,
-                                grid: { color: '#f1f5f9' }
-                            },
-                            x: { 
-                                grid: { display: false },
-                                ticks: {
-                                    maxRotation: 45,
-                                    minRotation: 45,
-                                    autoSkip: true,
-                                    maxTicksLimit: 15
-                                }
-                            }
-                        }
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true }, x: { grid: { display: false } } }
                     }
                 });
             })
@@ -524,7 +556,7 @@
 
     // Toggle ALL conversations at once
     function toggleAllGroups() {
-        const allContents = document.querySelectorAll('.collapsible-content-chat-window');
+        const allContents = document.querySelectorAll('.collapsible-content');
         const allIcons = document.querySelectorAll('.group-icon');
         const button = document.getElementById('global-toggle-btn');
         
@@ -545,70 +577,31 @@
         button.textContent = allExpanded ? 'Collapse All' : 'Expand All';
     }
 
-
-    function applyChatFilters() {
-        const startVal = document.getElementById('chat-start-date').value;
-        const endVal = document.getElementById('chat-end-date').value;
-        const filterType = document.getElementById('risk-filter').value;
+    // Filter conversations by risk level or trigger type
+    function applyRiskFilter(filterValue) {
+        const allGroups = document.querySelectorAll('.prompt-conversation-group');
         
-        const groups = document.querySelectorAll('.prompt-conversation-group');
-        const markers = document.querySelectorAll('.timeline-date-marker');
-
-        groups.forEach(group => {
-            const isRisky = group.getAttribute('data-has-risk') === 'true';
+        allGroups.forEach(group => {
+            const hasRisk = group.getAttribute('data-has-risk') === 'true';
             const isPassive = group.getAttribute('data-is-passive') === 'true';
             
-            // 1. Handle Risk Filter first (at the Conversation level)
-            let filter = (filterType === 'all') || 
-                         (filterType === 'risky' && isRisky) || 
-                         (filterType === 'passive-sensing' && isPassive) || 
-                         (filterType === 'user-initiated' && !isPassive);
-
-            if (!filter) {
-                group.classList.add('hidden');
-                return; // Skip message processing for this group
+            let shouldShow = false;
+            
+            if (filterValue === 'all') {
+                shouldShow = true;
+            } else if (filterValue === 'risky') {
+                shouldShow = hasRisk;
+            } else if (filterValue === 'passive-sensing') {
+                shouldShow = isPassive;
+            } else if (filterValue === 'user-initiated') {
+                shouldShow = !isPassive;
             }
-
-            // 2. Handle Date Range (at the Message level)
-            const messages = group.querySelectorAll('.message-wrapper');
-            let visibleMessagesInGroup = 0;
-
-            messages.forEach(msg => {
-                const msgDate = msg.getAttribute('data-msg-date');
-                const dateMatch = (!startVal || msgDate >= startVal) && 
-                                (!endVal || msgDate <= endVal);
-
-                if (dateMatch) {
-                    msg.style.display = 'flex'; // Or whatever your default display is
-                    visibleMessagesInGroup++;
-                } else {
-                    msg.style.display = 'none';
-                }
-            });
-
-            // 3. Show/Hide the whole group header based on if it has visible messages
-            if (visibleMessagesInGroup > 0) {
-                group.classList.remove('hidden');
-            } else {
-                group.classList.add('hidden');
-            }
-        });
-
-        // 4. Cleanup Date Markers (headers for the days)
-        markers.forEach(marker => {
-            let sibling = marker.nextElementSibling;
-            let hasVisibleContent = false;
-            while (sibling && !sibling.classList.contains('timeline-date-marker')) {
-                if (sibling.classList.contains('prompt-conversation-group') && !sibling.classList.contains('hidden')) {
-                    hasVisibleContent = true;
-                    break;
-                }
-                sibling = sibling.nextElementSibling;
-            }
-            marker.classList.toggle('hidden', !hasVisibleContent);
+            
+            group.style.display = shouldShow ? 'block' : 'none';
         });
     }
 
+    
 </script>
 {% endblock %}
 

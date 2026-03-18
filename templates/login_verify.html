@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Verify Login - Everdash{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-box">
+        <h1>Security Verification</h1>
+        <p class="subtitle">A 6-digit code has been sent to your registered phone number via SMS.</p>
+
+        <form method="POST" action="{{ url_for('login_verify') }}">
+            <div class="form-group">
+                <label for="otp_code">Verification Code</label>
+                <input type="text" 
+                       id="otp_code" 
+                       name="otp_code" 
+                       placeholder="000000"
+                       pattern="\d{6}" 
+                       inputmode="numeric" 
+                       required 
+                       autofocus>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">Verify & Login</button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Didn't receive the code? 
+                <a href="{{ url_for('resend_code') }}">Resend SMS</a> or 
+                <a href="{{ url_for('login') }}">Back to login</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

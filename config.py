@@ -1,5 +1,5 @@
 """
-Theradash Configuration Module
+Everdash Configuration Module
 
 This module loads all configuration settings from environment variables using python-dotenv.
 Configuration values are loaded from the .env file in the project root.
@@ -150,10 +150,11 @@ class Config:
     TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
     TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
     TWILIO_FROM_NUMBER = os.environ.get('TWILIO_FROM_NUMBER')
+    TWILIO_MESSAGING_SERVICE_SID = os.environ.get('TWILIO_MESSAGING_SERVICE_SID')
     TWILIO_ADMIN_NUMBERS = os.environ.get('TWILIO_ADMIN_NUMBERS', '').split(',')
 
     # Security settings
-    IP_PREFIX_ALLOWED = os.environ.get('IP_PREFIX_ALLOWED', '192.168.1')  # First 3 digits of allowed IP
+    IP_PREFIX_ALLOWED = os.environ.get('IP_PREFIX_ALLOWED', '10.')  # First 3 digits of allowed IP
     REGISTRATION_KEY = os.environ.get('REGISTRATION_KEY', 'default-registration-key-change-me')
 
     # Timezone
