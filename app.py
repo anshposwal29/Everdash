@@ -335,7 +335,6 @@ def dashboard():
     order = request.args.get('order', 'desc')
 
     # --- 2. FETCH MASTER DATA (API ONLY) ---
-    # We rely on the Mock API for the participant list and status
     try:
         api_participants = fetch_all_participants()
     except Exception as e:
@@ -343,39 +342,40 @@ def dashboard():
         api_participants = []
 
     # --- 3. GLOBAL METRICS ---
-    # Count how many users have the "Needs Attention" flag active
     attention_count = 0
     for p in api_participants:
         results = p.get('decision_engine_results', {})
+        # This is safe because `is True` will just evaluate to False if needs_attention is None
         if results.get('needs_attention') is True:
             attention_count += 1
 
     # --- 4. LIST VIEW ---
     if view == 'list':
-
         participants = api_participants.copy()
 
-        if sort == 'recent':
+        # [COMMENTED OUT] - 'recent' relies on messages which are not ready
+        # if sort == 'recent':
+        #     participants.sort(
+        #         key=lambda u: u.get('last_message_at') or '',
+        #         reverse=(order == 'desc')
+        #     )
+
+        if sort == 'silence':  #This is considering silence as days since gps or battery data / messages silence cannot be implemented yet
             participants.sort(
-                key=lambda u: u.get('last_message_at') or '',
+                key=lambda u: (u.get('decision_engine_results', {}).get('silence_days') or 0),
                 reverse=(order == 'desc')
             )
 
-        elif sort == 'silence':
-            participants.sort(
-                key=lambda u: u.get('decision_engine_results', {}).get('silence_days', 0),
-                reverse=(order == 'desc')
-            )
-
-        elif sort == 'risk':
-            participants.sort(
-                key=lambda u: u.get('decision_engine_results', {}).get('risky_count', 0),
-                reverse=(order == 'desc')
-            )
+        # [COMMENTED OUT] - 'risk' relies on risky_count which is currently None
+        # elif sort == 'risk':
+        #     participants.sort(
+        #         key=lambda u: (u.get('decision_engine_results', {}).get('risky_count') or 0),
+        #         reverse=(order == 'desc')
+        #     )
 
         elif sort == 'days':
             participants.sort(
-                key=lambda u: u.get('days_in_study', 0),
+                key=lambda u: (u.get('days_in_study') or 0),
                 reverse=(order == 'asc')
             )
 

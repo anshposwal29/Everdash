@@ -24,16 +24,29 @@
         <h1 style="margin: 0; font-size: 26px;">Overall — Priority View</h1>
       </div>
 
-      <div style="display:flex; align-items:center; gap:10px;">
-        <div style="font-weight:600;">Sort:</div>
-        <select id="sort-select" style="padding:8px 10px; border-radius:10px; border:1px solid #d0d0d0; background:white; min-width:220px;" onchange="updateFilters()">
-          <option value="recent" {% if sort == 'recent' %}selected{% endif %}>Most recent dialogue</option>
-          <option value="silence" {% if sort == 'silence' %}selected{% endif %}>Silence (longest first)</option>
-          <option value="risk" {% if sort == 'risk' %}selected{% endif %}>Risky messages (high → low)</option>
-          <option value="days" {% if sort == 'days' %}selected{% endif %}>Days in study (less → more)</option>
-        </select>
-      </div>
-    </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="font-weight:600;">Sort:</div>
+          <select id="sort-select" style="padding:8px 10px; border-radius:10px; border:1px solid #d0d0d0; background:white; min-width:220px;" onchange="updateFilters()">
+            
+            <option value="recent" disabled style="color: #999;" {% if sort == 'recent' %}selected{% endif %}>
+              Most recent dialogue (Coming Soon)
+            </option>
+            
+            <option value="silence" {% if sort == 'silence' %}selected{% endif %}>
+              Silence (longest first)
+            </option>
+            
+            <option value="risk" disabled style="color: #999;" {% if sort == 'risk' %}selected{% endif %}>
+              Risky messages (Coming Soon)
+            </option>
+            
+            <option value="days" {% if sort == 'days' %}selected{% endif %}>
+              Days in study (less → more)
+            </option>
+            
+          </select>
+        </div>
+        </div>
 
     <div style="
         padding: 10px 20px;
