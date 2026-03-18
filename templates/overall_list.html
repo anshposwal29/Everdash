@@ -1,3 +1,6 @@
+<!-- 
+  This is the template for the list dashboard view.
+-->
 {% extends "base.html" %}
 {% block content %}
 
@@ -24,6 +27,7 @@
         <h1 style="margin: 0; font-size: 26px;">Overall — Priority View</h1>
       </div>
 
+      <!---Sorting dropdown (recent and risk are disabled as the messages api is not ready)-->
         <div style="display:flex; align-items:center; gap:10px;">
           <div style="font-weight:600;">Sort:</div>
           <select id="sort-select" style="padding:8px 10px; border-radius:10px; border:1px solid #d0d0d0; background:white; min-width:220px;" onchange="updateFilters()">
@@ -57,7 +61,8 @@
         gap:20px;
         flex-wrap: wrap;
       ">
-      
+
+      <!--Buttons to change to other views-->
       <div style="display:flex; gap:10px; align-items:center;">
         <a href="{{ url_for('dashboard', view='list', window=window_days, sort=sort) }}"
            style="text-decoration:none; padding: 8px 12px; border-radius: 999px; border: 1px solid #2b6cb0; background: #ebf8ff; color: #1e40af; font-weight: 600; font-size: 14px;">
@@ -73,6 +78,7 @@
         </a>
       </div>
 
+      <!--Legend for lucide passive sensing icons-->
       <div style="display:flex; align-items:center; gap:18px; font-size:14px; flex-wrap:wrap;">
         <div style="display:flex; align-items:center; gap:6px;"><i data-lucide="map-pin" style="width:14px;"></i> Location</div>
         <div style="display:flex; align-items:center; gap:6px;"><i data-lucide="battery" style="width:14px;"></i> Battery</div>
@@ -91,6 +97,7 @@
       </div>
     </div>
 
+    <!--Titles row-->
     <div style="overflow-x: auto;">
       <table style="width: 100%; border-collapse: collapse; min-width: 900px;">
         <thead>
@@ -106,6 +113,7 @@
 
         <tbody id="user-table-body">
 
+          <!--Passive sensing colors logic-->
           {# 
             compliance_icon macro:
             Shows a colored icon based on compliance percentage.
@@ -130,6 +138,7 @@
             </span>
           {% endmacro %}
 
+          <!--Filling rows of table with participants-->
           {% if participants %}
             {% for u in participants %}
             <tr style="border-bottom: 1px solid #eee;">
@@ -247,6 +256,7 @@
       </table>
     </div>
 
+    <!--Bottom note-->
     <div style="padding: 12px 20px; border-top: 1px solid #eee; background: #fafafa;">
       <div style="font-size: 14px; color: #666;">
         Displaying participants from the Evergreen API.
@@ -259,6 +269,7 @@
 </div>
 
 <script>
+  // Handles page reloads for the sorting dropdown and initializes UI icons and compliance hover effects on page load.
   function updateFilters() {
     const sortVal = document.getElementById('sort-select').value;
     window.location.href = `{{ url_for('dashboard') }}?view=list&sort=${sortVal}`;
@@ -274,6 +285,7 @@
 
 {% block extra_js %}
 <script>
+  // COMPLIANCE HOVERING LOGIC
 function setupComplianceHover() {
   const tooltip = document.getElementById("tooltip");
   if (!tooltip) return;
