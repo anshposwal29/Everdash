@@ -1,12 +1,141 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div style="padding: 24px; max-width: 1200px; margin: 0 auto;">
-  <div style="background: #fff; border: 1px solid #e6e6e6; border-radius: 16px; padding: 40px; text-align: center;">
-    <h1>Week View</h1>
-    <p>This view is under construction.</p>
-    <a href="{{ url_for('dashboard', view='list') }}" style="color: #2563eb; text-decoration: underline;">Back to List</a>
-  </div>
+<div class="week-view-container" style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        
+        <a href="{{ url_for('dashboard', view='week', week_offset=week_offset - 1, page=1) }}" 
+           style="padding: 8px 16px; border: 1px solid #d0d0d0; border-radius: 8px; text-decoration: none; color: #333;">
+            &larr; Previous Week
+        </a>
+
+        <h3 style="margin: 0; font-weight: 600; color: #333;">
+            {{ week_dates[0].short_date }} &mdash; {{ week_dates[-1].short_date }}
+        </h3>
+
+        <a href="{{ url_for('dashboard', view='week', week_offset=week_offset + 1, page=1) }}" 
+           style="padding: 8px 16px; border: 1px solid #d0d0d0; border-radius: 8px; text-decoration: none; color: #333;">
+            Next Week &rarr;
+        </a>
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
+            <thead>
+                <tr style="border-bottom: 2px solid #f0f0f0;">
+                    
+                    <th style="text-align: left; padding: 15px; font-size: 0.85rem; color: #555;">USER INFO</th>
+                    <th style="text-align: left; padding: 15px; font-size: 0.85rem; color: #555;">ACTIONS</th>
+                    
+                    {% for day in week_dates %}
+                        <th style="text-align: center; padding: 15px;">
+                            <div style="font-size: 0.85rem; color: #555; text-transform: uppercase;">{{ day.day_name }}</div>
+                            <div style="font-size: 0.9rem; font-weight: 600; color: #333; margin-top: 4px;">{{ day.short_date }}</div>
+                        </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            
+            <tbody>
+                {% for participant in participants %}
+                <tr style="border-bottom: 1px solid #f0f0f0;">
+                    
+                    <td style="padding: 15px; vertical-align: middle;">
+                        <div style="font-weight: 600; color: #333; margin-bottom: 4px;">
+                            {{ participant.name or participant.identifier or 'Unknown Participant' }}
+                        </div>
+                        <div style="font-size: 0.8rem; color: #777;">
+                            ID: {{ participant.redcap_id or 'N/A' }} &bull; 
+                            {{ 'Dropped' if participant.dropped else 'Active' }} &bull; 
+                            {{ participant.days_in_study or 0 }} days
+                        </div>
+                    </td>
+
+                    <td style="padding: 15px; vertical-align: middle;">
+                        </td>
+
+                    {% for day in week_dates %}
+                    
+                    {% set daily_stats = participant.get('daily_data', {}).get(day.iso_date, {}) %}
+                    {% set compliance = daily_stats.get('compliance', {}) %}
+                    
+                    <td style="text-align: center; vertical-align: middle; padding: 15px;">
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                            
+                            <div style="display: flex; gap: 6px; justify-content: center;">
+                                
+                                {% set loc = compliance.get('location') %}
+                                {% set loc_color = '#16a34a' if loc is not none and loc >= 50 else ('#eab308' if loc is not none and loc >= 0 else '#ef4444') %}
+                                <i data-lucide="map-pin" style="width: 18px; height: 18px; color: {{ loc_color }};" title="Location: {{ loc or 'Missing' }}{% if loc is not none %}%{% endif %}"></i>
+
+                                {% set bat = compliance.get('battery') %}
+                                {% set bat_color = '#16a34a' if bat is not none and bat >= 50 else ('#eab308' if bat is not none and bat >= 0 else '#ef4444') %}
+                                <i data-lucide="battery" style="width: 18px; height: 18px; color: {{ bat_color }};" title="Battery: {{ bat or 'Missing' }}{% if bat is not none %}%{% endif %}"></i>
+
+                                {% set acc = compliance.get('accel') %}
+                                {% set acc_color = '#16a34a' if acc is not none and acc >= 50 else ('#eab308' if acc is not none and acc >= 0 else '#ef4444') %}
+                                <i data-lucide="activity" style="width: 18px; height: 18px; color: {{ acc_color }};" title="Accel: {{ acc or 'Missing' }}{% if acc is not none %}%{% endif %}"></i>
+
+                                {% set gyr = compliance.get('gyro') %}
+                                {% set gyr_color = '#16a34a' if gyr is not none and gyr >= 50 else ('#eab308' if gyr is not none and gyr >= 0 else '#ef4444') %}
+                                <i data-lucide="refresh-cw" style="width: 18px; height: 18px; color: {{ gyr_color }};" title="Gyro: {{ gyr or 'Missing' }}{% if gyr is not none %}%{% endif %}"></i>
+                            
+                            </div>
+
+                            {% set has_dialogues = daily_stats.get('has_dialogues') %}
+                            
+                            <div style="font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; background: #f9f9f9; border: 1px dashed #d0d0d0; color: #999;">
+                                {% if has_dialogues is none %}
+                                    <span title="API not connected yet">No Data</span>
+                                {% elif has_dialogues %}
+                                    <span style="color: #2563eb; font-weight: 600;">Dialogue Logged</span>
+                                {% else %}
+                                    <span>No Dialogue</span>
+                                {% endif %}
+                            </div>
+
+                        </div>
+                    </td>
+                    {% endfor %}
+
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 40px; color: #999;">
+                        No participants found for this page.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;">
+        
+        <div>
+            {% if page > 1 %}
+            <a href="{{ url_for('dashboard', view='week', week_offset=week_offset, page=page - 1) }}" 
+               style="padding: 6px 12px; border: 1px solid #d0d0d0; border-radius: 6px; text-decoration: none; color: #333; font-size: 0.9rem;">
+                &larr; Previous Page
+            </a>
+            {% endif %}
+        </div>
+
+        <div style="font-size: 0.9rem; color: #555;">
+            Page <strong>{{ page }}</strong> of <strong>{{ total_pages }}</strong>
+        </div>
+
+        <div>
+            {% if page < total_pages %}
+            <a href="{{ url_for('dashboard', view='week', week_offset=week_offset, page=page + 1) }}" 
+               style="padding: 6px 12px; border: 1px solid #d0d0d0; border-radius: 6px; text-decoration: none; color: #333; font-size: 0.9rem;">
+                Next Page &rarr;
+            </a>
+            {% endif %}
+        </div>
+        
+    </div>
 </div>
 {% endblock %}
 

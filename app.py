@@ -391,10 +391,46 @@ def dashboard():
 
     # --- 5. WEEK VIEW ---
     elif view == 'week':
-        return render_template('overall_week.html', 
-                               view=view, 
-                               window_days=window_days,
-                               attention_count=attention_count)
+        # -- Date Toggle Logic --
+        # week_offset: 0 = current week, -1 = last week, 1 = next week
+        week_offset = int(request.args.get('week_offset', 0))
+        
+        # Figure out the start of the week (Assuming Monday start)
+        today = datetime.today()
+        start_of_current_week = today - timedelta(days=today.weekday())
+        start_of_view_week = start_of_current_week + timedelta(weeks=week_offset)
+        
+        # Generate a list of the 7 days to pass to the template header
+        week_dates = []
+        for i in range(7):
+            current_day = start_of_view_week + timedelta(days=i)
+            week_dates.append({
+                'day_name': current_day.strftime('%a').upper(), # e.g., 'MON'
+                'short_date': current_day.strftime('%m/%d'),    # e.g., '03/16'
+                'iso_date': current_day.strftime('%Y-%m-%d')    # Used to match data later
+            })
+
+        # -- Pagination Logic --
+        page = int(request.args.get('page', 1))
+        per_page = 10
+        total_participants = len(api_participants)
+        
+        # Slice the list for the current page
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        paginated_participants = api_participants[start_idx:end_idx]
+        
+        total_pages = (total_participants + per_page - 1) // per_page
+
+        return render_template(
+            'overall_week.html', 
+            view=view,
+            participants=paginated_participants,
+            week_dates=week_dates,
+            week_offset=week_offset,
+            page=page,
+            total_pages=total_pages
+        )
 
     # --- 6. CALENDAR VIEW ---
     
