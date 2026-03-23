@@ -67,19 +67,27 @@
                                 
                                 {% set loc = compliance.get('location') %}
                                 {% set loc_color = '#16a34a' if loc is not none and loc >= 50 else ('#eab308' if loc is not none and loc >= 0 else '#ef4444') %}
-                                <i data-lucide="map-pin" style="width: 18px; height: 18px; color: {{ loc_color }};" title="Location: {{ loc or 'Missing' }}{% if loc is not none %}%{% endif %}"></i>
+                                <div class="compliance-icon-wrapper" data-tooltip="Location: {{ loc if loc is not none else 'Missing' }}{% if loc is not none %}%{% endif %}" style="transition: transform 0.2s; cursor: pointer; display: flex;">
+                                    <i data-lucide="map-pin" style="width: 18px; height: 18px; color: {{ loc_color }};"></i>
+                                </div>
 
                                 {% set bat = compliance.get('battery') %}
                                 {% set bat_color = '#16a34a' if bat is not none and bat >= 50 else ('#eab308' if bat is not none and bat >= 0 else '#ef4444') %}
-                                <i data-lucide="battery" style="width: 18px; height: 18px; color: {{ bat_color }};" title="Battery: {{ bat or 'Missing' }}{% if bat is not none %}%{% endif %}"></i>
+                                <div class="compliance-icon-wrapper" data-tooltip="Battery: {{ bat if bat is not none else 'Missing' }}{% if bat is not none %}%{% endif %}" style="transition: transform 0.2s; cursor: pointer; display: flex;">
+                                    <i data-lucide="battery" style="width: 18px; height: 18px; color: {{ bat_color }};"></i>
+                                </div>
 
                                 {% set acc = compliance.get('accel') %}
                                 {% set acc_color = '#16a34a' if acc is not none and acc >= 50 else ('#eab308' if acc is not none and acc >= 0 else '#ef4444') %}
-                                <i data-lucide="activity" style="width: 18px; height: 18px; color: {{ acc_color }};" title="Accel: {{ acc or 'Missing' }}{% if acc is not none %}%{% endif %}"></i>
+                                <div class="compliance-icon-wrapper" data-tooltip="Accel: {{ acc if acc is not none else 'Missing' }}{% if acc is not none %}%{% endif %}" style="transition: transform 0.2s; cursor: pointer; display: flex;">
+                                    <i data-lucide="activity" style="width: 18px; height: 18px; color: {{ acc_color }};"></i>
+                                </div>
 
                                 {% set gyr = compliance.get('gyro') %}
                                 {% set gyr_color = '#16a34a' if gyr is not none and gyr >= 50 else ('#eab308' if gyr is not none and gyr >= 0 else '#ef4444') %}
-                                <i data-lucide="refresh-cw" style="width: 18px; height: 18px; color: {{ gyr_color }};" title="Gyro: {{ gyr or 'Missing' }}{% if gyr is not none %}%{% endif %}"></i>
+                                <div class="compliance-icon-wrapper" data-tooltip="Gyro: {{ gyr if gyr is not none else 'Missing' }}{% if gyr is not none %}%{% endif %}" style="transition: transform 0.2s; cursor: pointer; display: flex;">
+                                    <i data-lucide="refresh-cw" style="width: 18px; height: 18px; color: {{ gyr_color }};"></i>
+                                </div>
                             
                             </div>
 
@@ -137,5 +145,56 @@
         
     </div>
 </div>
+
+<div id="tooltip" style="
+        position: fixed; 
+        background-color: rgba(15, 23, 42, 0.9); 
+        color: white; 
+        padding: 6px 10px; 
+        border-radius: 6px; 
+        font-size: 0.8rem; 
+        font-weight: 500;
+        pointer-events: none; 
+        opacity: 0; 
+        transition: opacity 0.15s ease-in-out; 
+        z-index: 9999; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        white-space: nowrap;">
+    </div>
+{% endblock %}
+
+
+
+{% block extra_js %}
+<script>
+  // COMPLIANCE HOVERING LOGIC
+function setupComplianceHover() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+
+  document.querySelectorAll(".compliance-icon-wrapper").forEach(wrapper => {
+    wrapper.addEventListener("mouseenter", (e) => {
+      tooltip.textContent = wrapper.dataset.tooltip;
+      tooltip.style.opacity = 1;
+      wrapper.style.transform = "scale(1.25)";
+    });
+
+    wrapper.addEventListener("mouseleave", () => {
+      tooltip.style.opacity = 0;
+      wrapper.style.transform = "scale(1)";
+    });
+
+    wrapper.addEventListener("mousemove", (e) => {
+      tooltip.style.left = e.clientX + 12 + "px";
+      tooltip.style.top = e.clientY + 12 + "px";
+    });
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (window.lucide) lucide.createIcons();
+  setupComplianceHover();
+});
+</script>
 {% endblock %}
 
