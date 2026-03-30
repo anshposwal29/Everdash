@@ -282,6 +282,8 @@ body {
     box-shadow: var(--shadow-sm);
     margin-bottom: var(--space-md);
     border: 1px solid var(--color-border-light);
+    padding: 24px 0; 
+    font-family: 'Inter', system-ui, sans-serif;
 }
 
 .header-top {
@@ -290,19 +292,28 @@ body {
     align-items: center;
     padding: var(--space-md) var(--space-lg);
     border-bottom: 1px solid var(--color-border-light);
+    margin-bottom: 24px;
 }
 
 .dashboard-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--color-text);
+    font-size: 26px;
+    font-weight: 700;
     margin: 0;
+    color: #1e293b; 
+    letter-spacing: -0.02em;
 }
 
 .header-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-sm);
+    align-items: center;
+    gap: 16px;
+}
+
+.btn-group {
+    background: #f1f5f9; 
+    padding: 4px; 
+    border-radius: 10px;
 }
 
 .filter-dropdown {
@@ -630,7 +641,7 @@ body {
 
 .sync-icon {
     display: inline-block;
-    font-size: 1.1rem;
+    font-size: 18px;
 }
 
 /* Legacy Dashboard Info (keeping for backward compatibility) */
@@ -807,6 +818,7 @@ body {
 
 /* Status Message */
 .status-message {
+    display: none;
     padding: 1rem;
     margin-top: 1rem;
     border-radius: 4px;
@@ -4139,3 +4151,4 @@ body {
     margin-left: 4px;
     text-transform: uppercase;
 }
+

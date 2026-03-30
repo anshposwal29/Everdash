@@ -2,14 +2,14 @@
 {% block title %}Dashboard - Everdash{% endblock %}
 
 {% block content %}
-<div class="dashboard-header-v2" style="padding: 24px 0; font-family: 'Inter', system-ui, sans-serif;">
-    <div class="header-top" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-        <h1 class="dashboard-title" style="margin: 0; font-size: 26px; font-weight: 700; color: #1e293b; letter-spacing: -0.02em;">
+<div class="dashboard-header-v2">
+    <div class="header-top">
+        <h1 class="dashboard-title">
             Conversation Dashboard
         </h1>
 
-        <div class="header-actions" style="display: flex; align-items: center; gap: 16px;">
-            <div class="btn-group" role="group" style="background: #f1f5f9; padding: 4px; border-radius: 10px;">
+        <div class="header-actions">
+            <div class="btn-group" role="group">
                 {% for view_type in ['list', 'week', 'calendar'] %}
                 {% set is_active = request.args.get('view', 'calendar') == view_type %}
                 <a href="{{ url_for('dashboard', view=view_type) }}" 
@@ -20,9 +20,8 @@
                 {% endfor %}
             </div>
 
-            <button id="sync-btn" class="btn-icon" title="Refresh Data" 
-                    style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #64748b; transition: border-color 0.2s;">
-                <span class="sync-icon" style="font-size: 18px;">&#x21bb;</span>
+            <button id="sync-btn" class="btn-icon" title="Refresh Data">
+                <span class="sync-icon">&#x21bb;</span>
             </button>
         </div>
     </div>
@@ -32,7 +31,7 @@
         
         <input type="hidden" name="view" value="{{ request.args.get('view', 'calendar') }}">
         
-        <div class="filter-group filters-left" style="display: flex; gap: 12px;">
+        <div class="filter-group filters-left">
             {% if projects|length > 1 %}
             <div class="filter-item">
                 <select name="project" onchange="this.form.submit()" class="filter-select" 
@@ -255,6 +254,6 @@
     </table>
 </div>
 
-<div id="sync-status-message" class="status-message" style="display: none;"></div>
+<div id="sync-status-message" class="status-message"></div>
 
 {% endblock %}
