@@ -51,7 +51,7 @@ def _get(path, params=None):
     """
     url = f"{EVERGREEN_BASE_URL}{path}"
     try:
-        response = requests.get(url, headers=HEADERS, params=params, timeout=10)
+        response = requests.get(url, headers=HEADERS, params=params, timeout=60)
         if response.status_code == 200:
             return response.json()
         else:
@@ -172,6 +172,56 @@ def _calculate_passive_compliance(raw_gps, raw_battery, raw_accel, raw_gyro, win
         "gyr": good_day_pct(raw_gyro),
     }
 
+def _build_daily_data(raw_gps, raw_bat, raw_accel, raw_gyro):
+    """
+    Groups raw sensor data by day for the Week View UI.
+    Calculates compliance based on 'Hourly Coverage' (how many unique 
+    hours in a 24-hour period had at least one data point).
+    """
+    daily_data = {}
+
+    def process_sensor(data_points, ui_key):
+        if not data_points:
+            return
+            
+        # Dictionary to track which distinct hours have data for each day
+        # e.g., day_hours["2026-03-16"] = {"00", "01", "08", "14", ...}
+        day_hours = {}
+            
+        for point in data_points:
+            ts = point.get("timestamp", "")
+            # Ensure timestamp is long enough to extract YYYY-MM-DD and HH
+            # Works with "2026-03-16T14:30:00Z" or "2026-03-16 14:30:00"
+            if ts and len(ts) >= 13: 
+                day = ts[:10]       # Extracts "2026-03-16"
+                hour = ts[11:13]    # Extracts the "14"
+                
+                if day not in day_hours:
+                    day_hours[day] = set()
+                
+                day_hours[day].add(hour)
+                
+        # Now calculate the percentage for each day based on a 24-hour clock
+        for day, hours_set in day_hours.items():
+            if day not in daily_data:
+                daily_data[day] = {
+                    "compliance": {},
+                    "has_dialogues": None  # Placeholder until Messages API is ready
+                }
+            
+            # e.g., data in 18 unique hours = (18/24) * 100 = 75%
+            pct = min(100, int((len(hours_set) / 24.0) * 100))
+            daily_data[day]["compliance"][ui_key] = pct
+
+    # Process each sensor
+    process_sensor(raw_gps, "location")
+    process_sensor(raw_bat, "battery")
+    process_sensor(raw_accel, "accel")
+    process_sensor(raw_gyro, "gyro")
+
+    return daily_data
+
+
 
 def _calculate_days_in_study(created_at_str):
     """
@@ -247,6 +297,7 @@ def build_cache():
         print(f"    GPS: {len(raw_gps)} pts | Battery: {len(raw_bat)} pts | "
               f"Accel: {len(raw_accel)} pts | Gyro: {len(raw_gyro)} pts")
 
+
         # Fetch features/anomalies
         features = _fetch_features(user_id, start_ts, end_ts)
 
@@ -254,6 +305,8 @@ def build_cache():
         compliance    = _calculate_passive_compliance(raw_gps, raw_bat, raw_accel, raw_gyro, SENSOR_WINDOW_DAYS)
         silence_days  = _calculate_silence_days(raw_gps, raw_bat)
         days_in_study = _calculate_days_in_study(user.get("created_at"))
+
+        daily_data  = _build_daily_data(raw_gps, raw_bat, raw_accel, raw_gyro)
 
         # Build anomaly info — only from what the API actually returned
         anomaly_count = None
@@ -297,6 +350,9 @@ def build_cache():
             # --- Conversations ---
             # Messages API is not ready yet
             "conversations":       None,
+
+            # --- Daily breakdown for Week View ---
+            "daily_data":          daily_data,
 
             # --- Cache metadata ---
             "cached_at": now.isoformat()

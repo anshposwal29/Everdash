@@ -335,7 +335,6 @@ def dashboard():
     order = request.args.get('order', 'desc')
 
     # --- 2. FETCH MASTER DATA (API ONLY) ---
-    # We rely on the Mock API for the participant list and status
     try:
         api_participants = fetch_all_participants()
     except Exception as e:
@@ -343,39 +342,40 @@ def dashboard():
         api_participants = []
 
     # --- 3. GLOBAL METRICS ---
-    # Count how many users have the "Needs Attention" flag active
     attention_count = 0
     for p in api_participants:
         results = p.get('decision_engine_results', {})
+        # This is safe because `is True` will just evaluate to False if needs_attention is None
         if results.get('needs_attention') is True:
             attention_count += 1
 
     # --- 4. LIST VIEW ---
     if view == 'list':
-
         participants = api_participants.copy()
 
-        if sort == 'recent':
+        # [COMMENTED OUT] - 'recent' relies on messages which are not ready
+        # if sort == 'recent':
+        #     participants.sort(
+        #         key=lambda u: u.get('last_message_at') or '',
+        #         reverse=(order == 'desc')
+        #     )
+
+        if sort == 'silence':  #This is considering silence as days since gps or battery data / messages silence cannot be implemented yet
             participants.sort(
-                key=lambda u: u.get('last_message_at') or '',
+                key=lambda u: (u.get('decision_engine_results', {}).get('silence_days') or 0),
                 reverse=(order == 'desc')
             )
 
-        elif sort == 'silence':
-            participants.sort(
-                key=lambda u: u.get('decision_engine_results', {}).get('silence_days', 0),
-                reverse=(order == 'desc')
-            )
-
-        elif sort == 'risk':
-            participants.sort(
-                key=lambda u: u.get('decision_engine_results', {}).get('risky_count', 0),
-                reverse=(order == 'desc')
-            )
+        # [COMMENTED OUT] - 'risk' relies on risky_count which is currently None
+        # elif sort == 'risk':
+        #     participants.sort(
+        #         key=lambda u: (u.get('decision_engine_results', {}).get('risky_count') or 0),
+        #         reverse=(order == 'desc')
+        #     )
 
         elif sort == 'days':
             participants.sort(
-                key=lambda u: u.get('days_in_study', 0),
+                key=lambda u: (u.get('days_in_study') or 0),
                 reverse=(order == 'asc')
             )
 
@@ -391,10 +391,46 @@ def dashboard():
 
     # --- 5. WEEK VIEW ---
     elif view == 'week':
-        return render_template('overall_week.html', 
-                               view=view, 
-                               window_days=window_days,
-                               attention_count=attention_count)
+        # -- Date Toggle Logic --
+        # week_offset: 0 = current week, -1 = last week, 1 = next week
+        week_offset = int(request.args.get('week_offset', 0))
+        
+        # Figure out the start of the week (Assuming Monday start)
+        today = datetime.today()
+        start_of_current_week = today - timedelta(days=today.weekday())
+        start_of_view_week = start_of_current_week + timedelta(weeks=week_offset)
+        
+        # Generate a list of the 7 days to pass to the template header
+        week_dates = []
+        for i in range(7):
+            current_day = start_of_view_week + timedelta(days=i)
+            week_dates.append({
+                'day_name': current_day.strftime('%a').upper(), # e.g., 'MON'
+                'short_date': current_day.strftime('%m/%d'),    # e.g., '03/16'
+                'iso_date': current_day.strftime('%Y-%m-%d')    # Used to match data later
+            })
+
+        # -- Pagination Logic --
+        page = int(request.args.get('page', 1))
+        per_page = 10
+        total_participants = len(api_participants)
+        
+        # Slice the list for the current page
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        paginated_participants = api_participants[start_idx:end_idx]
+        
+        total_pages = (total_participants + per_page - 1) // per_page
+
+        return render_template(
+            'overall_week.html', 
+            view=view,
+            participants=paginated_participants,
+            week_dates=week_dates,
+            week_offset=week_offset,
+            page=page,
+            total_pages=total_pages
+        )
 
     # --- 6. CALENDAR VIEW ---
     
